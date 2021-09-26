@@ -1,6 +1,11 @@
-package Game;
+package lemmini.game;
+
+import java.nio.charset.StandardCharsets;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,99 +27,176 @@ package Game;
  * Based on the documentation and Basic code of Herman Perk (LemGen)
  */
 public class LevelCode {
-	//  nibble 0 | nibble 1 | nibble 2 | nibble 3  | nibble 4 | nibble 5 | nibble 6
-	// ----------|----------|----------|-----------|----------|----------|---------
-	//  3  2  1 0| 3  2 1  0|3  2  1  0| 3  2  1  0| 3 2  1  0|3  2  1  0|3  2 1  0
-	// ----------|----------|----------|-----------|----------|----------|---------
-	// L0 %0 S0 0|S1 L1 0 %1|0 L2 %2 S2|S4 S3 %3 L3|%4 0 L4 S5|0 %5 S6 L5|0 L6 0 %6
+    //  nibble 0  | nibble 1  | nibble 2  | nibble 3  | nibble 4  | nibble 5  | nibble 6
+    // -----------|-----------|-----------|-----------|-----------|-----------|-----------
+    //  3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0
+    // -----------|-----------|-----------|-----------|-----------|-----------|-----------
+    // L0 %0 F0 U0|U1 L1  0 %1|U2 L2 %2 F1|U4 U3 %3 L3|%4 U5 L4 F2|U6 %5 F3 L5|L7 L6  0 %6
 
-	/* magic: S*/
-	private final static int MMASK[]   = { 1, 2, 4, 24, 32, 64, 0};
-	private final static int MSHIFTL[] = { 1, 2, 0,  0,  0,  0, 0};
-	private final static int MSHIFTR[] = { 0, 0, 2,  1,  5,  5, 0};
-	/* level: L */
-	private final static int LMASK[]   = { 1, 2, 4,  8, 16, 32, 64};
-	private final static int LSHIFTL[] = { 3, 1, 0,  0,  0,  0,  0};
-	private final static int LSHIFTR[] = { 0, 0, 0,  3,  3,  5,  4};
-	/* percent: % */
-	private final static int PMASK[]   = { 1, 2, 4,  8, 16, 32, 64};
-	private final static int PSHIFTL[] = { 2, 0, 0,  0,  0,  0, 0};
-	private final static int PSHIFTR[] = { 0, 1, 1,  2,  1,  3, 6};
+    /* level: L */
+    private static final int[] LMASK   = {1, 2, 4,  8, 16, 32, 192};
+    private static final int[] LSHIFTL = {3, 1, 0,  0,  0,  0,   0};
+    private static final int[] LSHIFTR = {0, 0, 0,  3,  3,  5,   4};
+    /* percent: % */
+    private static final int[] PMASK   = {1, 2, 4,  8, 16, 32,  64};
+    private static final int[] PSHIFTL = {2, 0, 0,  0,  0,  0,   0};
+    private static final int[] PSHIFTR = {0, 1, 1,  2,  1,  3,   6};
+    /* failed: F */
+    private static final int[] FMASK   = {1, 0, 2,  0,  4,  8,   0};
+    private static final int[] FSHIFTL = {1, 0, 0,  0,  0,  0,   0};
+    private static final int[] FSHIFTR = {0, 0, 1,  0,  2,  2,   0};
+    /* unknown: U */
+    private static final int[] UMASK   = {1, 2, 4, 24, 32, 64,   0};
+    private static final int[] USHIFTL = {0, 2, 1,  0,  0,  0,   0};
+    private static final int[] USHIFTR = {0, 0, 0,  1,  3,  3,   0};
+    
+    private static final int MAX_LVL_NUM = 255;
+    private static final int MAX_PERCENT = 127;
+    private static final int MAX_FAILED = 15;
+    private static final int MAX_UNKNOWN = 127;
+    
+    private static final int FIRST_LETTER = 0x41;
+    private static final int LAST_LETTER = 0x5A;
 
-	private final static int MAX_LVL_NUM = 127;
 
+    /**
+     * Create a level code from the given parameters
+     * @param seed The seed string used as base for the level code
+     * @param lvl The level number (0-255)
+     * @param percent Percentage of levels saved in the level won to get this code
+     * @param failed The number of times that the level was failed
+     * @param unknown
+     * @param offset Used to get a higher code for the first level
+     * @return String containing level code
+     */
+    public static String create(final String seed, final int lvl, int percent,
+            int failed, int unknown, final int offset) {
+        if (lvl > MAX_LVL_NUM || lvl < 0 || seed == null || seed.length() != 10) {
+            return null;
+        }
+        for (int i = 0; i < 10; i++) {
+            if (seed.charAt(i) < FIRST_LETTER || seed.charAt(i) > LAST_LETTER) {
+                return null;
+            }
+        }
+        percent = StrictMath.min(StrictMath.max(percent, 0), MAX_PERCENT);
+        failed = StrictMath.min(StrictMath.max(failed, 0), MAX_FAILED);
+        unknown = StrictMath.min(StrictMath.max(unknown, 0), MAX_UNKNOWN);
+        byte[] bi;
+        bi = seed.getBytes(StandardCharsets.US_ASCII);
+        byte[] bo = new byte[bi.length];
 
-	/**
-	 * Create a level code from the given parameters
-	 * @param seed The seed string used as base for the level code
-	 * @param lvl The level number (0..127)
-	 * @param percent Percentage of levels saved in the level won to get this code
-	 * @param magic A "magic" number with more or less unknown sense
-	 * @param offset Used to get a higher code for the first level
-	 * @return String containing level code
-	 */
-	public static String create(final String seed, int lvl, final int percent, final int magic, final int offset) {
-		if (lvl > MAX_LVL_NUM || percent > 127 || magic > 127 || seed==null || seed.length() != 10)
-			return null;
-		byte bi[] = seed.getBytes();
-		byte bo[] = new byte[bi.length];
+        // add offset and wrap around
+        int level = lvl + offset;
+        level %= (MAX_LVL_NUM + 1);
 
-		// add offset and wrap around
-		int level = lvl + offset;
-		level %= (MAX_LVL_NUM+1);
+        // create first 7 bytes
+        int sum = 0;
+        for (int i = 0; i < 7; i++) {
+            bi[i] |= (byte) (((level & LMASK[i]) << LSHIFTL[i]) >>> LSHIFTR[i]);
+            bi[i] |= (byte) (((percent & PMASK[i]) << PSHIFTL[i]) >>> PSHIFTR[i]);
+            bi[i] |= (byte) (((failed & FMASK[i]) << FSHIFTL[i]) >>> FSHIFTR[i]);
+            bi[i] |= (byte) (((unknown & UMASK[i]) << USHIFTL[i]) >>> USHIFTR[i]);
+            if (bi[i] > LAST_LETTER) {
+                bi[i] -= 26;
+            }
+            bo[(i + 8 - (level % 8)) % 7] = bi[i]; // rotate
+            sum += bi[i] & 0xff; // checksum
+        }
+        // create 8th and 9th bytes (level)
+        bo[7] = (byte) (bi[7] + (level & 0xf));
+        if (bo[7] > LAST_LETTER) {
+            bo[7] -= 26;
+        }
+        bo[8] = (byte) (bi[8] + ((level & 0xf0) >> 4));
+        if (bo[8] > LAST_LETTER) {
+            bo[8] -= 26;
+        }
+        sum += (bo[7] & 0xff) + (bo[8] & 0xff);
+        // create 10th byte (checksum)
+        bo[9] = (byte) (bi[9] + (sum & 0x0f));
+        if (bo[9] > LAST_LETTER) {
+            bo[9] -= 26;
+        }
+        return new String(bo, StandardCharsets.US_ASCII);
+    }
 
-		// create first 7 bytes
-		int sum = 0;
-		for (int i=0; i<7; i++) {
-			bi[i] += (byte)(((magic & MMASK[i]) << MSHIFTL[i]) >>> MSHIFTR[i]);
-			bi[i] += (byte)(((level & LMASK[i]) << LSHIFTL[i]) >>> LSHIFTR[i]);
-			bi[i] += (byte)(((percent & PMASK[i]) << PSHIFTL[i]) >>> PSHIFTR[i]);
-			bo[(i + 8 - (level % 8)) % 7] = bi[i]; // rotate
-			sum += bi[i] & 0xff; // checksum
-		}
-		// create bytes 8th and 9th byte (level)
-		bo[7] = (byte)(bi[7] + (level & 0xf));
-		bo[8] = (byte)(bi[8] + ((level & 0xf0) >> 4));
-		sum += (bo[7] + bo[8]) & 0xff;
-		// create 10th byte (checksum)
-		bo[9] = (byte)(bi[9] + (sum & 0x0f));
-		return new String(bo);
-	}
+    /**
+     * Extract the level info from the level code and seed
+     * @param seed The seed string used as base for the level code
+     * @param code Code that contains the level number (amongst other things)
+     * @param offset Used to get a higher code for the first level
+     * @return Array if ints containing level info (null in case of error)
+     */
+    public static int[] getLevel(final String seed, final String code, final int offset) {
+        byte[] bs;
+        byte[] bi;
+        bs = seed.getBytes(StandardCharsets.US_ASCII);
+        bi = code.getBytes(StandardCharsets.US_ASCII);
+        byte[] bo = new byte[bi.length];
 
-	/**
-	 * Extract the level number from the level code and seed
-	 * @param seed The seed string used as base for the level code
-	 * @param code Code that contains the level number (amongst other things)
-	 * @param offset Used to get a higher code for the first level
-	 * @return Level number extracted from the level code (-1 in case of error)
-	 */
-	public static int getLevel(final String seed, final String code, final int offset) {
-		byte bs[] = seed.getBytes();
-		byte bi[] = code.getBytes();
-		byte bo[] = new byte[bi.length];
+        if (seed.length() != 10 || code.length() != 10) {
+            return null;
+        }
+        for (int i = 0; i < 10; i++) {
+            if (seed.charAt(i) < FIRST_LETTER || seed.charAt(i) > LAST_LETTER
+                    || code.charAt(i) < FIRST_LETTER || code.charAt(i) > LAST_LETTER) {
+                return null;
+            }
+        }
+        
+        // verify checksum
+        if (bi[9] < bs[9]) {
+            bi[9] += 26;
+        } 
+        if (((bi[0] + bi[1] + bi[2] + bi[3] + bi[4] + bi[5] + bi[6] + bi[7] + bi[8]) & 0xf) != bi[9] - bs[9]) {
+            return null;
+        }
+        
+        for (int i = 7; i < 9; i++) {
+            if (bi[i] < bs[i]) {
+                bi[i] += 26;
+            }
+        }
+        int level = ((bi[7] - bs[7]) & 0xf) | (((bi[8] - bs[8]) & 0xf) << 4);
+        
+        // unrotate
+        for (int i = 0; i < 7; i++) {
+            bo[(i + 6 + (level % 8)) % 7] = bi[i];
+        }
+        for (int i = 0; i < 7; i++) {
+            if (bi[i] < bs[i]) {
+                bi[i] += 26;
+            }
+        }
+        
+        // check bits that must be 0
+        if (((bo[1] - bs[1]) & 2) + ((bo[6] - bs[6]) & 2) != 0) {
+            return null;
+        }
+        
+        // decode
+        int level_ = 0;
+        int percent = 0;
+        int failed = 0;
+        int unknown = 0;
+        for (int i = 0; i < 7; i++) {
+            int nibble = (bo[i] - bs[i]) & 0xff; // reconstruct nibble stored
+            level_ += ((nibble << LSHIFTR[i]) >> LSHIFTL[i]) & LMASK[i];
+            percent += ((nibble << PSHIFTR[i]) >> PSHIFTL[i]) & PMASK[i];
+            failed += ((nibble << FSHIFTR[i]) >> FSHIFTL[i]) & FMASK[i];
+            unknown += ((nibble << USHIFTR[i]) >> USHIFTL[i]) & UMASK[i];
+        }
+        if (level != level_) {
+            return null;
+        }
+        
+        level -= offset;
+        while (level < 0) {
+            level += MAX_LVL_NUM;
+        }
 
-		if (seed.length() != 10 || code.length() != 10)
-			return -1;
-
-		int level = ((bi[7]-bs[7]) & 0xf) + (((bi[8]-bs[8])& 0xf)<<4);
-		// unrotate
-		for (int j=0; j<7; j++)
-			bo[(j + 6 + (level % 8)) % 7] = bi[j];
-		//decode
-		int level_ = 0;
-		int percent = 0;
-		for (int i=0; i<7; i++) {
-			int nibble = (bo[i] - bs[i]) & 0xff; // reconstruct nibble stored
-			level_ += ((nibble << LSHIFTR[i]) >> LSHIFTL[i]) & LMASK[i];
-			percent += ((nibble << PSHIFTR[i]) >> PSHIFTL[i]) & PMASK[i];
-		}
-		if (level != level_ || percent > 100)
-			return -1;
-
-		level -= offset;
-		while (level < 0)
-			level += MAX_LVL_NUM;
-
-		return level;
-	}
+        int[] ret = {level, percent, failed, unknown};
+        return ret;
+    }
 }

@@ -1,23 +1,18 @@
-package Game;
+package lemmini.game;
 
 import java.awt.Color;
-import java.awt.Component;
-import java.awt.Graphics2D;
-import java.awt.Image;
-import java.awt.MediaTracker;
-import java.awt.Transparency;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
-import java.awt.image.BufferedImage;
-import java.awt.image.PixelGrabber;
-import java.awt.image.WritableRaster;
 import java.util.ArrayList;
-
-import GameUtil.Sprite;
-import Tools.Props;
-import Tools.ToolBox;
+import java.util.List;
+import lemmini.gameutil.Sprite;
+import lemmini.graphics.GraphicsContext;
+import lemmini.graphics.Image;
+import lemmini.tools.Props;
+import lemmini.tools.ToolBox;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -34,866 +29,1282 @@ import Tools.ToolBox;
  */
 
 /**
- * Load a level, paint level, create background stencil.
+ * Load a level, paint level, create foreground stencil.
  *
  * @author Volker Oth
  */
 public class Level {
-	/** maximum width of level */
-	public final static int WIDTH = 1664*2;
-	/** maximum height of level */
-	public final static int HEIGHT = 160*2;
-	/** array of default ARGB colors for particle effects */
-	public final static int DEFAULT_PARTICLE_COLORS[] = { 0xff00ff00, 0xff0000ff, 0xffffffff, 0xffffffff, 0xffff0000 };
+    
+    /** maximum width of level */
+    public static final int DEFAULT_WIDTH = 1600 * 2;
+    /** maximum height of level */
+    public static final int DEFAULT_HEIGHT = 160 * 2;
+    /** array of default ARGB colors for particle effects */
+    public static final int[] DEFAULT_PARTICLE_COLORS = {0xff00ff00, 0xff0000ff, 0xffffffff, 0xffffffff, 0xffff0000};
 
-	/** array of default styles */
-	private final static String STYLES[] = { "dirt", "fire", "marble", "pillar",
-		"crystal", "brick", "rock", "snow", "Bubble", "special" };
-	/** template color to be replaced with debris color */
-	private final static int TEMPLATE_COLOR = 0xffff00ff;
+    /** array of default styles */
+    private static final String[] STYLES = {"dirt", "fire", "marble", "pillar", "crystal",
+        "brick", "rock", "snow", "bubble", "xmas"};
+    /** array of default special styles */
+    private static final String[] SPECIAL_STYLES = {"awesome", "menace", "beastii", "beasti",
+        "covox", "prima", "apple"};
 
-	/** array of normal sprite objects - no transparency, drawn behind background image */
-	private SpriteObject sprObjBehind[];
-	/** array of special sprite objects - with transparency, drawn above background image */
-	private SpriteObject sprObjFront[];
-	/** array of all sprite objects (in front and behind) */
-	private SpriteObject sprObjects[];
-	/** array of level entries */
-	private Entry entries[];
-	/** release rate : 0 is slowest, 0x0FA (250) is fastest */
-	private int releaseRate;
-	/** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
-	private int numLemmings;
-	/** number of Lemmings to rescue : should be less than or equal to number of Lemmings */
-	private int numToRescue;
-	/** time limit in seconds */
-	private int timeLimitSeconds;
-	/** number of climbers in this level : max 0xfa (250) */
-	private int numClimbers;
-	/** number of floaters in this level : max 0xfa (250) */
-	private int numFloaters;
-	/** number of bombers in this level : max 0xfa (250) */
-	private int numBombers;
-	/** number of blockers in this level : max 0xfa (250) */
-	private int numBlockers;
-	/** number of builders in this level : max 0xfa (250) */
-	private int numBuilders;
-	/** number of bashers in this level : max 0xfa (250) */
-	private int numBashers;
-	/** number of miners in this level : max 0xfa (250) */
-	private int numMiners;
-	/** number of diggers in this level : max 0xfa (250) */
-	private int numDiggers;
-	/** start screen x pos : 0 - 0x04f0 (1264) rounded to modulo 8 */
-	private int xPos;
-	/** background color as ARGB */
-	private int bgCol;
-	/** background color */
-	private Color bgColor;
-	/** color used for steps and debris */
-	private int debrisCol;
-	/** array of ARGB colors used for particle effects */
-	private int particleCol[];
-	/** maximum safe fall distance */
-	private int maxFallDistance;
-	/** this level is a SuperLemming level (runs faster) */
-	private boolean superlemming;
-	/** level is  completely loaded */
-	private boolean ready = false;
-	/** objects like doors - originally 32 objects where each consists of 8 bytes */
-	private ArrayList<LvlObject> objects;
-	/** background tiles - every pixel in them is interpreted as brick in the stencil */
-	private Image tiles[];
-	/** sprite objects of all sprite objects available in this style */
-	private SpriteObject sprObjAvailable[];
-	/** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
-	private ArrayList<Terrain> terrain;
-	/** steel areas which are indestructible - originally 32 objects, 4 bytes each */
-	private ArrayList<Steel> steel; //
-	/** level name - originally 32 bytes ASCII - filled with whitespaces */
-	private String lvlName;
-	/** used to read in the configuration file */
-	private Props props;
+    /** array of normal sprite objects - no transparency, drawn behind foreground image */
+    private SpriteObject[] sprObjBehind;
+    /** array of special sprite objects - with transparency, drawn in front of foreground image */
+    private SpriteObject[] sprObjFront;
+    /** array of all sprite objects (in front and behind) */
+    private SpriteObject[] sprObjects;
+    /** array of level entrances */
+    private Entrance[] entrances;
+    /** release rate: 0 is slowest, 99 is fastest */
+    private int releaseRate;
+    /** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
+    private int numLemmings;
+    /** number of Lemmings to rescue: should be less than or equal to number of Lemmings */
+    private int numToRescue;
+    /** time limit in seconds */
+    private int timeLimitSeconds;
+    /** number of climbers in this level */
+    private int numClimbers;
+    /** number of floaters in this level */
+    private int numFloaters;
+    /** number of bombers in this level */
+    private int numBombers;
+    /** number of blockers in this level */
+    private int numBlockers;
+    /** number of builders in this level */
+    private int numBuilders;
+    /** number of bashers in this level */
+    private int numBashers;
+    /** number of miners in this level */
+    private int numMiners;
+    /** number of diggers in this level */
+    private int numDiggers;
+    /** start screen x position */
+    private int xPosCenter;
+    /** background color */
+    private Color bgColor;
+    /** color used for steps and debris */
+    private int debrisCol;
+    private int debrisCol2;
+    /** array of ARGB colors used for particle effects */
+    private int[] particleCol;
+    /** maximum safe fall distance */
+    private int maxFallDistance;
+    private boolean classicSteel;
+    /** this level is a SuperLemming level (runs faster) */
+    private boolean superlemming;
+    private boolean forceNormalTimerSpeed;
+    /** level is completely loaded */
+    private boolean ready = false;
+    /** objects like doors - originally 32 objects where each consists of 8 bytes */
+    private final List<LvlObject> objects;
+    /** foreground tiles - every pixel in them is interpreted as brick in the stencil */
+    private Image[] tiles;
+    private Image[] tileMasks;
+    private Image special;
+    private Image specialMask;
+    /** sprite objects of all sprite objects available in this style */
+    private SpriteObject[] sprObjAvailable;
+    /** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
+    private final List<Terrain> terrain;
+    /** steel areas which are indestructible - originally 32 objects, 4 bytes each */
+    private final List<Steel> steel;
+    private final List<Background> backgrounds;
+    /** level name - originally 32 bytes ASCII filled with whitespace */
+    private String lvlName;
+    /** used to read in the configuration file */
+    private Props props;
+    private Props props2;
+    private int levelWidth;
 
-	/**
-	 * Load a level and all level resources.
-	 * @param fname file name
-	 * @throws ResourceException
-	 * @throws LemmException
-	 */
-	void loadLevel(final String fname) throws ResourceException, LemmException {
-		ready = false;
-		// read level properties from file
-		Props p = new Props();
-		if (!p.load(fname))
-			throw new ResourceException(fname);
+    public Level() {
+        objects = new ArrayList<>(64);
+        terrain = new ArrayList<>(512);
+        steel = new ArrayList<>(64);
+        backgrounds = new ArrayList<>(4);
+    }
 
-		// read name
-		lvlName = p.get("name","");
-		//out(fname + " - " + lvlName);
-		maxFallDistance = p.get("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
-		// read configuration in big endian word
-		releaseRate = p.get("releaseRate",-1);
-		//out("releaseRate = " + releaseRate);
-		numLemmings = p.get("numLemmings",-1);
-		//out("numLemmings = " + numLemmings);
-		numToRescue = p.get("numToRescue",-1);
-		//out("numToRescue = " + numToRescue);
-		timeLimitSeconds = p.get("timeLimitSeconds",-1);
-		if (timeLimitSeconds == -1) {
-			int timeLimit = p.get("timeLimit",-1);
-			timeLimitSeconds = timeLimit*60;
-		}
+    /**
+     * Load a level and all level resources.
+     * @param fname file name
+     * @throws ResourceException
+     * @throws LemmException
+     */
+    void loadLevel(final String fname) throws ResourceException, LemmException {
+        ready = false;
+        special = null;
+        specialMask = null;
+        // read level properties from file
+        Props p = new Props();
+        if (!p.load(fname)) {
+            throw new ResourceException(fname);
+        }
 
-		//out("timeLimit = " + timeLimit);
-		numClimbers = p.get("numClimbers",-1);
-		//out("numClimbers = " + numClimbers);
-		numFloaters = p.get("numFloaters",-1);
-		//out("numFloaters = " + numFloaters);
-		numBombers = p.get("numBombers",-1);
-		//out("numBombers = " + numBombers);
-		numBlockers = p.get("numBlockers",-1);
-		//out("numBlockers = " + numBlockers);
-		numBuilders = p.get("numBuilders",-1);
-		//out("numBuilders = " + numBuilders);
-		numBashers = p.get("numBashers",-1);
-		//out("numBashers = " + numBashers);
-		numMiners = p.get("numMiners",-1);
-		//out("numMiners = " + numMiners);
-		numDiggers = p.get("numDiggers",-1);
-		//out("numDiggers = " + numDiggers);
-		xPos = p.get("xPos",-1);
-		//out("xPos = " + xPos);
-		String strStyle = p.get("style","");
-		int style;
-		style = -1;
-		for (int i=0; i<STYLES.length; i++)
-			if (strStyle.equalsIgnoreCase(STYLES[i])) {
-				style = i;
-				break;
-			}
-		//out("style = " + styles[style]);
-		superlemming = p.get("superlemming", false);
+        // read name
+        lvlName = p.get("name", "");
+        //out(fname + " - " + lvlName);
+        maxFallDistance = p.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
+        classicSteel = p.getBoolean("classicSteel", false);
+        levelWidth = p.getInt("width", DEFAULT_WIDTH);
+        // read configuration in big endian word
+        releaseRate = p.getInt("releaseRate", 0);
+        //out("releaseRate = " + releaseRate);
+        numLemmings = p.getInt("numLemmings", 1);
+        //out("numLemmings = " + numLemmings);
+        numToRescue = p.getInt("numToRescue", 0);
+        //out("numToRescue = " + numToRescue);
+        timeLimitSeconds = p.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+        if (timeLimitSeconds == Integer.MIN_VALUE) {
+            int timeLimit = p.getInt("timeLimit", 0);
+            timeLimitSeconds = timeLimit * 60;
+        }
 
-		// read objects
-		//out("\n[Objects]");
-		objects = new ArrayList<LvlObject>();
-		int def[] = {-1};
-		for (int i = 0; true /*i < 32*/; i++) {
-			int[] val = p.get("object_"+i,def);
-			if (val.length == 5) {
-				LvlObject obj = new LvlObject(val);
-				objects.add(obj);
-				//out("" + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
-			} else break;
-		}
-		// read terrain
-		//out("\n[Terrain]");
-		terrain = new ArrayList<Terrain>();
-		for (int i = 0; true /*i < 400*/; i++) {
-			int[] val = p.get("terrain_"+i,def);
-			if (val.length == 4) {
-				Terrain ter = new Terrain(val);
-				terrain.add(ter);
-				//out("" + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
-			} else break;
-		}
-		// read steel blocks
-		//out("\n[Steel]");
-		steel = new ArrayList<Steel>();
-		for (int i = 0; true/*i < 32*/; i++) {
-			int[] val = p.get("steel_"+i,def);
-			if (val.length == 4) {
-				Steel stl = new Steel(val);
-				steel.add(stl);
-				//out("" + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
-			} else break;
-		}
-		// load objects
-		sprObjAvailable = null;
-		// first load the data from object descriptor file xxx.ini
-		String fnames = Core.findResource("styles/"+strStyle + "/" + strStyle + ".ini");
-		props = new Props();
-		if (!props.load(fnames)) {
-			if (style != -1)
-				throw new ResourceException(fnames);
-			else
-				throw new LemmException("Style "+strStyle+ " not existing.");
-		}
-		// load blockset
-		tiles = loadTileSet(strStyle, Core.getCmp());
-		sprObjAvailable = loadObjects(strStyle, Core.getCmp());
-		ready = true;
-	}
+        //out("timeLimit = " + timeLimit);
+        numClimbers = p.getInt("numClimbers", 0);
+        //out("numClimbers = " + numClimbers);
+        numFloaters = p.getInt("numFloaters", 0);
+        //out("numFloaters = " + numFloaters);
+        numBombers = p.getInt("numBombers", 0);
+        //out("numBombers = " + numBombers);
+        numBlockers = p.getInt("numBlockers", 0);
+        //out("numBlockers = " + numBlockers);
+        numBuilders = p.getInt("numBuilders", 0);
+        //out("numBuilders = " + numBuilders);
+        numBashers = p.getInt("numBashers", 0);
+        //out("numBashers = " + numBashers);
+        numMiners = p.getInt("numMiners", 0);
+        //out("numMiners = " + numMiners);
+        numDiggers = p.getInt("numDiggers", 0);
+        //out("numDiggers = " + numDiggers);
+        xPosCenter = p.getInt("xPosCenter", Integer.MIN_VALUE);
+        if (xPosCenter == Integer.MIN_VALUE) {
+            int xPos = p.getInt("xPos", 0);
+            xPosCenter = xPos + 400;
+        }
+        //out("xPosCenter = " + xPosCenter);
+        String strStyle = p.get("style", "");
+        int style = -1;
+        for (int i = 0; i < STYLES.length; i++) {
+            if (strStyle.equalsIgnoreCase(STYLES[i])) {
+                style = i;
+                break;
+            }
+        }
+        //out("style = " + STYLES[style]);
+        String strSpecialStyle = p.get("specialStyle", "");
+        int specialStyle = -1;
+        for (int i = 0; i < SPECIAL_STYLES.length; i++) {
+            if (strSpecialStyle.equalsIgnoreCase(SPECIAL_STYLES[i])) {
+                specialStyle = i;
+                break;
+            }
+        }
+        //out("specialStyle = " + strSpecialStyle);
+        superlemming = p.getBoolean("superlemming", false);
+        forceNormalTimerSpeed = p.getBoolean("forceNormalTimerSpeed", false);
+        
+        // load objects
+        sprObjAvailable = null;
+        // first load the data from object descriptor file xxx.ini
+        String fnames = Core.findResource("styles/" + strStyle + "/" + strStyle + ".ini");
+        props = new Props();
+        if (fnames == null || !props.load(fnames)) {
+            if (style != -1) {
+                throw new ResourceException("styles/" + strStyle + "/" + strStyle + ".ini");
+            } else {
+                throw new LemmException("Style \"" + strStyle + "\" does not exist.");
+            }
+        }
+        if (!strSpecialStyle.isEmpty()) {
+            String fnames2 = Core.findResource("styles/special/" + strSpecialStyle + "/" + strSpecialStyle + ".ini");
+            props2 = new Props();
+            if (fnames2 == null || !props2.load(fnames2)) {
+                if (specialStyle != -1) {
+                    throw new ResourceException("styles/special/" + strSpecialStyle + "/" + strSpecialStyle + ".ini");
+                } else {
+                    throw new LemmException("Special style \"" + strSpecialStyle + "\" does not exist.");
+                }
+            }
+        } else {
+            props2 = props;
+        }
+        // load blockset
+        if (!strSpecialStyle.isEmpty()) {
+            special = loadSpecialSet(strSpecialStyle);
+            specialMask = loadSpecialMaskSet(strSpecialStyle);
+        }
+        tiles = loadTileSet(strStyle);
+        tileMasks = loadTileMaskSet(strStyle);
+        
+        sprObjAvailable = loadObjects(strStyle);
+        
+        // read objects
+        //out("\n[Objects]");
+        objects.clear();
+        for (int i = 0; true; i++) {
+            int[] val = p.getIntArray("object_" + i, null);
+            if (val != null && val.length >= 5) {
+                LvlObject obj = new LvlObject(val);
+                objects.add(obj);
+                //out("" + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
+            } else {
+                break;
+            }
+        }
+        // read terrain
+        //out("\n[Terrain]");
+        terrain.clear();
+        if (!strSpecialStyle.isEmpty()) {
+            int positionX;
+            int positionY;
+            positionX = props2.getInt("positionX", 0);
+            positionY = props2.getInt("positionY", 0);
+            Terrain ter = new Terrain(new int[]{0, positionX, positionY, 0}, true);
+            terrain.add(ter);
+        }
+        for (int i = 0; true; i++) {
+            int[] val = p.getIntArray("terrain_" + i, null);
+            if (val != null && val.length >= 4) {
+                Terrain ter = new Terrain(val, false);
+                terrain.add(ter);
+                //out("" + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
+            } else {
+                break;
+            }
+        }
+        // read steel blocks
+        //out("\n[Steel]");
+        steel.clear();
+        for (int i = 0; true; i++) {
+            int[] val = p.getIntArray("steel_" + i, null);
+            if (val != null && val.length >= 4) {
+                Steel stl = new Steel(val);
+                steel.add(stl);
+                //out("" + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
+            } else {
+                break;
+            }
+        }
+        // read background
+        backgrounds.clear();
+        int numBackgrounds = p.getInt("numBackgrounds", 0);
+        for (int i = 0; i < numBackgrounds; i++) {
+            List<LvlObject> bgObjects = new ArrayList<>(16);
+            List<Terrain> bgTerrain = new ArrayList<>(256);
+            boolean bgTiled = p.getBoolean("bg_" + i + "_tiled", false);
+            int bgWidth = p.getInt("bg_" + i + "_width", 0);
+            int bgHeight = p.getInt("bg_" + i + "_height", 0);
+            int bgOffsetX = p.getInt("bg_" + i + "_offsetX", 0);
+            int bgOffsetY = p.getInt("bg_" + i + "_offsetY", 0);
+            double bgScrollSpeedX = p.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
+            for (int j = 0; true; j++) {
+                int[] val = p.getIntArray("bg_" + i + "_object_" + j, null);
+                if (val != null && val.length >= 5) {
+                    LvlObject obj = new LvlObject(val);
+                    bgObjects.add(obj);
+                } else {
+                    break;
+                }
+            }
+            for (int j = 0; true; j++) {
+                int[] val = p.getIntArray("bg_" + i + "_terrain_" + j, null);
+                if (val != null && val.length >= 4) {
+                    Terrain ter = new Terrain(val, false);
+                    bgTerrain.add(ter);
+                } else {
+                    break;
+                }
+            }
+            backgrounds.add(new Background(bgObjects, bgTerrain, bgTiled, bgWidth, bgHeight, bgOffsetX, bgOffsetY, bgScrollSpeedX));
+        }
+        ready = true;
+    }
 
-	/**
-	 * Paint a level.
-	 * @param bgImage background image to draw into
-	 * @param cmp parent component
-	 * @param s stencil to reuse
-	 * @return stencil of this level
-	 */
-	Stencil paintLevel(final BufferedImage bgImage, final Component cmp, final Stencil s) {
-		// flush all resources
-		sprObjFront = null;
-		sprObjBehind = null;
-		sprObjects = null;
-		entries = null;
-		System.gc();
-		// the screenBuffer should be big enough to hold the level
-		// returns stencil buffer;
-		int bgWidth = bgImage.getWidth();
-		int bgHeight = bgImage.getHeight();
-		// try to reuse old stencil
-		Stencil stencil;
-		if (s!= null && s.getWidth() == bgWidth && s.getHeight() == bgImage.getHeight()) {
-			s.clear();
-			stencil = s;
-		} else
-			stencil = new Stencil(bgWidth,bgImage.getHeight());
-		// paint terrain
-		for (int n = 0; n < terrain.size(); n++) {
-			Terrain t = terrain.get(n);
-			Image i = tiles[t.id];
-			int width = i.getWidth(null);
-			int height = i.getHeight(null);
+    /**
+     * Paint a level.
+     * @param fgImage foreground image to draw into
+     * @param s stencil to reuse
+     * @return stencil of this level
+     */
+    Stencil paintLevel(final Image fgImage, final List<Image> bgImages, final Stencil s) {
+        // flush all resources
+        sprObjFront = null;
+        sprObjBehind = null;
+        sprObjects = null;
+        entrances = null;
+        System.gc();
+        // the screenBuffer should be big enough to hold the level
+        // returns stencil buffer;
+        int fgWidth = fgImage.getWidth();
+        int fgHeight = fgImage.getHeight();
+        // try to reuse old stencil
+        Stencil stencil;
+        if (s != null && s.getWidth() == fgWidth && s.getHeight() == fgHeight) {
+            s.clear();
+            stencil = s;
+        } else {
+            stencil = new Stencil(fgWidth, fgHeight);
+        }
+        // paint terrain
+        for (Terrain t : terrain) {
+            if (t.id < 0) {
+                continue;
+            }
+            Image i;
+            Image mask;
+            if (t.specialGraphic) {
+                i = special;
+                mask = specialMask;
+            } else {
+                i = tiles[t.id];
+                mask = tileMasks[t.id];
+            }
+            int width = i.getWidth();
+            int height = i.getHeight();
+            int maskWidth = mask.getWidth();
+            int maskHeight = mask.getHeight();
+            
+            int[] source = new int[width * height];
+            int[] sourceMask = new int[maskWidth * maskHeight];
+            GraphicsContext graphicsContext = i.createGraphicsContext();
+            GraphicsContext graphicsContextMask = mask.createGraphicsContext();
+            graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
+            graphicsContextMask.grabPixels(mask, 0, 0, width, height, sourceMask, 0, width);
+            int tx = t.xPos;
+            int ty = t.yPos;
+            boolean fake = (t.modifier & Terrain.MODE_FAKE) != 0;
+            boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
+            boolean noOverwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) != 0;
+            boolean remove = !noOverwrite && (t.modifier & Terrain.MODE_REMOVE) != 0;
+            boolean invisible = (t.modifier & Terrain.MODE_INVISIBLE) != 0;
+            for (int y = 0; y < height; y++) {
+                if (y + ty < 0 || y + ty >= fgHeight) {
+                    continue;
+                }
+                int yLine;
+                if (upsideDown) {
+                    yLine = (height - y - 1) * width;
+                } else {
+                    yLine = y * width;
+                }
+                for (int x = 0; x < width; x++) {
+                    if (x + tx < 0 || x + tx >= fgWidth) {
+                        continue;
+                    }
+                    int col = source[yLine + x];
+                    int maskCol = sourceMask[yLine + x];
+                    // ignore transparent pixels
+                    if (!invisible && (col & 0xff000000) != 0) {
+                        //col = (col & 0xffffff) | 0x80000000;
+                        if (noOverwrite) {
+                            fgImage.addRGBBehind(x + tx, y + ty, col);
+                        } else if (remove) {
+                            fgImage.removeAlpha(x + tx, y + ty, (col >>> 24) & 0xff);
+                        } else {
+                            fgImage.addRGB(x + tx, y + ty, col);
+                        }
+                    }
+                    if (!fake && (maskCol & 0xff000000) != 0) {
+                        if (remove) {
+                            stencil.andMask(x + tx, y + ty, ~Stencil.MSK_BRICK);
+                        } else {
+                            stencil.orMask(x + tx, y + ty, Stencil.MSK_BRICK);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // paint steel tiles into stencil
+        for (Steel stl : steel) {
+            int sx = stl.xPos;
+            int sy = stl.yPos;
+            for (int y = 0; y < stl.height; y++) {
+                if (y + sy < 0 || y + sy >= fgHeight) {
+                    continue;
+                }
+                for (int x = 0; x < stl.width; x++) {
+                    if (x + sx < 0 || x + sx >= fgWidth) {
+                        continue;
+                    }
+                    stencil.orMask(x + sx, y + sy, Stencil.MSK_STEEL);
+                }
+            }
+        }
+        
+        // now for the animated objects
+        List<SpriteObject> oCombined = new ArrayList<>(64);
+        List<SpriteObject> oBehind = new ArrayList<>(64);
+        List<SpriteObject> oFront = new ArrayList<>(64);
+        List<Entrance> entrance = new ArrayList<>(8);
+        for (int n = 0; n < objects.size() && n >= 0; n++) {
+            LvlObject o = objects.get(n);
+            if (o.id < 0) {
+                oCombined.add(null);
+                continue;
+            }
+            SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
+            spr.setX(o.xPos);
+            spr.setY(o.yPos);
+            // check for entrances
+            if (spr.getType() == SpriteObject.Type.ENTRANCE && !o.fake) {
+                Entrance e = new Entrance(o.xPos + spr.getWidth() / 2 + spr.getMaskOffsetX(),
+                        o.yPos + spr.getMaskOffsetY());
+                e.id = oCombined.size();
+                entrance.add(e);
+            }
+            // animated
+            boolean invisible = (o.paintMode & LvlObject.MODE_INVISIBLE) != 0;
+            boolean drawOnVis = !invisible && (o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN) != 0;
+            boolean noOverwrite = !drawOnVis && (o.paintMode & LvlObject.MODE_NO_OVERWRITE) != 0;
+            boolean inFront = !invisible && !noOverwrite;
+            boolean drawFull = inFront && !drawOnVis;
+            
+            spr.setVisOnTerrain(drawOnVis);
+            
+            if (inFront) {
+                oFront.add(spr);
+            } else {
+                oBehind.add(spr);
+            }
+            oCombined.add(spr);
+            
+            for (int y = 0; y < spr.getHeight(); y++) {
+                if (y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                    continue;
+                }
+                for (int x = 0; x < spr.getWidth(); x++) {
+                    if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
+                        continue;
+                    }
+                    stencil.addID(spr.getX() + x, spr.getY() + y, n);
+                }
+            }
+            
+            // draw stencil
+            if (!o.fake) {
+                for (int y = spr.getMaskOffsetY(); y < spr.getMaskHeight() + spr.getMaskOffsetY(); y++) {
+                    if (y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                        continue;
+                    }
+                    for (int x = spr.getMaskOffsetX(); x < spr.getMaskWidth() + spr.getMaskOffsetX(); x++) {
+                        if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
+                            continue;
+                        }
+                        // manage collision mask
+                        // now read stencil
+                        if ((spr.getMask(x, y) & 0xff000000) != 0) { // not transparent
+                            stencil.andMask(spr.getX() + x, y + spr.getY(), Stencil.MSK_BRICK);
+                            stencil.orMask(spr.getX() + x, y + spr.getY(), spr.getMaskType());
+                            stencil.setMaskObjectID(spr.getX() + x, y + spr.getY(), n);
+                        }
+                    }
+                }
+            }
+            // remove invisible pixels from all object frames that are "in front"
+            if (!invisible) {
+                // get flipped or normal version
+                if (o.upsideDown) {
+                    // flip the image vertically
+                    spr.flipSprite();
+                }
+                for (int y = 0; y < spr.getHeight(); y++) {
+                    for (int x = 0; x < spr.getWidth(); x++) {
+                        boolean paint = true;
+                        if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth
+                                || y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                            paint = false;
+                        } else if (inFront) {
+                            // now read terrain image
+                            int terrainVal = fgImage.getRGB(x + spr.getX(), y + spr.getY());
+                            paint = drawFull || ((terrainVal & 0xff000000) >>> 24) >= 0x80 && drawOnVis;
+                        }
+                        if (!paint) {
+                            spr.setPixelVisibility(x, y, false); // set transparent
+                        }
+                    }
+                }
+            }
+        }
+        
+        // paint background
+        if (bgImages != null) {
+            int numBackgrounds = Math.min(backgrounds.size(), bgImages.size());
+            List<SpriteObject> bgOCombined = new ArrayList<>(32);
+            List<SpriteObject> bgOFront = new ArrayList<>(32);
+            List<SpriteObject> bgOBehind = new ArrayList<>(32);
+            for (int m = 0; m < numBackgrounds; m++) {
+                Background bg = backgrounds.get(m);
+                Image targetBg = bgImages.get(m);
+                bgOCombined.clear();
+                bgOBehind.clear();
+                bgOFront.clear();
+                
+                for (Terrain t : bg.terrain) {
+                    if (t.id < 0 || (t.modifier & Terrain.MODE_INVISIBLE) != 0) {
+                        continue;
+                    }
+                    Image i;
+                    i = tiles[t.id];
+                    int width = i.getWidth();
+                    int height = i.getHeight();
+                    
+                    int[] source = new int[width * height];
+                    GraphicsContext graphicsContext = i.createGraphicsContext();
+                    graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
+                    int tx = t.xPos;
+                    int ty = t.yPos;
+                    boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
+                    boolean overwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) == 0;
+                    boolean remove = (t.modifier & Terrain.MODE_REMOVE) != 0;
+                    for (int y = 0; y < height; y++) {
+                        if (y + ty < 0 || y + ty >= fgHeight) {
+                            continue;
+                        }
+                        int yLine;
+                        if (upsideDown) {
+                            yLine = (height - y - 1) * width;
+                        } else {
+                            yLine = y * width;
+                        }
+                        for (int x = 0; x < width; x++) {
+                            if (x + tx < 0 || x + tx >= fgWidth) {
+                                continue;
+                            }
+                            int col = source[yLine + x];
+                            // ignore transparent pixels
+                            if ((col & 0xff000000) != 0) {
+                                if (!overwrite) {
+                                    targetBg.addRGBBehind(x + tx, y + ty, col);
+                                } else if (remove) {
+                                    targetBg.removeAlpha(x + tx, y + ty, (col >>> 24) & 0xff);
+                                } else {
+                                    targetBg.addRGB(x + tx, y + ty, col);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                for (LvlObject o : bg.objects) {
+                    if (o.id < 0) {
+                        continue;
+                    }
+                    SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
+                    spr.setX(o.xPos);
+                    spr.setY(o.yPos);
+                    // animated
+                    boolean invisible = (o.paintMode & LvlObject.MODE_INVISIBLE) != 0;
+                    boolean drawOnVis = !invisible && (o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN) != 0;
+                    boolean noOverwrite = !drawOnVis && (o.paintMode & LvlObject.MODE_NO_OVERWRITE) != 0;
+                    boolean inFront = !invisible && !noOverwrite;
+                    boolean drawFull = inFront && !drawOnVis;
 
-			int source[] = new int[width * height];
-			PixelGrabber pixelgrabber = new PixelGrabber(i, 0, 0, width,
-					height, source, 0, width);
-			try {
-				pixelgrabber.grabPixels();
-			} catch (InterruptedException interruptedexception) {}
-			int tx = t.xPos;
-			int ty = t.yPos;
-			boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
-			boolean overwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) == 0;
-			boolean remove = (t.modifier & Terrain.MODE_REMOVE) != 0;
-			try {
-				for (int y = 0; y < height; y++) {
-					if (y + ty < 0 || y + ty >= bgHeight)
-						continue;
-					int yLineStencil = (y + ty) * bgWidth;
-					int yLine;
-					if (upsideDown)
-						yLine = (height - y - 1) * width;
-					else
-						yLine = y * width;
-					for (int x = 0; x < width; x++) {
-						if (x + tx < 0 || x + tx >= bgWidth)
-							continue;
-						int col = source[yLine + x];
-						// ignore transparent pixels
-						if ((col & 0xff000000) == 0)
-							continue;
-						boolean paint = false;
-						if (!overwrite) {
-							// don't overwrite -> only paint if background is transparent
-							if (stencil.get(yLineStencil + tx + x) == Stencil.MSK_EMPTY)
-								paint = true;
-						} else if (remove) {
-							bgImage.setRGB(x + tx, y + ty, 0 /*bgCol*/);
-							stencil.set(yLineStencil + tx + x, Stencil.MSK_EMPTY);
-						} else
-							paint = true;
-						if (paint) {
-							bgImage.setRGB(x + tx, y + ty, col);
-							stencil.set(yLineStencil + tx + x,Stencil.MSK_BRICK);
-						}
-					}
-				}
-			} catch (ArrayIndexOutOfBoundsException ex) {
-			}
-		}
+                    spr.setVisOnTerrain(drawOnVis);
 
-		// now for the animated objects
-		ArrayList<SpriteObject> oCombined = new ArrayList<SpriteObject>(64);
-		ArrayList<SpriteObject> oBehind = new ArrayList<SpriteObject>(64);
-		ArrayList<SpriteObject> oFront = new ArrayList<SpriteObject>(4);
-		ArrayList<Entry> entry = new ArrayList<Entry>(4);
-		AffineTransform tx;
-		for (int n = 0; n < objects.size(); n++) {
-			try {
-				LvlObject o = objects.get(n);
-				//if (sprObjAvailable[o.id].animMode != Sprite.ANIM_NONE) {
-				SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
-				spr.setX(o.xPos);
-				spr.setY(o.yPos);
-				// affine transform for flipping
-				tx = AffineTransform.getScaleInstance(1, -1);
-				tx.translate(0, -spr.getHeight());
-				AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-				BufferedImage imgSpr;
-				// check for entries (ignore upside down entries)
-				if (spr.getType() == SpriteObject.Type.ENTRY && !o.upsideDown) {
-					Entry e = new Entry(o.xPos+spr.getWidth()/2, o.yPos);
-					e.id = oCombined.size();
-					entry.add(e);
-					spr.setAnimMode(Sprite.Animation.NONE);
-				}
-				// animated
-				boolean drawOnVis = o.paintMode == LvlObject.MODE_VIS_ON_TERRAIN;
-				boolean noOverwrite = o.paintMode == LvlObject.MODE_NO_OVERWRITE;
-				boolean inFront = (drawOnVis || !noOverwrite);
-				boolean drawFull = o.paintMode == LvlObject.MODE_FULL;
+                    if (inFront) {
+                        bgOFront.add(spr);
+                    } else {
+                        bgOBehind.add(spr);
+                    }
+                    bgOCombined.add(spr);
 
-				if (inFront)
-					oFront.add(spr);
-				else
-					oBehind.add(spr);
-				oCombined.add(spr);
+                    // remove invisible pixels from all object frames that are "in front"
+                    if (!invisible) {
+                        // get flipped or normal version
+                        if (o.upsideDown) {
+                            // flip the image vertically
+                            spr.flipSprite();
+                        }
+                        for (int y = 0; y < spr.getHeight(); y++) {
+                            for (int x = 0; x < spr.getWidth(); x++) {
+                                boolean paint = true;
+                                if (x + spr.getX() < 0 || x + spr.getX() >= targetBg.getWidth()
+                                        || y + spr.getY() < 0 || y + spr.getY() >= targetBg.getHeight()) {
+                                    paint = false;
+                                } else if (inFront) {
+                                    // now read terrain image
+                                    int terrainVal = targetBg.getRGB(x + spr.getX(), y + spr.getY());
+                                    paint = drawFull || ((terrainVal & 0xff000000) >>> 24) >= 0x80 && drawOnVis;
+                                }
+                                if (!paint) {
+                                    spr.setPixelVisibility(x, y, false); // set transparent
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                bg.sprObjects = new SpriteObject[bgOCombined.size()];
+                bg.sprObjects = bgOCombined.toArray(bg.sprObjects);
+                bg.sprObjFront = new SpriteObject[bgOFront.size()];
+                bg.sprObjFront = bgOFront.toArray(bg.sprObjFront);
+                bg.sprObjBehind = new SpriteObject[bgOBehind.size()];
+                bg.sprObjBehind = bgOBehind.toArray(bg.sprObjBehind);
+            }
+        }
+        
+        entrances = new Entrance[entrance.size()];
+        entrances = entrance.toArray(entrances);
+        
+        sprObjects = new SpriteObject[oCombined.size()];
+        sprObjects = oCombined.toArray(sprObjects);
+        sprObjFront = new SpriteObject[oFront.size()];
+        sprObjFront = oFront.toArray(sprObjFront);
+        sprObjBehind = new SpriteObject[oBehind.size()];
+        sprObjBehind = oBehind.toArray(sprObjBehind);
+        System.gc();
+        
+        return stencil;
+    }
+    
+    /**
+     * Draw opaque objects behind foreground image.
+     * @param g graphics object to draw on
+     * @param width width of screen
+     * @param xOfs level offset position
+     */
+    public void drawBehindObjects(final GraphicsContext g, final int width, final int xOfs) {
+        // draw "behind" objects
+        if (sprObjBehind != null) {
+            for (int n = sprObjBehind.length - 1; n >= 0; n--) {
+                SpriteObject spr = sprObjBehind[n];
+                Image img = spr.getImage();
+                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width) {
+                    g.drawImage(img, spr.getX() - xOfs, spr.getY());
+                }
+            }
+        }
+    }
 
-				// draw stencil (only for objects that are not upside down)
-				if (!o.upsideDown) {
-					for (int y = 0; y < spr.getHeight(); y++) {
-						if (y + spr.getY() < 0 || y + spr.getY() >= bgHeight)
-							continue;
-						int yLineStencil = (y + spr.getY()) * bgWidth;
-						for (int x = 0; x < spr.getWidth(); x++) {
-							//boolean pixOverdraw = false;
-							if (x + spr.getX() < 0 || x + spr.getX() >= bgWidth)
-								continue;
-							// manage collision mask
-							// now read stencil
-							int stencilVal;
-							stencilVal = stencil.get(yLineStencil + spr.getX()+ x);
-							// store object type in mask and idx in higher byte
-							if (/*paint &&*/ spr.getType() != SpriteObject.Type.ENTRY && spr.getType() != SpriteObject.Type.PASSIVE)
-								if ((spr.getMask(x,y) & 0xff000000) != 0) { // not transparent
-									// avoid two objects on the same stencil position
-									// overlap makes it impossible to delete pixels in objects (mask operations)
-									if (Stencil.getObjectID(stencilVal) == 0) {
-										stencil.or(yLineStencil + spr.getX() + x, spr.getMaskType() | Stencil.createObjectID(n));
-									} // else: overlap - erased later in object instance
-								}
-						}
-					}
-				}
-				// remove invisible pixels from all object frames that are "in front"
-				// for upside down objects, just create the upside down copy
-				if (o.upsideDown || inFront) {
-					for (int frame = 0; frame < spr.getNumFrames(); frame++) {
-						imgSpr = ToolBox.createImage(spr.getWidth(),spr.getHeight(), Transparency.BITMASK);
-						// get flipped or normal version
-						if (o.upsideDown) {
-							// flip the image vertically
-							imgSpr = op.filter(spr.getImage(frame), imgSpr);
-						} else {
-							WritableRaster rImgSpr = imgSpr.getRaster();
-							rImgSpr.setRect(spr.getImage(frame).getRaster()); // just copy
-						}
-						// for "in front" objects the really drawn pixels have to be determined
-						if (inFront) {
-							for (int y = 0; y < spr.getHeight(); y++) {
-								if (y + spr.getY() < 0 || y + spr.getY() >= bgHeight)
-									continue;
-								int yLineStencil = (y + spr.getY()) * bgWidth;
-								for (int x = 0; x < spr.getWidth(); x++) {
-									if (x + spr.getX() < 0 || x + spr.getX() >= bgWidth)
-										continue;
-									// now read stencil
-									int stencilVal = stencil.get(yLineStencil + spr.getX()+ x);
-									int stencilValMasked = stencilVal & Stencil.MSK_WALK_ON;
-									boolean paint =
-										drawFull || (stencilValMasked != 0 && drawOnVis) || (stencilValMasked == 0 && noOverwrite);
-									// hack for overlap:
-									int id = Stencil.getObjectID(stencilVal);
-									// check if a different interactive object was already entered at this pixel position
-									// however: exits must always be painted
-									// also: passive objects will always be painted
-									if ( inFront && spr.getType() != SpriteObject.Type.PASSIVE && spr.getType() != SpriteObject.Type.EXIT && id!=0 && id != n)
-										paint = false;
-									// sprite screenBuffer  pixel
-									int imgCol = imgSpr.getRGB(x,y);
-									if ((imgCol & 0xff000000) == 0)
-										continue;
-									if (!paint)
-										imgSpr.setRGB(x,y,imgCol&0xffffff); // set transparent
-								}
-							}
-						}
-						//spr.img[frame].flush(); // will be overwritten -> flush data
-						spr.setImage(frame,imgSpr);
-					}
-				}
-			} catch (ArrayIndexOutOfBoundsException ex) {
-				//System.out.println("Array out of bounds");
-			}
-		}
+    /**
+     * Draw transparent objects in front of foreground image.
+     * @param g graphics object to draw on
+     * @param width width of screen
+     * @param xOfs level offset position
+     */
+    public void drawInFrontObjects(final GraphicsContext g, final int width, final int xOfs) {
+        // draw "in front" objects
+        if (sprObjFront != null) {
+            for (SpriteObject spr : sprObjFront) {
+                Image img = spr.getImage();
+                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width) {
+                    g.drawImage(img, spr.getX() - xOfs, spr.getY());
+                }
+            }
+        }
+    }
+    
+    public void drawBackground(final GraphicsContext g, final int width,
+            final int xOfs, final int scaleX, final int scaleY) {
+        List<Image> bgImages = GameController.getBgImages();
+        if (bgImages == null || scaleX == 0 || scaleY == 0) {
+            return;
+        }
+        
+        int numBackgrounds = Math.min(bgImages.size(), backgrounds.size());
+        
+        for (int i = numBackgrounds - 1; i >= 0; i--) {
+            Image bgImage = bgImages.get(i);
+            Background bg = backgrounds.get(i);
+            
+            int bgImageWidth = bgImage.getWidth();
+            int bgImageHeight = bgImage.getHeight();
+            
+            int xOfsNew = (int) (-xOfs * bg.scrollSpeedX) + bg.offsetX;
+            int yOfsNew = bg.offsetY;
+            if (bg.tiled) {
+                xOfsNew %= bgImageWidth;
+                xOfsNew -= (xOfsNew > 0) ? bgImageWidth : 0;
+                yOfsNew %= bgImageHeight;
+                yOfsNew -= (yOfsNew > 0) ? bgImageHeight : 0;
+            }
+            
+            for (int y = yOfsNew; y < DEFAULT_HEIGHT; y += bgImageHeight) {
+                for (int x = xOfsNew; x < width; x += bgImageWidth) {
+                    // draw "behind" objects
+                    if (bg.sprObjBehind != null) {
+                        for (int n = bg.sprObjBehind.length - 1; n >= 0; n--) {
+                            SpriteObject spr = bg.sprObjBehind[n];
+                            Image img = spr.getImage();
+                            g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
+                                    (x + spr.getX() + img.getWidth()) / scaleX,
+                                    (y + spr.getY() + img.getHeight()) / scaleY,
+                                    0, 0, img.getWidth(), img.getHeight());
+                        }
+                    }
+                    
+                    g.drawImage(bgImage, x / scaleX, y / scaleY,
+                            (x + bgImageWidth) / scaleX,
+                            (y + bgImageHeight) / scaleY,
+                            0, 0, bgImageWidth, bgImageHeight);
+                    
+                    // draw "in front" objects
+                    if (bg.sprObjFront != null) {
+                        for (SpriteObject spr : bg.sprObjFront) {
+                            Image img = spr.getImage();
+                            g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
+                                    (x + spr.getX() + img.getWidth()) / scaleX,
+                                    (y + spr.getY() + img.getHeight()) / scaleY,
+                                    0, 0, img.getWidth(), img.getHeight());
+                        }
+                    }
+                    
+                    if (!bg.tiled) {
+                        break;
+                    }
+                }
+                
+                if (!bg.tiled) {
+                    break;
+                }
+            }
+        }
+    }
+    
+    public void advanceBackgroundFrame() {
+        for (Background bg : backgrounds) {
+            for (SpriteObject spr : bg.sprObjects) {
+                if (spr != null) {
+                    spr.getImageAnim(); // just to animate
+                }
+            }
+        }
+    }
+    
+    public void openBackgroundEntrances() {
+        for (Background bg : backgrounds) {
+            for (SpriteObject spr : bg.sprObjects) {
+                if (spr != null && spr.getAnimMode() == Sprite.Animation.ONCE_ENTRANCE) {
+                    spr.setAnimMode(Sprite.Animation.ONCE);
+                }
+            }
+        }
+    }
 
-		entries = new Entry[entry.size()];
-		entries = entry.toArray(entries);
+    ///**
+    // * Debug output.
+    // * @param o string to print
+    // */
+    //private static void out(final String o) {
+    //    System.out.println(o);
+    //}
 
-		// paint steel tiles into stencil
-		for (int n = 0; n < steel.size(); n++) {
-			Steel stl = steel.get(n);
-			int sx = stl.xPos;
-			int sy = stl.yPos;
-			for (int y = 0; y < stl.height; y++) {
-				if (y + sy < 0 || y + sy >= bgHeight)
-					continue;
-				int yLineStencil = (y + sy) * bgWidth;
-				for (int x = 0; x < stl.width; x++) {
-					if (x + sx < 0 || x + sx >= bgWidth)
-						continue;
-					int stencilVal = stencil.get(yLineStencil + x + sx);
-					// only allow steel on brick
-					if ((stencilVal & Stencil.MSK_BRICK) != 0) {
-						stencilVal &= ~Stencil.MSK_BRICK;
-						stencilVal |= Stencil.MSK_STEEL;
-						stencil.set(yLineStencil + x + sx, stencilVal);
-					}
-				}
-			}
-		}
-		// flush tiles
-		//		if (tiles != null)
-		//			for (int i=0; i < tiles.length; i++)
-		//				tiles[i].flush();
-
-		sprObjects    = new SpriteObject[oCombined.size()];
-		sprObjects = oCombined.toArray(sprObjects);
-		sprObjFront = new SpriteObject[oFront.size()];
-		sprObjFront = oFront.toArray(sprObjFront);
-		sprObjBehind = new SpriteObject[oBehind.size()];
-		sprObjBehind = oBehind.toArray(sprObjBehind);
-		System.gc();
-
-		return stencil;
-	}
-
-	/**
-	 * Draw opaque objects behind background image.
-	 * @param g graphics object to draw on
-	 * @param width width of screen
-	 * @param xOfs level offset position
-	 */
-	public void drawBehindObjects(final Graphics2D g, final int width, final int xOfs) {
-		// draw "behind" objects
-		if (sprObjBehind != null) {
-			for (int n=0; n<sprObjBehind.length; n++) {
-				try {
-					SpriteObject spr = sprObjBehind[n];
-					BufferedImage img = spr.getImage();
-					if (spr.getX()+spr.getWidth() > xOfs && spr.getX() < xOfs+width)
-						g.drawImage(img,spr.getX()-xOfs,spr.getY(),null);
-					//spr.drawHidden(offImg,xOfsTemp);
-				} catch (ArrayIndexOutOfBoundsException ex) {}
-			}
-		}
-	}
-
-	/**
-	 * Draw transparent objects in front of background image.
-	 * @param g graphics object to draw on
-	 * @param width width of screen
-	 * @param xOfs level offset position
-	 */
-	public void drawInFrontObjects(final Graphics2D g, final int width, final int xOfs) {
-		// draw "in front" objects
-		if (sprObjFront != null) {
-			for (int n=0; n<sprObjFront.length; n++) {
-				try {
-					SpriteObject spr = sprObjFront[n];
-					BufferedImage img = spr.getImage();
-					if (spr.getX()+spr.getWidth() > xOfs && spr.getX() < xOfs+width)
-						g.drawImage(img,spr.getX()-xOfs,spr.getY(),null);
-				} catch (ArrayIndexOutOfBoundsException ex) {}
-			}
-		}
-	}
-
-	//	/**
-	//	 * Debug output.
-	//	 * @param o string to print
-	//	 */
-	//	private static void out(final String o) {
-	//		System.out.println(o);
-	//	}
-
-	/**
-	 * Load tile set from a styles folder.
-	 * @param set name of the style
-	 * @param cmp parent component
-	 * @return array of images where each image contains one tile
-	 * @throws ResourceException
-	 */
-	private Image[] loadTileSet(final String set, final Component cmp) throws ResourceException {
-		ArrayList<Image> images = new ArrayList<Image>(64);
-		MediaTracker tracker = new MediaTracker(cmp);
-		int tiles = props.get("tiles", 64);
-		for (int n = 0; n < tiles; n++) {
-			String fName = "styles/" + set + "/" + set + "_" + Integer.toString(n) + ".gif";
-			Image img = Core.loadImage(tracker, fName);
-			images.add(img);
-		}
-		try {
-			tracker.waitForAll();
-		} catch (InterruptedException ex) {}
-		Image ret[] = new Image[images.size()];
-		ret = images.toArray(ret);
-		images = null;
-		return ret;
-	}
-
-
-	/**
-	 * Load level sprite objects.
-	 * @param set name of the style
-	 * @param cmp parent component
-	 * @return array of images where each image contains one tile
-	 * @throws ResourceException
-	 */
-	private SpriteObject[] loadObjects(final String set, final Component cmp) throws ResourceException {
-		//URLClassLoader urlLoader = (URLClassLoader) this.getClass().getClassLoader();
-		MediaTracker tracker = new MediaTracker(cmp);
-		// first some global settings
-		bgCol = props.get("bgColor",0x000000) | 0xff000000;
-		bgColor = new Color(bgCol);
-		debrisCol = props.get("debrisColor",0xffffff) | 0xff000000;
-		// replace pink color with debris color
-		Lemming.patchColors(TEMPLATE_COLOR,debrisCol);
-		particleCol = props.get("particleColor", DEFAULT_PARTICLE_COLORS);
-		for (int i=0; i<particleCol.length; i++)
-			particleCol[i] |= 0xff000000;
-		// go through all the entries (shouldn't be more than 64)
-		ArrayList<SpriteObject> sprites = new ArrayList<SpriteObject>(64);
-		int idx;
-		for (idx = 0; true; idx++) {
-			// get number of animations
-			String sIdx = Integer.toString(idx);
-			int frames = props.get("frames_" + sIdx, -1);
-			if (frames < 0)
-				break;
-			// load screenBuffer
-			String fName = "styles/"+set + "/" + set + "o_" + Integer.toString(idx)+ ".gif";
-			Image img = Core.loadImage(tracker, fName);
-			try {
-				tracker.waitForAll();
-			} catch (InterruptedException ex) {}
-			// get animation mode
-			int anim = props.get("anim_" + sIdx, -1);
-			if (anim < 0)
-				break;
-			SpriteObject sprite = new SpriteObject(img, frames);
-			switch (anim) {
-				case 0: // dont' animate
-					sprite.setAnimMode(Sprite.Animation.NONE);
-					break;
-				case 1: // loop mode
-					sprite.setAnimMode(Sprite.Animation.LOOP);
-					break;
-				case 2: // triggered animation - for the moment handle like loop
-					sprite.setAnimMode(Sprite.Animation.TRIGGERED);
-					break;
-				case 3: // entry animation
-					sprite.setAnimMode(Sprite.Animation.ONCE);
-					break;
-			}
-			// get object type
-			int type = props.get("type_" + sIdx, -1);
-			if (type < 0)
-				break;
-			sprite.setType(SpriteObject.getType(type));
-			switch (sprite.getType()) {
-				case EXIT:
-				case NO_DIG_LEFT:
-				case NO_DIG_RIGHT:
-				case TRAP_DIE:
-				case TRAP_REPLACE:
-				case TRAP_DROWN:
-					// load mask
-					fName = "styles/"+set + "/" + set + "om_" + Integer.toString(idx)+ ".gif";
-					img = Core.loadImage(tracker, fName);
-					sprite.setMask(img);
-					break;
-			}
-			// get sound
-			int sound = props.get("sound_" + sIdx, -1);
-			sprite.setSound(sound);
-
-			sprites.add(sprite);
-		}
-		SpriteObject ret[] = new SpriteObject[sprites.size()];
-		ret = sprites.toArray(ret);
-		sprites = null;
-		return ret;
-	}
-
-	/**
-	 * Create a mini map for this level.
-	 * @param image image to re-use (if null or wrong size, it will be recreated)
-	 * @param bgImage background image used as source for the mini map
-	 * @param scaleX integer X scaling factor (2 -> half width)
-	 * @param scaleY integer Y scaling factor (2 -> half height)
-	 * @param tint apply a greenish color tint
-	 * @return image with mini map
-	 */
-	public BufferedImage createMiniMap(final BufferedImage image, final BufferedImage bgImage, final int scaleX, final int scaleY, final boolean tint) {
-		Level level = GameController.getLevel();
-		int bgCol;
-		int width = bgImage.getWidth()/scaleX;
-		int height = bgImage.getHeight()/scaleY;
-		BufferedImage img;
-
-		if (image == null || image.getWidth() != width || image.getHeight() != height)
-			img = ToolBox.createImage(width,height,Transparency.OPAQUE);
-		else
-			img = image;
-		Graphics2D gx = img.createGraphics();
-		// clear background
-		gx.setBackground(bgColor);
-		gx.clearRect(0, 0, width, height);
-		// read back background color to avoid problems with 16bit mode
-		// (bgColor written can be slightly different from the one read)
-		bgCol = img.getRGB(0,0);
-		// draw "behind" objects
-		if (level != null && level.sprObjBehind != null) {
-			for (int n=0; n<level.sprObjBehind.length; n++) {
-				try {
-					SpriteObject spr = level.sprObjBehind[n];
-					BufferedImage sprImg = spr.getImage();
-					gx.drawImage(sprImg,spr.getX()/scaleX,spr.getY()/scaleY,
-							spr.getWidth()/scaleX, spr.getHeight()/scaleY, null);
-				} catch (ArrayIndexOutOfBoundsException ex) {}
-			}
-		}
-		gx.drawImage(bgImage,0,0,width,height,0,0,bgImage.getWidth(),bgImage.getHeight(),null);
-		// draw "in front" objects
-		if (level != null && level.sprObjFront != null) {
-			for (int n=0; n<level.sprObjFront.length; n++) {
-				try {
-					SpriteObject spr = level.sprObjFront[n];
-					BufferedImage sprImg = spr.getImage();
-					gx.drawImage(sprImg,spr.getX()/scaleX,spr.getY()/scaleY,
-							spr.getWidth()/scaleX, spr.getHeight()/scaleY, null);
-				} catch (ArrayIndexOutOfBoundsException ex) {}
-			}
-		}
-		gx.dispose();
-		// now tint in green
-		if (tint) {
-			for (int y=0; y<img.getHeight(); y++)
-				for (int x=0; x<img.getWidth(); x++) {
-					int c = img.getRGB(x,y);
-					if (c == bgCol)
-						c = 0xff000000; // make backgroud black instead of dark green (easier mask operations)
-					else {
-						int sum = 0;
-						for (int i =0; i<3; i++,c>>=8)
-							sum += (c&0xff);
-						sum /= 3; // mean value
-						if (sum != 0)
-							sum += 0x60;
-						//sum *= 3; // make lighter
-						if (sum > 0xff)
-							sum = 0xff;
-						c = 0xff000000 + /*((sum<<16)&0xff0000)*/ + ((sum<<8)&0xff00) /*+ sum*/;
-					}
-					img.setRGB(x,y,c);
-				}
-		}
-		return img;
-	}
-
-	/**
-	 * Get level sprite object via index.
-	 * @param idx index
-	 * @return level sprite object
-	 */
-	public SpriteObject getSprObject(final int idx) {
-		return sprObjects[idx];
-	}
-
-	/**
-	 * Get number of level sprite objects.
-	 * @return number of level sprite objects
-	 */
-	public int getSprObjectNum() {
-		if (sprObjects == null)
-			return 0;
-		return sprObjects.length;
-	}
-
-	/**
-	 * Get level Entry via idx.
-	 * @param idx index
-	 * @return level Entry
-	 */
-	public Entry getEntry(final int idx) {
-		return entries[idx];
-	}
-
-	/**
-	 * Get number of entries for this level.
-	 * @return number of entries.
-	 */
-	public int getEntryNum() {
-		if (entries == null)
-			return 0;
-		return entries.length;
-	}
-
-	/**
-	 * Get background color.
-	 * @return background color.
-	 */
-	public Color getBgColor() {
-		return bgColor;
-	}
-
-	/**
-	 * Get ready state of level.
-	 * @return true if level is completely loaded.
-	 */
-	public boolean isReady() {
-		return ready;
-	}
-
-	/**
-	 * Get maximum safe fall distance.
-	 * @return maximum safe fall distance
-	 */
-	public int getMaxFallDistance() {
-		return maxFallDistance;
-	}
-
-	/**
-	 * Get array of ARGB colors used for particle effects.
-	 * @return array of ARGB colors used for particle effects
-	 */
-	public int[] getParticleCol() {
-		return particleCol;
-	}
-
-	/**
-	 * Get start screen x position : 0 - 0x04f0 (1264) rounded to modulo 8,
-	 * @return start screen x position
-	 */
-	public int getXpos() {
-		return xPos;
-	}
-
-	/**
-	 * Get number of climbers in this level : max 0xfa (250).
-	 * @return number of climbers in this level
-	 */
-	public int getNumClimbers () {
-		return numClimbers;
-	}
-
-	/**
-	 * Get number of floaters in this level : max 0xfa (250).
-	 * @return number of floaters in this level
-	 */
-	public int getNumFloaters () {
-		return numFloaters;
-	}
-
-	/**
-	 * Get number of bombers in this level : max 0xfa (250).
-	 * @return number of bombers in this level
-	 */
-	public int getNumBombers () {
-		return numBombers;
-	}
-
-	/**
-	 * Get number of blockers in this level : max 0xfa (250).
-	 * @return number of blockers in this level
-	 */
-	public int getNumBlockers () {
-		return numBlockers;
-	}
-
-	/**
-	 * Get number of builders in this level : max 0xfa (250).
-	 * @return number of builders in this level
-	 */
-	public int getNumBuilders () {
-		return numBuilders;
-	}
-
-	/**
-	 * Get number of bashers in this level : max 0xfa (250).
-	 * @return number of bashers in this level
-	 */
-	public int getNumBashers () {
-		return numBashers;
-	}
-
-	/**
-	 * Get number of miners in this level : max 0xfa (250).
-	 * @return number of miners in this level
-	 */
-	public int getNumMiners () {
-		return numMiners;
-	}
+    /**
+     * Load tile set from a styles folder.
+     * @param set name of the style
+     * @return array of images where each image contains one tile
+     * @throws ResourceException
+     */
+    private Image[] loadTileSet(final String set) throws ResourceException {
+        List<Image> images = new ArrayList<>(64);
+        int tiles = props.getInt("tiles", 0);
+        for (int n = 0; n < tiles; n++) {
+            String fName = Core.findResource(
+                    "styles/" + set + "/" + set + "_" + n + ".png", Core.IMAGE_EXTENSIONS);
+            if (fName == null) {
+                throw new ResourceException("styles/" + set + "/" + set + "_" + n + ".png");
+            }
+            Image img = Core.loadTranslucentImage(fName);
+            images.add(img);
+        }
+        Image[] ret = new Image[images.size()];
+        ret = images.toArray(ret);
+        return ret;
+    }
+    
+    /**
+     * Load tile set masks from a styles folder.
+     * @param set name of the style
+     * @return array of images where each image contains one tile mask
+     * @throws ResourceException
+     */
+    private Image[] loadTileMaskSet(final String set) throws ResourceException {
+        List<Image> images = new ArrayList<>(64);
+        int tileMasks = props.getInt("tiles", 0);
+        for (int n = 0; n < tileMasks; n++) {
+            Image img;
+            String fName = Core.findResource(
+                    "styles/" + set + "/" + set + "m_" + n + ".png", Core.IMAGE_EXTENSIONS);
+            if (fName != null) {
+                img = Core.loadBitmaskImage(fName);
+            } else {
+                fName = Core.findResource(
+                        "styles/" + set + "/" + set + "_" + n + ".png", Core.IMAGE_EXTENSIONS);
+                if (fName == null) {
+                    throw new ResourceException("styles/" + set + "/" + set + "_" + n + ".png");
+                }
+                img = Core.loadBitmaskImage(fName);
+            }
+            images.add(img);
+        }
+        Image[] ret = new Image[images.size()];
+        ret = images.toArray(ret);
+        return ret;
+    }
+    
+    /**
+     * Load a special graphic from the styles/special folder.
+     * @param set name of the style
+     * @return array of images where each image contains one tile
+     * @throws ResourceException
+     */
+    private Image loadSpecialSet(final String specialSet) throws ResourceException {
+        String fName = Core.findResource(
+                "styles/special/" + specialSet + "/" + specialSet + ".png", Core.IMAGE_EXTENSIONS);
+        if (fName == null) {
+            throw new ResourceException("styles/special/" + specialSet + "/" + specialSet + ".png");
+        }
+        Image img = Core.loadTranslucentImage(fName);
+        return img;
+    }
+    
+    /**
+     * Load a special graphic mask from the styles/special folder.
+     * @param set name of the style
+     * @return array of images where each image contains one tile
+     * @throws ResourceException
+     */
+    private Image loadSpecialMaskSet(final String specialSet) throws ResourceException {
+        Image img;
+        String fName = Core.findResource(
+                "styles/special/" + specialSet + "/" + specialSet + "m.png", Core.IMAGE_EXTENSIONS);
+        if (fName != null) {
+            img = Core.loadBitmaskImage(fName);
+        } else {
+            fName = Core.findResource(
+                    "styles/special/" + specialSet + "/" + specialSet + ".png", Core.IMAGE_EXTENSIONS);
+            if (fName == null) {
+                throw new ResourceException("styles/special/" + specialSet + "/" + specialSet + ".png");
+            }
+            img = Core.loadBitmaskImage(fName);
+        }
+        return img;
+    }
 
 
-	/**
-	 * Get number of diggers in this level : max 0xfa (250).
-	 * @return number of diggers in this level
-	 */
-	public int getMumDiggers () {
-		return numDiggers;
-	}
+    /**
+     * Load level sprite objects.
+     * @param set name of the style
+     * @return array of images where each image contains one tile
+     * @throws ResourceException
+     */
+    private SpriteObject[] loadObjects(final String set) throws ResourceException {
+        // first some global settings
+        int bgCol = props2.getInt("bgColor", props.getInt("bgColor", 0x000000)) | 0xff000000;
+        bgColor = new Color(bgCol);
+        debrisCol = props2.getInt("debrisColor", props.getInt("debrisColor", 0xffffff)) | 0xff000000;
+        debrisCol2 = props2.getInt("debrisColor2", props.getInt("debrisColor2", debrisCol)) | 0xff000000;
+        Lemming.patchColors(debrisCol, debrisCol2);
+        particleCol = props2.getIntArray("particleColor", props.getIntArray("particleColor", DEFAULT_PARTICLE_COLORS));
+        for (int i = 0; i < particleCol.length; i++) {
+            particleCol[i] |= 0xff000000;
+        }
+        // go through all the entrances
+        List<SpriteObject> sprites = new ArrayList<>(64);
+        int idx;
+        for (idx = 0; true; idx++) {
+            // get number of animations
+            String sIdx = Integer.toString(idx);
+            int frames = props.getInt("frames_" + sIdx, -1);
+            if (frames < 0) {
+                break;
+            }
+            // load screen buffer
+            String fName = Core.findResource(
+                    "styles/" + set + "/" + set + "o_" + idx + ".png", Core.IMAGE_EXTENSIONS);
+            if (fName == null) {
+                throw new ResourceException("styles/" + set + "/" + set + "o_" + idx + ".png");
+            }
+            Image img = Core.loadTranslucentImage(fName);
+            // load sprite
+            int anim = props.getInt("anim_" + sIdx, -1);
+            if (anim < 0) {
+                break;
+            }
+            SpriteObject sprite = new SpriteObject(img, frames);
+            // get object type
+            int type = props.getInt("type_" + sIdx, -1);
+            if (type < 0) {
+                break;
+            }
+            sprite.setType(SpriteObject.getType(type));
+            switch (sprite.getType()) {
+                case EXIT:
+                case TURN_LEFT:
+                case TURN_RIGHT:
+                case NO_DIG_LEFT:
+                case NO_DIG_RIGHT:
+                case TRAP_DIE:
+                case TRAP_REPLACE:
+                case TRAP_DROWN:
+                case STEEL:
+                    // load mask
+                    fName = Core.findResource(
+                            "styles/" + set + "/" + set + "om_" + idx + ".png", Core.IMAGE_EXTENSIONS);
+                    if (fName == null) {
+                        throw new ResourceException("styles/" + set + "/" + set + "om_" + idx + ".png");
+                    }
+                    int maskOffsetX = props.getInt("maskOffsetX_" + sIdx, 0);
+                    int maskOffsetY = props.getInt("maskOffsetY_" + sIdx, 0);
+                    img = Core.loadBitmaskImage(fName);
+                    sprite.setMask(img, maskOffsetX, maskOffsetY);
+                    break;
+                case ENTRANCE:
+                    maskOffsetX = props.getInt("maskOffsetX_" + sIdx, 0);
+                    maskOffsetY = props.getInt("maskOffsetY_" + sIdx, 0);
+                    sprite.setMask(null, maskOffsetX, maskOffsetY);
+                    break;
+                default:
+                    break;
+            }
+            // get animation mode
+            switch (anim) {
+                case 0: // don't animate
+                    sprite.setAnimMode(Sprite.Animation.NONE);
+                    break;
+                case 1: // loop mode
+                    sprite.setAnimMode(Sprite.Animation.LOOP);
+                    break;
+                case 2: // triggered animation - for the moment handle like loop
+                    sprite.setAnimMode(Sprite.Animation.TRIGGERED);
+                    break;
+                case 3: // entrance animation
+                    if (sprite.getType() == SpriteObject.Type.ENTRANCE) {
+                        sprite.setAnimMode(Sprite.Animation.ONCE_ENTRANCE);
+                    } else {
+                        sprite.setAnimMode(Sprite.Animation.ONCE);
+                    }
+                    break;
+                default:
+                    break;
+            }
+            // get sound
+            int[] sound = props.getIntArray("sound_" + sIdx, null);
+            if (sound == null) {
+                sound = new int[]{-1};
+            }
+            sprite.setSound(sound);
 
-	/**
-	 * Get time limit in seconds
-	 * @return time limit in seconds
-	 */
-	public int getTimeLimitSeconds() {
-		return timeLimitSeconds;
-	}
+            sprites.add(sprite);
+        }
+        SpriteObject[] ret = new SpriteObject[sprites.size()];
+        ret = sprites.toArray(ret);
+        return ret;
+    }
 
-	/**
-	 * Get number of Lemmings to rescue : should be less than or equal to number of Lemmings.
-	 * @return number of Lemmings to rescue
-	 */
-	public int getNumToRescue() {
-		return numToRescue;
-	}
+    /**
+     * Create a minimap for this level.
+     * @param image image to re-use (if null or wrong size, it will be recreated)
+     * @param fgImage foreground image used as source for the minimap
+     * @param scaleX integer X scaling factor (2 -> half width)
+     * @param scaleY integer Y scaling factor (2 -> half height)
+     * @param tint apply a greenish color tint
+     * @param drawBackground
+     * @return image with minimap
+     */
+    public Image createMinimap(final Image image, final Image fgImage, final int scaleX, final int scaleY,
+            final boolean tint, final boolean drawBackground) {
+        Level level = GameController.getLevel();
+        int bgCol;
+        int width = fgImage.getWidth() / scaleX;
+        int height = fgImage.getHeight() / scaleY;
+        Image img;
 
-	/**
-	 * Get number of Lemmings in this level (maximum 0x0072 = 114 in original LVL format).
-	 * @return number of Lemmings in this level
-	 */
-	public int getNumLemmings() {
-		return numLemmings;
-	}
+        if (image == null || image.getWidth() != width || image.getHeight() != height) {
+            img = ToolBox.createTranslucentImage(width, height);
+        } else {
+            img = image;
+        }
+        GraphicsContext gx = img.createGraphicsContext();
+        // clear background
+        if (tint) {
+            gx.setBackground(GameController.BLANK_COLOR);
+        } else {
+            gx.setBackground(bgColor);
+        }
+        gx.clearRect(0, 0, width, height);
+        // draw background image
+        if (drawBackground) {
+            drawBackground(gx, fgImage.getWidth(), 0, scaleX, scaleY);
+        }
+        // draw "behind" objects
+        if (level != null && level.sprObjBehind != null) {
+            for (int n = level.sprObjBehind.length - 1; n >= 0; n--) {
+                SpriteObject spr = level.sprObjBehind[n];
+                Image sprImg = spr.getImage();
+                gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
+                        spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+            }
+        }
+        
+        gx.drawImage(fgImage, 0, 0, width, height, 0, 0, fgImage.getWidth(), fgImage.getHeight());
+        // draw "in front" objects
+        if (level != null && level.sprObjFront != null) {
+            for (SpriteObject spr : level.sprObjFront) {
+                Image sprImg = spr.getImage();
+                gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
+                        spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+            }
+        }
+        gx.dispose();
+        // now tint in green
+        if (tint) {
+            for (int y = 0; y < img.getHeight(); y++) {
+                for (int x = 0; x < img.getWidth(); x++) {
+                    int c = img.getRGB(x, y);
+                    c = Minimap.tintColor(c);
+                    img.setRGB(x, y, c);
+                }
+            }
+        }
+        return img;
+    }
 
-	/**
-	 * Get color of debris pixels (to be replaced with level color).
-	 * @return color of debris pixels as ARGB
-	 */
-	public int getDebrisColor() {
-		return debrisCol;
-	}
+    /**
+     * Get level sprite object via index.
+     * @param idx index
+     * @return level sprite object
+     */
+    public SpriteObject getSprObject(final int idx) {
+        if (idx >= 0 && idx < sprObjects.length) {
+            return sprObjects[idx];
+        } else {
+            return null;
+        }
+    }
 
-	/**
-	 * Get release rate : 0 is slowest, 0x0FA (250) is fastest
-	 * @return release rate : 0 is slowest, 0x0FA (250) is fastest
-	 */
-	public int getReleaseRate() {
-		return releaseRate;
-	}
+    /**
+     * Get number of level sprite objects.
+     * @return number of level sprite objects
+     */
+    public int getSprObjectNum() {
+        if (sprObjects == null) {
+            return 0;
+        }
+        return sprObjects.length;
+    }
 
-	/**
-	 * Check if this is a SuperLemming level (runs faster).
-	 * @return true if this is a SuperLemming level, false otherwise
-	 */
-	public boolean isSuperLemming() {
-		return superlemming;
-	}
+    /**
+     * Get level Entrance via idx.
+     * @param idx index
+     * @return level Entrance
+     */
+    Entrance getEntrance(final int idx) {
+        return entrances[idx];
+    }
 
-	/**
-	 * Get level name.
-	 * @return level name
-	 */
-	public String getLevelName() {
-		return lvlName;
-	}
+    /**
+     * Get number of entrances for this level.
+     * @return number of entrances.
+     */
+    public int getNumEntrances() {
+        if (entrances == null) {
+            return 0;
+        }
+        return entrances.length;
+    }
+
+    /**
+     * Get background color.
+     * @return background color.
+     */
+    public Color getBgColor() {
+        return bgColor;
+    }
+
+    /**
+     * Get ready state of level.
+     * @return true if level is completely loaded.
+     */
+    public boolean isReady() {
+        return ready;
+    }
+
+    /**
+     * Get maximum safe fall distance.
+     * @return maximum safe fall distance
+     */
+    public int getMaxFallDistance() {
+        return maxFallDistance;
+    }
+    
+    public boolean getClassicSteel() {
+        return classicSteel;
+    }
+
+    /**
+     * Get array of ARGB colors used for particle effects.
+     * @return array of ARGB colors used for particle effects
+     */
+    public int[] getParticleCol() {
+        return particleCol;
+    }
+
+    /**
+     * Get start screen x position.
+     * @return start screen x position
+     */
+    public int getXPosCenter() {
+        return xPosCenter;
+    }
+
+    /**
+     * Get number of climbers in this level.
+     * @return number of climbers in this level
+     */
+    public int getNumClimbers() {
+        return numClimbers;
+    }
+
+    /**
+     * Get number of floaters in this level.
+     * @return number of floaters in this level
+     */
+    public int getNumFloaters() {
+        return numFloaters;
+    }
+
+    /**
+     * Get number of bombers in this level.
+     * @return number of bombers in this level
+     */
+    public int getNumBombers() {
+        return numBombers;
+    }
+
+    /**
+     * Get number of blockers in this level.
+     * @return number of blockers in this level
+     */
+    public int getNumBlockers() {
+        return numBlockers;
+    }
+
+    /**
+     * Get number of builders in this level.
+     * @return number of builders in this level
+     */
+    public int getNumBuilders() {
+        return numBuilders;
+    }
+
+    /**
+     * Get number of bashers in this level.
+     * @return number of bashers in this level
+     */
+    public int getNumBashers() {
+        return numBashers;
+    }
+
+    /**
+     * Get number of miners in this level.
+     * @return number of miners in this level
+     */
+    public int getNumMiners() {
+        return numMiners;
+    }
+
+
+    /**
+     * Get number of diggers in this level.
+     * @return number of diggers in this level
+     */
+    public int getMumDiggers() {
+        return numDiggers;
+    }
+
+    /**
+     * Get time limit in seconds
+     * @return time limit in seconds
+     */
+    public int getTimeLimitSeconds() {
+        return timeLimitSeconds;
+    }
+
+    /**
+     * Get number of Lemmings to rescue: should be less than or equal to number of Lemmings.
+     * @return number of Lemmings to rescue
+     */
+    public int getNumToRescue() {
+        return numToRescue;
+    }
+
+    /**
+     * Get number of Lemmings in this level (maximum 0x0072 = 114 in original LVL format).
+     * @return number of Lemmings in this level
+     */
+    public int getNumLemmings() {
+        return numLemmings;
+    }
+
+    /**
+     * Get color of debris pixels (to be replaced with level color).
+     * @return color of debris pixels as ARGB
+     */
+    public int getDebrisColor() {
+        return debrisCol;
+    }
+    
+    public int getDebrisColor2() {
+        return debrisCol2;
+    }
+
+    /**
+     * Get release rate: 0 is slowest, 99 is fastest
+     * @return release rate: 0 is slowest, 99 is fastest
+     */
+    public int getReleaseRate() {
+        return releaseRate;
+    }
+    
+    public int getWidth() {
+        return levelWidth;
+    }
+    
+    public int[] getBgWidths() {
+        int[] ret = new int[backgrounds.size()];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = backgrounds.get(i).width;
+        }
+        
+        return ret;
+    }
+    
+    public int[] getBgHeights() {
+        int[] ret = new int[backgrounds.size()];
+        for (int i = 0; i < ret.length; i++) {
+            ret[i] = backgrounds.get(i).height;
+        }
+        
+        return ret;
+    }
+
+    /**
+     * Check if this is a SuperLemming level (runs faster).
+     * @return true if this is a SuperLemming level, false otherwise
+     */
+    public boolean isSuperLemming() {
+        return superlemming;
+    }
+    
+    /**
+     * Check whether the timer should run at normal speed, even if this is a SuperLemming level.
+     * @return true if the timer should run at normal speed, false otherwise
+     */
+    public boolean getForceNormalTimerSpeed() {
+        return forceNormalTimerSpeed;
+    }
+
+    /**
+     * Get level name.
+     * @return level name
+     */
+    public String getLevelName() {
+        return lvlName;
+    }
 }
 
 /**
@@ -901,71 +1312,80 @@ public class Level {
  * @author Volker Oth
  */
 class LvlObject {
-	/** paint mode: only visible on a terrain pixel */
-	static final int MODE_VIS_ON_TERRAIN = 8;
-	/** paint mode: don't overwrite terrain pixel in the original background image */
-	static final int MODE_NO_OVERWRITE = 4;
-	/** paint mode: don't overwrite terrain pixel in the current (!) background image.
-		special NO_OVERWRITE case for objects hidden behind terrain. */
-	static final int MODE_HIDDEN = 5;
-	/** paint mode: paint without any further checks */
-	static final int MODE_FULL = 0;
+    /** paint mode: only visible on terrain pixels */
+    static final int MODE_VIS_ON_TERRAIN = 8;
+    /** paint mode: don't overwrite terrain pixels in the original foreground image */
+    static final int MODE_NO_OVERWRITE = 4;
+    /** paint mode: don't draw the object */
+    static final int MODE_INVISIBLE = 2;
 
-	/** identifier */
-	int id;
-	/** x position in pixels */
-	int xPos;
-	/** y position in pixels */
-	int yPos;
-	/** paint mode - must be one of the MODEs above */
-	int paintMode;
-	/** flag: paint the object upside down */
-	boolean upsideDown;
+    private static final long serialVersionUID = 0x01;
 
-	/**
-	 * Constructor
-	 * @param val three values as array [identifier, x position, y position]
-	 */
-	public LvlObject(final int[] val) {
-		id   = val[0];
-		xPos = val[1];
-		yPos = val[2];
-		paintMode = val[3];
-		upsideDown = val[4] != 0;
-	}
+    /** identifier */
+    int id;
+    /** x position in pixels */
+    int xPos;
+    /** y position in pixels */
+    int yPos;
+    /** paint mode - must be one of the MODEs above */
+    int paintMode;
+    /** flag: paint the object upside down */
+    boolean upsideDown;
+    boolean fake;
+
+    /**
+     * Constructor
+     * @param val five values as array [identifier, x position, y position, paint mode, flags]
+     */
+    public LvlObject(final int[] val) {
+        id = val[0];
+        xPos = val[1];
+        yPos = val[2];
+        paintMode = val[3];
+        upsideDown = (val[4] & 0x01) != 0;
+        fake = (val[4] & 0x02) != 0;
+    }
 }
 
 /**
- * Storage class for a terrain/background tiles.
+ * Storage class for a terrain/background tile.
  * @author Volker Oth
  */
 class Terrain {
-	/** paint mode: don't overwrite existing terrain pixel */
-	static final int MODE_NO_OVERWRITE = 8;
-	/** paint mode: upside down */
-	static final int MODE_UPSIDE_DOWN = 4;
-	/** paint mode: remove existing terrain pixels instead of overdrawing them */
-	static final int MODE_REMOVE = 2;
+    static final int MODE_FAKE = 16;
+    /** paint mode: don't overwrite existing terrain pixels */
+    static final int MODE_NO_OVERWRITE = 8;
+    /** paint mode: upside down */
+    static final int MODE_UPSIDE_DOWN = 4;
+    /** paint mode: remove existing terrain pixels instead of overdrawing them */
+    static final int MODE_REMOVE = 2;
+    /** paint mode: don't draw terrain pixels */
+    static final int MODE_INVISIBLE = 1;
 
-	/** identifier */
-	int id;
-	/** x position in pixels */
-	int xPos;
-	/** y position in pixels */
-	int yPos;
-	/** modifier - must be one of the above MODEs */
-	int modifier;
+    private static final long serialVersionUID = 0x01;
 
-	/**
-	 * Constructor.
-	 * @param val three values as array [identifier, x position, y position]
-	 */
-	public Terrain(final int[] val) {
-		id   = val[0];
-		xPos = val[1];
-		yPos = val[2];
-		modifier = val[3];
-	}
+    /** identifier */
+    int id;
+    /** x position in pixels */
+    int xPos;
+    /** y position in pixels */
+    int yPos;
+    /** modifier - must be one of the above MODEs */
+    int modifier;
+    boolean specialGraphic;
+
+    /**
+     * Constructor.
+     * @param val four values as array [identifier, x position, y position, modifier]
+     * @param special
+     */
+    public Terrain(final int[] val, final boolean special) {
+        id   = val[0];
+        xPos = val[1];
+        yPos = val[2];
+        modifier = val[3];
+        specialGraphic = special;
+    }
 }
 
 /**
@@ -973,48 +1393,76 @@ class Terrain {
  * @author Volker Oth
  */
 class Steel {
-	/** x position in pixels */
-	int xPos;
-	/** y position in pixels */
-	int yPos;
-	/** width in pixels */
-	int width;
-	/** height in pixels */
-	int height;
+    private static final long serialVersionUID = 0x01;
 
-	/**
-	 * Constructor.
-	 * @param val four values as array [x position, y position, width, height]
-	 */
-	public Steel(final int[] val) {
-		xPos = val[0];
-		yPos = val[1];
-		width = val[2];
-		height = val[3];
-	}
+    /** x position in pixels */
+    int xPos;
+    /** y position in pixels */
+    int yPos;
+    /** width in pixels */
+    int width;
+    /** height in pixels */
+    int height;
+
+    /**
+     * Constructor.
+     * @param val four values as array [x position, y position, width, height]
+     */
+    public Steel(final int[] val) {
+        xPos = val[0];
+        yPos = val[1];
+        width = val[2];
+        height = val[3];
+    }
 }
 
 /**
- * Storage class for level Entries.
+ * Storage class for level Entrances.
  * @author Volker Oth
  */
-class Entry {
-	/** identifier */
-	int id;
-	/** x position in pixels */
-	int xPos;
-	/** y position in pixels */
-	int yPos;
+class Entrance {
+    /** identifier */
+    int id;
+    /** x position in pixels */
+    int xPos;
+    /** y position in pixels */
+    int yPos;
 
 
-	/**
-	 * Constructor.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 */
-	Entry(final int x, final int y) {
-		xPos = x;
-		yPos = y;
-	}
+    /**
+     * Constructor.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     */
+    Entrance(final int x, final int y) {
+        xPos = x;
+        yPos = y;
+    }
+}
 
+class Background {
+    
+    List<LvlObject> objects;
+    List<Terrain> terrain;
+    SpriteObject[] sprObjects;
+    SpriteObject[] sprObjFront;
+    SpriteObject[] sprObjBehind;
+    boolean tiled;
+    int width;
+    int height;
+    int offsetX;
+    int offsetY;
+    double scrollSpeedX;
+    
+    Background(final List<LvlObject> o, final List<Terrain> t, final boolean ti,
+            final int w, final int h, final int ofsX, final int ofsY, final double ssx) {
+        objects = o;
+        terrain = t;
+        tiled = ti;
+        width = w;
+        height = h;
+        offsetX = ofsX;
+        offsetY = ofsY;
+        scrollSpeedX = ssx;
+    }
 }

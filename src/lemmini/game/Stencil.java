@@ -1,6 +1,11 @@
-package Game;
+package lemmini.game;
+
+import java.util.Arrays;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,228 +26,351 @@ package Game;
  * @author Volker Oth
  */
 public class Stencil {
-	/* Each pixel is represented by a 32bit value in the stencil.
-	 * The lower part is used for a bitmask that contains stencil properties.
-	 * The higher part (val << ID_SHIFT_VAL) can contain an identifier for
-	 * a special trap, exit etc.
-	 * Note: the lowe part is a bitmask, mainly to save space, but also
-	 * since some combinations of properties are possible.
-	 * Yet of course not all combinations are possible or make sense.
-	 */
-	/** empty space - background is visible */
-	public final static int MSK_EMPTY = 0;
-	/** brick - can be destroyed, Lemmings can walk on it */
-	public final static int MSK_BRICK = 1;
-	/** steel - can't be destroyed, Lemmings can walk on it */
-	public final static int MSK_STEEL = 2;
-	/** Lemmings can either walk on steel or on brick */
-	public final static int MSK_WALK_ON = MSK_BRICK|MSK_STEEL;
-	/** stair build by a builder - note that this is just an additional attribute - brick is also needed to walk on it */
-	public final static int MSK_STAIR = 4;
-	/** right side of stopper mask - reflects to the right */
-	public final static int MSK_STOPPER_RIGHT = 8;
-	/** left side of stopper mask - reflects to the left */
-	public final static int MSK_STOPPER_LEFT = 16;
-	/** stopper mask (either left or right) */
-	public final static int MSK_STOPPER = MSK_STOPPER_RIGHT|MSK_STOPPER_LEFT;
-	/** arrow to the right - no digging to the left */
-	public final static int MSK_NO_DIG_LEFT = 32;
-	/** arrow to the left - no digging to the right */
-	public final static int MSK_NO_DIG_RIGHT = 64;
-	/** no digging - either left or right */
-	public final static int MSK_NO_DIG = MSK_NO_DIG_LEFT|MSK_NO_DIG_RIGHT;
+    
+    private static final int[] EMPTY_ARRAY = {};
+    /** empty space - background is visible */
+    public static final int MSK_EMPTY = 0;
+    /** brick - Lemmings can walk on it */
+    public static final int MSK_BRICK = 1;
+    /** steel - can't be destroyed */
+    public static final int MSK_STEEL = 1 << 1;
+    public static final int MSK_TURN_LEFT = 1 << 2;
+    public static final int MSK_TURN_RIGHT = 1 << 3;
+    /** right side of blocker mask - reflects to the right */
+    public static final int MSK_BLOCKER_LEFT = 1 << 4;
+    /** center of blocker mask */
+    public static final int MSK_BLOCKER_CENTER = 1 << 5;
+    /** left side of blocker mask - reflects to the left */
+    public static final int MSK_BLOCKER_RIGHT = 1 << 6;
+    /** blocker mask (either left, center, or right) */
+    public static final int MSK_BLOCKER = MSK_BLOCKER_LEFT | MSK_BLOCKER_CENTER | MSK_BLOCKER_RIGHT;
+    /** arrow to the right - no bashing to the left */
+    public static final int MSK_NO_BASH_LEFT = 1 << 7;
+    /** arrow to the left - no bashing to the right */
+    public static final int MSK_NO_BASH_RIGHT = 1 << 8;
+    /** no bashing - either left or right */
+    public static final int MSK_NO_BASH = MSK_NO_BASH_LEFT | MSK_NO_BASH_RIGHT;
 
-	/** mask used to erase stencil properties when a pixel is erased */
-	public final static int MSK_ERASE = ~(Stencil.MSK_WALK_ON|Stencil.MSK_STAIR|Stencil.MSK_NO_DIG);
+    /** a trap that triggers the drowning animation - i.e. water */
+    public static final int MSK_TRAP_LIQUID = 1 << 9;
+    /** a trap that removes the Lemming */
+    public static final int MSK_TRAP_REMOVE = 1 << 10;
+    /** a trap that triggers the normal death animation */
+    public static final int MSK_TRAP_FIRE = 1 << 11;
+    /** a trap (either LIQUID, REMOVE or FIRE) */
+    public static final int MSK_TRAP = MSK_TRAP_LIQUID | MSK_TRAP_REMOVE | MSK_TRAP_FIRE;
+    /** the level exit */
+    public static final int MSK_EXIT = 1 << 12;
 
-	/** a trap triggering the drowning animation - i.e. water */
-	public final static int MSK_TRAP_DROWN = 128;
-	/** a trap that replaces the Lemming with a special death animation */
-	public final static int MSK_TRAP_REPLACE = 256;
-	/** a trap that triggers the normal death animation */
-	public final static int MSK_TRAP_DIE = 512;
-	/** a trap (either DROWN, REPLACE or DIE) */
-	public final static int MSK_TRAP = MSK_TRAP_DROWN|MSK_TRAP_REPLACE|MSK_TRAP_DIE;
-	/** the level exit */
-	public final static int MSK_EXIT = 1024;
-
-	/** number of bits the identifier is shifter up (below is the bitmask part) */
-	private final static int ID_SHIFT_VAL = 16;
-
-	/** array which represents the stencil buffer */
-	private int stencil[];
-	/** width of stencil (=width of level) */
-	private int width;
-	/** height of stencil (=height of level) */
-	private int height;
+    /** array which represents the stencil buffer */
+    private final StencilPixel[] stencil;
+    /** width of stencil (=width of level) */
+    private final int width;
+    /** height of stencil (=height of level) */
+    private final int height;
 
 
-	/**
-	 * Constructor.
-	 * @param w width in pixels
-	 * @param h height in pixels
-	 */
-	public Stencil(final int w, final int h) {
-		width = w;
-		height = h;
-		stencil = new int[width * height];
-	}
+    /**
+     * Constructor.
+     * @param w width in pixels
+     * @param h height in pixels
+     */
+    public Stencil(final int w, final int h) {
+        width = w;
+        height = h;
+        stencil = new StencilPixel[width * height];
+        for (int i = 0; i < stencil.length; i++) {
+            stencil[i] = new StencilPixel();
+        }
+    }
 
-	/**
-	 * Clear stencil (fill with MSK_EMPTY).
-	 */
-	public void clear() {
-		int size = width*height;
-		for (int idx=0; idx<size; idx++)
-			stencil[idx] = MSK_EMPTY;
-	}
+    /**
+     * Clear stencil (fill with MSK_EMPTY).
+     */
+    public void clear() {
+        int size = width * height;
+        for (int idx = 0; idx < size; idx++) {
+            stencil[idx].clear();
+        }
+    }
+        
+     /**
+     * Set given value at given position.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @param val stencil value
+     */
+    public void setMask(final int x, final int y, final int val) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        
+        int pos = x + y * width;
+        stencil[pos].setMask(val);
+    }
 
-	/**
-	 * Set given value at given position.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @param val stencil value
-	 */
-	public void set(final int x, final int y, final int val) {
-		stencil[x+y*width] = val;
-	}
+    /**
+     * Set given value at given position.
+     * @param pos position (x+y*width)
+     * @param val stencil value
+     */
+    public void setMask(final int pos, final int val) {
+        int y = pos / width;
+        int x = pos % width;
+        setMask(x, y, val);
+    }
+    
+    /**
+     * AND given value with existing value at given position.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @param val stencil value
+     */
+    public void andMask(final int x, final int y, final int val) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        
+        int pos = x + y * width;
+        stencil[pos].andMask(val);
+    }
+    
+    /**
+     * AND given value with existing value at given position.
+     * @param pos position (x*width+y)
+     * @param val stencil value
+     */
+    public void andMask(final int pos, final int val) {
+        int y = pos / width;
+        int x = pos % width;
+        andMask(x, y, val);
+    }
+    
+    /**
+     * OR given value with existing value at given position.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @param val stencil value
+     */
+    public void orMask(final int x, final int y, final int val) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        
+        int pos = x + y * width;
+        stencil[pos].orMask(val);
+    }
+    
+    /**
+     * OR given value with existing value at given position.
+     * @param pos position (x*width+y)
+     * @param val stencil value
+     */
+    public void orMask(final int pos, final int val) {
+        int y = pos / width;
+        int x = pos % width;
+        orMask(x, y, val);
+    }
+    
+    /**
+     * Sets the mask object ID of this stencil pixel.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @param id identifier
+     */
+    public void setMaskObjectID(final int x, final int y, final int id) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        
+        int pos = x + y * width;
+        stencil[pos].setMaskObjectID(id);
+    }
 
-	/**
-	 * Set given value at given position.
-	 * @param pos position (x*width+y)
-	 * @param val stencil value
-	 */
-	public void set(final int pos, final int val) {
-		stencil[pos] = val;
-	}
+    /**
+     * Sets the mask object ID of this stencil pixel.
+     * @param pos position (x+y*width)
+     * @param id identifier
+     */
+    public void setMaskObjectID(final int pos, final int id) {
+        int y = pos / width;
+        int x = pos % width;
+        setMaskObjectID(x, y, id);
+    }
+    
+    /**
+     * Get stencil value at given position.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @return stencil value
+     */
+    public int getMask(final int x, final int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return 0;
+        }
+        
+        int pos = x + y * width;
+        return stencil[pos].getMask();
+    }
 
-	/**
-	 * Get stencil value at given position.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @return stencil value
-	 */
-	public int get(final int x, final int y) {
-		return stencil[x+y*width];
-	}
+    /**
+     * Get stencil value at given position.
+     * @param pos position (x+y*width)
+     * @return stencil value
+     */
+    public int getMask(final int pos) {
+        int y = pos / width;
+        int x = pos % width;
+        return getMask(x, y);
+    }
+    
+    /**
+     * Adds an object ID to the stencil.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @param id identifier
+     */
+    public void addID(final int x, final int y, final int id) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return;
+        }
+        
+        int pos = x + y * width;
+        stencil[pos].addObjectID(id);
+    }
 
-	/**
-	 * Get stencil value at given position.
-	 * @param pos position (x*width+y)
-	 * @return stencil value
-	 */
-	public int get(final int pos) {
-		return stencil[pos];
-	}
+    /**
+     * Adds an object ID to the stencil.
+     * @param pos position (x+y*width)
+     * @param id identifier
+     */
+    public void addID(final int pos, final int id) {
+        int y = pos / width;
+        int x = pos % width;
+        addID(x, y, id);
+    }
+    
+    /**
+     * Gets all object IDs from the stencil.
+     * @param x x position in pixels
+     * @param y y position in pixels
+     * @return identifier
+     */
+    public int[] getIDs(final int x, final int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return EMPTY_ARRAY;
+        }
+        
+        int pos = x + y * width;
+        return stencil[pos].getObjectIDs();
+    }
 
-	/**
-	 * AND given value with existing value at given position.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @param val stencil value
-	 */
-	public void and(final int x, final int y, final int val) {
-		int pos = x+y*width;
-		stencil[pos] = (stencil[pos] & val);
-	}
+    /**
+     * Gets all object IDs from the stencil.
+     * @param pos position (x+y*width)
+     * @return identifier
+     */
+    public int[] getIDs(final int pos) {
+        int y = pos / width;
+        int x = pos % width;
+        return getIDs(x, y);
+    }
+    
+    public int getMaskObjectID(final int x, final int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) {
+            return -1;
+        }
+        
+        int pos = x + y * width;
+        return stencil[pos].getMaskObjectID();
+    }
+    
+    public int getMaskObjectID(final int pos) {
+        int y = pos / width;
+        int x = pos % width;
+        return getMaskObjectID(x, y);
+    }
 
-	/**
-	 * AND given value with existing value at given position.
-	 * @param pos position (x*width+y)
-	 * @param val stencil value
-	 */
-	public void and(final int pos, final int val) {
-		stencil[pos] = (stencil[pos] & val);
-	}
+    /** Get width of stencil.
+     * @return width of stencil
+     */
+    public int getWidth() {
+        return width;
+    }
 
-	/**
-	 * OR given value with existing value at given position.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @param val stencil value
-	 */
-	public void or(final int x, final int y, final int val) {
-		int pos = x+y*width;
-		stencil[pos] = (stencil[pos] | val);
-	}
+    /**
+     * Get height of stencil.
+     * @return height of stencil
+     */
+    public int getHeight() {
+        return height;
+    }
+}
 
-	/**
-	 * OR given value with existing value at given position.
-	 * @param pos position (x*width+y)
-	 * @param val stencil value
-	 */
-	public void or(final int pos, final int val) {
-		stencil[pos] = (stencil[pos] | val);
-	}
-
-	/**
-	 * Set only the ID without changing the lower bitmask part.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @param id identifier (must not exceed 16bit)
-	 */
-	public void setID(final int x, final int y, final int id) {
-		stencil[x+y*width] |= (id << ID_SHIFT_VAL);
-	}
-
-	/**
-	 * Set only the ID without changing the lower bitmask part.
-	 * @param pos position (x*width+y)
-	 * @param id identifier (must not exceed 16bit)
-	 */
-	public void setID(final int pos, final int id) {
-		stencil[pos] |= (id << ID_SHIFT_VAL);
-	}
-
-	/**
-	 * Get the identifier from the stencil.
-	 * @param x x position in pixels
-	 * @param y y position in pixels
-	 * @return identifier
-	 */
-	public int getID(final int x, final int y) {
-		return (stencil[x+y*width] >> ID_SHIFT_VAL);
-	}
-
-	/**
-	 * Get the identifier from the stencil.
-	 * @param pos position (x*width+y)
-	 * @return identifier
-	 */
-	public int getID(final int pos) {
-		return (stencil[pos] >> ID_SHIFT_VAL);
-	}
-
-	/**
-	 * Get identifier (upper part) from full stencil value.
-	 * @param sval stencil value
-	 * @return identifier
-	 */
-	public static int getObjectID(final int sval) {
-		return sval >> ID_SHIFT_VAL;
-	}
-
-	/**
-	 * Create the numerical value used in the stencil from the identifier.
-	 * @param id identifier
-	 * @return numerical value of the identifier as used in the stencil
-	 */
-	static int createObjectID(final int id) {
-		return id << ID_SHIFT_VAL;
-	}
-
-	/** Get width of stencil.
-	 * @return width of stencil
-	 */
-	public int getWidth() {
-		return width;
-	}
-
-	/**
-	 * Get height of stencil.
-	 * @return height of stencil
-	 */
-	public int getHeight() {
-		return height;
-	}
+class StencilPixel {
+    private static final int[] EMPTY_ARRAY = {};
+    
+    private int mask;
+    private int maskObjectID;
+    private int[] objectIDs;
+    
+    public StencilPixel() {
+        mask = 0;
+        maskObjectID = -1;
+        objectIDs = null;
+    }
+    
+    public void clear() {
+        mask = 0;
+        maskObjectID = -1;
+        objectIDs = null;
+    }
+    
+    public void setMask(int newMask) {
+        mask = newMask;
+    }
+    
+    public void andMask(int newMask) {
+        mask &= newMask;
+    }
+    
+    public void orMask(int newMask) {
+        mask |= newMask;
+    }
+    
+    public void setMaskObjectID(int mo) {
+        maskObjectID = mo;
+    }
+    
+    public void addObjectID(int newID) {
+        if (objectIDs == null) {
+            objectIDs = new int[1];
+            objectIDs[0] = newID;
+        } else {
+            for (int i = 0; i < objectIDs.length; i++) {
+                if (objectIDs[i] == newID) {
+                    return;
+                }
+            }
+            int[] tempArray = Arrays.copyOf(objectIDs, objectIDs.length + 1);
+            tempArray[tempArray.length - 1] = newID;
+            objectIDs = tempArray;
+        }
+    }
+    
+    public int getMask() {
+        return mask;
+    }
+    
+    public int getMaskObjectID() {
+        return maskObjectID;
+    }
+    
+    public int[] getObjectIDs() {
+        if (objectIDs != null) {
+            return objectIDs;
+        } else {
+            return EMPTY_ARRAY;
+        }
+    }
 }

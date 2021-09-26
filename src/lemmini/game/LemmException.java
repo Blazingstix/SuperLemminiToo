@@ -1,6 +1,9 @@
-package Game;
+package lemmini.game;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,20 +25,20 @@ package Game;
  * @author Volker Oth
  */
 public class LemmException extends Exception {
-	private final static long serialVersionUID = 0x000000001;
+    private static final long serialVersionUID = 0x000000001;
 
-	/**
-	 * Constructor.
-	 */
-	public LemmException() {
-		super();
-	}
+    /**
+     * Constructor.
+     */
+    public LemmException() {
+        super();
+    }
 
-	/**
-	 * Constructor.
-	 * @param s Exception string
-	 */
-	public LemmException(final String s) {
-		super(s);
-	}
+    /**
+     * Constructor.
+     * @param s Exception string
+     */
+    public LemmException(final String s) {
+        super(s);
+    }
 }

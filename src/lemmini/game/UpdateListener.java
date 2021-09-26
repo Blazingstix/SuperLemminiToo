@@ -1,6 +1,9 @@
-package Game;
+package lemmini.game;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +25,8 @@ package Game;
  * @author Volker Oth
  */
 public interface UpdateListener {
-	/**
-	 * Action to perform if Listener is called
-	 */
-	public void update();
+    /**
+     * Action to perform if Listener is called
+     */
+    public void update();
 }

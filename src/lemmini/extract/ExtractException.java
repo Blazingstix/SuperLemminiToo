@@ -1,6 +1,9 @@
-package Extract;
+package lemmini.extract;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,20 +26,37 @@ package Extract;
  */
 
 public class ExtractException extends Exception {
-	private final static long serialVersionUID = 0x000000001;
+    
+    private static final long serialVersionUID = 0x000000001;
+    
+    private boolean canceledByUser;
 
-	/**
-	 * Constructor.
-	 */
-	public ExtractException() {
-		super();
-	}
+    /**
+     * Constructor.
+     */
+    public ExtractException() {
+        canceledByUser = false;
+    }
 
-	/**
-	 * Constructor.
-	 * @param s Exception string
-	 */
-	public ExtractException(final String s) {
-		super(s);
-	}
+    /**
+     * Constructor.
+     * @param s Exception string
+     */
+    public ExtractException(final String s) {
+        super(s);
+        canceledByUser = false;
+    }
+    
+    /**
+     * Constructor.
+     * @param s Exception string
+     */
+    public ExtractException(final String s, final boolean c) {
+        super(s);
+        canceledByUser = c;
+    }
+    
+    public boolean isCanceledByUser() {
+        return canceledByUser;
+    }
 }

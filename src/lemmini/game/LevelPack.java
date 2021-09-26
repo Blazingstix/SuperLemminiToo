@@ -1,11 +1,16 @@
-package Game;
+package lemmini.game;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
-
-import Tools.Props;
-import Tools.ToolBox;
+import java.util.List;
+import java.util.Locale;
+import lemmini.tools.Props;
+import lemmini.tools.ToolBox;
 
 /*
+ * FILE MODIFIED BY RYAN SAKOWSKI
+ * 
+ * 
  * Copyright 2009 Volker Oth
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -27,182 +32,287 @@ import Tools.ToolBox;
  * @author Volker Oth
  */
 public class LevelPack {
+    
+    public static final String FAILURE_A1_DEF = "ROCK BOTTOM! I hope for your sake";
+    public static final String FAILURE_A2_DEF = "that you nuked that level.";
+    public static final String FAILURE_B1_DEF = "Better rethink your strategy before";
+    public static final String FAILURE_B2_DEF = "you try this level again!";
+    public static final String FAILURE_C1_DEF = "A little more practice on this level";
+    public static final String FAILURE_C2_DEF = "is definitely recommended.";
+    public static final String FAILURE_D1_DEF = "You got pretty close that time.";
+    public static final String FAILURE_D2_DEF = "Now try again for that few % extra.";
+    public static final String FAILURE_E1_DEF = "OH NO, So near and yet so far (teehee)";
+    public static final String FAILURE_E2_DEF = "Maybe this time.....";
+    public static final String SUCCESS_A1_DEF = "SPOT ON. You can't get much closer";
+    public static final String SUCCESS_A2_DEF = "than that. Let's try the next....";
+    public static final String SUCCESS_B1_DEF = "That level seemed no problem to you on";
+    public static final String SUCCESS_B2_DEF = "that attempt. Onto the next....";
+    public static final String SUCCESS_C1_DEF = "You totally stormed that level!";
+    public static final String SUCCESS_C2_DEF = "Let's see if you can storm the next...";
+    public static final String SUCCESS_D1_DEF = "Superb! You rescued every lemming on";
+    public static final String SUCCESS_D2_DEF = "that level. Can you do it again....?";
 
-	/** name of the level pack */
-	private String name;
-	/** seed used to generate the level codes */
-	private String codeSeed;
-	/** array containing names of difficulty levels (easiest first, hardest last) */
-	private String diffLevels[];
-	/** array of array of level info - [difficulty][level number] */
-	private LevelInfo lvlInfo[][];
-	/** path of level pack - where the INI files for the level are located */
-	private String path;
-	/** maximum number of pixels a Lemming can fall before he dies */
-	private int maxFallDistance;
-	/** offset to apply in level code algorithm */
-	private int codeOffset;
+    /** name of the level pack */
+    private String name;
+    private boolean allLevelsUnlocked;
+    /** seed used to generate the level codes */
+    private String codeSeed;
+    /** array containing names of ratings (easiest first, hardest last) */
+    private String[] ratings;
+    /** array of array of level info - [rating][level number] */
+    private LevelInfo[][] lvlInfo;
+    /** path of level pack - where the INI files for the level are located */
+    private final String path;
+    /** maximum number of pixels a Lemming can fall before he dies */
+    private int maxFallDistance;
+    /** offset to apply in level code algorithm */
+    private int codeOffset;
+    
+    private final String[] debriefings = new String[18];
+    private String[] mods;
 
-	/**
-	 * Constructor for dummy level pack. Needed for loading single levels.
-	 */
-	public LevelPack() {
-		name = "test";
-		path = "";
-		codeSeed = "AAAAAAAAAA";
-		maxFallDistance = 126;
-		codeOffset = 0;
+    /**
+     * Constructor for dummy level pack. Needed for loading single levels.
+     */
+    public LevelPack() {
+        name = "test";
+        allLevelsUnlocked = true;
+        path = "";
+        mods = new String[0];
+        codeSeed = "";
+        maxFallDistance = 126;
+        codeOffset = 0;
 
-		diffLevels = new String[1];
-		diffLevels[0] = "test";
+        ratings = new String[1];
+        ratings[0] = "test";
 
-		lvlInfo = new LevelInfo[1][1];
-		lvlInfo[0][0] = new LevelInfo();
-		//lvlInfo[0][0].code = "..........";
-		lvlInfo[0][0].setMusic("tim1.mod");
-		lvlInfo[0][0].setName("test");
-		lvlInfo[0][0].setFileName("");
-	}
+        lvlInfo = new LevelInfo[1][1];
+        lvlInfo[0][0] = new LevelInfo();
+        lvlInfo[0][0].setMusic("tim1.mod");
+        lvlInfo[0][0].setName("test");
+        lvlInfo[0][0].setFileName("");
+        
+        debriefings[0]  = FAILURE_A1_DEF;
+        debriefings[1]  = FAILURE_A2_DEF;
+        debriefings[2]  = FAILURE_B1_DEF;
+        debriefings[3]  = FAILURE_B2_DEF;
+        debriefings[4]  = FAILURE_C1_DEF;
+        debriefings[5]  = FAILURE_C2_DEF;
+        debriefings[6]  = FAILURE_D1_DEF;
+        debriefings[7]  = FAILURE_D2_DEF;
+        debriefings[8]  = FAILURE_E1_DEF;
+        debriefings[9]  = FAILURE_E2_DEF;
+        debriefings[10] = SUCCESS_A1_DEF;
+        debriefings[11] = SUCCESS_A2_DEF;
+        debriefings[12] = SUCCESS_B1_DEF;
+        debriefings[13] = SUCCESS_B2_DEF;
+        debriefings[14] = SUCCESS_C1_DEF;
+        debriefings[15] = SUCCESS_C2_DEF;
+        debriefings[16] = SUCCESS_D1_DEF;
+        debriefings[17] = SUCCESS_D2_DEF;
+    }
 
-	/**
-	 * Constructor for loading a level pack.
-	 * @param fname file name of level pack ini
-	 * @throws ResourceException
-	 */
-	public LevelPack(final String fname) throws ResourceException {
-		// extract path from descriptor file
-		path = ToolBox.getPathName(fname);
-		// load the descriptor file
-		Props props = new Props();
-		if (!props.load(fname))
-			throw new ResourceException(fname);
-		// read name
-		name = props.get("name","");
-		// read code seed
-		codeSeed = props.get("codeSeed","").trim().toUpperCase();
-		// read code level offset
-		codeOffset = props.get("codeOffset",0);
-		// read max falling distance
-		maxFallDistance = props.get("maxFallDistance", 126);
-		// read levels of difficulty
-		ArrayList<String> difficulty = new ArrayList<String>(); // <String>
-		int idx = 0;
-		String diffLevel;
-		do {
-			diffLevel = props.get("level_"+Integer.toString(idx++),"");
-			if (diffLevel.length() > 0)
-				difficulty.add(diffLevel);
-		} while (diffLevel.length() > 0);
-		diffLevels = new String[difficulty.size()];
-		diffLevels = difficulty.toArray(diffLevels);
-		// read music files
-		ArrayList<String> music = new ArrayList<String>(); // <String>
-		String track;
-		idx = 0;
-		do {
-			track = props.get("music_"+Integer.toString(idx++),"");
-			if (track.length() > 0)
-				music.add(track);
-		} while (track.length() > 0);
-		// read levels
-		lvlInfo = new LevelInfo[difficulty.size()][];
-		String levelStr[];
-		String def[] = {""};
-		for (int diff=0; diff<difficulty.size(); diff++) {
-			idx = 0;
-			ArrayList<LevelInfo> levels = new ArrayList<LevelInfo>(); // <LevelInfo>
-			diffLevel = difficulty.get(diff);
-			do {
-				levelStr = props.get(diffLevel.toLowerCase()+"_"+Integer.toString(idx),def);
-				// filename, music number
-				if (levelStr.length == 2) {
-					// get name from ini file
-					Props lvlProps = new Props();
-					lvlProps.load(path+"/"/*+lvlPath+"/"*/+levelStr[0]);
-					// Now put everything together
-					LevelInfo info = new LevelInfo();
-					info.setFileName(path+"/"/*+lvlPath+"/"*/+levelStr[0]);
-					info.setMusic(music.get(Integer.parseInt(levelStr[1/*2*/])));
-					//info.code = levelStr[1];
-					info.setName(lvlProps.get("name","")); // only used in menu
-					levels.add(info);
-				}
-				idx++;
-			} while (levelStr.length == 2);
-			lvlInfo[diff] = new LevelInfo[levels.size()];
-			lvlInfo[diff] = levels.toArray(lvlInfo[diff]);
-		}
-	}
+    /**
+     * Constructor for loading a level pack.
+     * @param fname file name of level pack ini
+     * @throws ResourceException
+     */
+    public LevelPack(final String fname) throws ResourceException {
+        // extract path from descriptor file
+        path = ToolBox.getPathName(fname);
+        // load the descriptor file
+        Props props = new Props();
+        if (!props.load(fname)) {
+            throw new ResourceException(fname);
+        }
+        // read name
+        name = props.get("name", "");
+        allLevelsUnlocked = props.getBoolean("allLevelsUnlocked", false);
+        // read mods
+        mods = props.getArray("mods", null);
+        if (mods == null) {
+            mods = new String[0];
+        }
+        // read code seed
+        codeSeed = props.get("codeSeed", "").trim().toUpperCase(Locale.ENGLISH);
+        // read code level offset
+        codeOffset = props.getInt("codeOffset", 0);
+        // read max falling distance
+        maxFallDistance = props.getInt("maxFallDistance", 126);
+        // read music files
+        List<String> music = new ArrayList<>(64);
+        String track;
+        int idx = 0;
+        do {
+            track = props.get("music_" + (idx++), "");
+            if (!track.isEmpty()) {
+                music.add(track);
+            }
+        } while (!track.isEmpty());
+        // read debriefings
+        debriefings[0]  = props.get("failureA1", FAILURE_A1_DEF);
+        debriefings[1]  = props.get("failureA2", FAILURE_A2_DEF);
+        debriefings[2]  = props.get("failureB1", FAILURE_B1_DEF);
+        debriefings[3]  = props.get("failureB2", FAILURE_B2_DEF);
+        debriefings[4]  = props.get("failureC1", FAILURE_C1_DEF);
+        debriefings[5]  = props.get("failureC2", FAILURE_C2_DEF);
+        debriefings[6]  = props.get("failureD1", FAILURE_D1_DEF);
+        debriefings[7]  = props.get("failureD2", FAILURE_D2_DEF);
+        debriefings[8]  = props.get("failureE1", FAILURE_E1_DEF);
+        debriefings[9]  = props.get("failureE2", FAILURE_E2_DEF);
+        debriefings[10] = props.get("successA1", SUCCESS_A1_DEF);
+        debriefings[11] = props.get("successA2", SUCCESS_A2_DEF);
+        debriefings[12] = props.get("successB1", SUCCESS_B1_DEF);
+        debriefings[13] = props.get("successB2", SUCCESS_B2_DEF);
+        debriefings[14] = props.get("successC1", SUCCESS_C1_DEF);
+        debriefings[15] = props.get("successC2", SUCCESS_C2_DEF);
+        debriefings[16] = props.get("successD1", SUCCESS_D1_DEF);
+        debriefings[17] = props.get("successD2", SUCCESS_D2_DEF);
+        // read ratings
+        List<String> ratingList = new ArrayList<>(8);
+        idx = 0;
+        String rating;
+        do {
+            rating = props.get("level_" + idx, "");
+            idx++;
+            if (!rating.isEmpty()) {
+                ratingList.add(rating);
+            }
+        } while (!rating.isEmpty());
+        ratings = new String[ratingList.size()];
+        ratings = ratingList.toArray(ratings);
+        // read levels
+        lvlInfo = new LevelInfo[ratingList.size()][];
+        String[] levelStr;
+        List<LevelInfo> levels = new ArrayList<>(64);
+        for (int r = 0; r < ratingList.size(); r++) {
+            idx = 0;
+            levels.clear();
+            rating = ratingList.get(r);
+            if (!Normalizer.isNormalized(rating, Normalizer.Form.NFKC)) {
+                rating = Normalizer.normalize(rating, Normalizer.Form.NFKC);
+            }
+            do {
+                levelStr = props.getArray(rating.toLowerCase(Locale.ENGLISH) + "_" + idx, null);
+                // filename, music number
+                if (levelStr != null && levelStr.length >= 2) {
+                    // get name from INI file
+                    Props lvlProps = new Props();
+                    lvlProps.load(path + "/" + levelStr[0]);
+                    // Now put everything together
+                    LevelInfo info = new LevelInfo();
+                    info.setFileName(path + "/" + levelStr[0]);
+                    info.setMusic(music.get(Props.parseInt(levelStr[1])));
+                    info.setName(lvlProps.get("name", "")); // only used in menu
+                    levels.add(info);
+                }
+                idx++;
+            } while (levelStr != null && levelStr.length >= 2);
+            lvlInfo[r] = new LevelInfo[levels.size()];
+            lvlInfo[r] = levels.toArray(lvlInfo[r]);
+        }
+    }
 
-	/**
-	 * Assemble level pack and difficulty level to string.
-	 * @param pack level pack
-	 * @param diff name of difficulty level
-	 * @return String formed from level pack and difficulty level
-	 */
-	public static String getID(final String pack, final String diff) {
-		return pack.toLowerCase()+"-"+diff.toLowerCase();
-	}
+    /**
+     * Assemble level pack and rating to string.
+     * @param pack level pack
+     * @param rating name of rating
+     * @return String formed from level pack and rating
+     */
+    public static String getID(String pack, String rating) {
+        pack = pack.toLowerCase(Locale.ENGLISH);
+        if (!Normalizer.isNormalized(pack, Normalizer.Form.NFKC)) {
+            pack = Normalizer.normalize(pack, Normalizer.Form.NFKC);
+        }
+        
+        rating = rating.toLowerCase(Locale.ENGLISH);
+        if (!Normalizer.isNormalized(rating, Normalizer.Form.NFKC)) {
+            pack = Normalizer.normalize(rating, Normalizer.Form.NFKC);
+        }
+        
+        return pack + "-" + rating;
+    }
 
-	/**
-	 * Return levels of difficulty as string array.
-	 * @return levels of difficulty as string array
-	 */
-	public String[] getDiffLevels() {
-		return diffLevels;
-	}
+    /**
+     * Return ratings as string array.
+     * @return ratings as string array
+     */
+    public String[] getRatings() {
+        return ratings;
+    }
 
-	/**
-	 * Get name of level pack.
-	 * @return name of level pack
-	 */
-	public String getName() {
-		return name;
-	}
+    /**
+     * Get name of level pack.
+     * @return name of level pack
+     */
+    public String getName() {
+        return name;
+    }
 
-	/**
-	 * Get code seed.
-	 * @return code seed.
-	 */
-	public String getCodeSeed() {
-		return codeSeed;
-	}
+    /**
+     * Get code seed.
+     * @return code seed.
+     */
+    public String getCodeSeed() {
+        return codeSeed;
+    }
 
-	/**
-	 * Get maximum fall distance.
-	 * @return maximum fall distance
-	 */
-	public int getMaxFallDistance() {
-		return maxFallDistance;
-	}
+    /**
+     * Get maximum fall distance.
+     * @return maximum fall distance
+     */
+    public int getMaxFallDistance() {
+        return maxFallDistance;
+    }
+    
+    public String[] getDebriefings() {
+        return debriefings;
+    }
+    
+    public boolean getAllLevelsUnlocked() {
+        return allLevelsUnlocked;
+    }
 
-	/**
-	 * Get offset to apply in level code algorithm.
-	 * @return offset to apply in level code algorithm
-	 */
-	public int getCodeOffset() {
-		return codeOffset;
-	}
+    /**
+     * Get offset to apply in level code algorithm.
+     * @return offset to apply in level code algorithm
+     */
+    public int getCodeOffset() {
+        return codeOffset;
+    }
 
-	/**
-	 * Get level info for a certain level.
-	 * @param diffLvl difficulty level
-	 * @param level level number
-	 * @return LevelInfo for the given level
-	 */
-	public LevelInfo getInfo(final int diffLvl, final int level) {
-		return lvlInfo[diffLvl][level];
-	}
+    /**
+     * Get level info for a certain level.
+     * @param rating rating
+     * @param level level number
+     * @return LevelInfo for the given level
+     */
+    public LevelInfo getInfo(final int rating, final int level) {
+        return lvlInfo[rating][level];
+    }
 
-	/**
-	 * Return all levels for a given difficulty
-	 * @param diffLevel number of difficulty level
-	 * @return level names as string array
-	 */
-	public String[] getLevels(final int diffLevel) {
-		String names[] = new String[lvlInfo[diffLevel].length];
-		for (int i=0; i<lvlInfo[diffLevel].length; i++)
-			names[i] = lvlInfo[diffLevel][i].getName();
-		return names;
-	}
+    /**
+     * Return all levels for a rating
+     * @param rating index of rating
+     * @return level names as string array
+     */
+    public String[] getLevels(final int rating) {
+        String[] names = new String[lvlInfo[rating].length];
+        for (int i = 0; i < lvlInfo[rating].length; i++) {
+            names[i] = (i + 1) + ": " + lvlInfo[rating][i].getName().trim();
+        }
+        return names;
+    }
+    
+    public String[] getMods() {
+        if (mods.length == 0) {
+            return mods;
+        }
+        
+        String[] retArray = new String[mods.length];
+        for (int i = 0; i < mods.length; i++) {
+            retArray[i] = "mods/" + mods[i];
+        }
+        return retArray;
+    }
 }
