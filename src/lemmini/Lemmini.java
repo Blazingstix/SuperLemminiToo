@@ -63,12 +63,12 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
     /** height of menu and icon bar in pixels */
     private static final int WIN_OFS = 120;
     private static final boolean ALLOW_LEVEL_PATCHING = false;
-    public static final String REVISION = "0.90";
+    public static final String REVISION = "0.90a";
     
     private static final long serialVersionUID = 0x01;
     
     /** flag: started as Webstart application */
-    private static boolean isWebstartApp = false;
+    private static boolean isWebstartApp = true;
     private static boolean createPatches = false;
 
     /** self reference */

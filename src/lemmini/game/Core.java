@@ -111,14 +111,14 @@ public class Core {
             if (pos != -1) {
                 programPropsFileStr = programPropsFileStr.substring(0, pos);
             }
-
+            
             /** @todo doesn't work if JAR is renamed...
              *  Maybe it would be a better idea to search only for ".JAR" and then
              *  for the first path separator...
              */
-
-            s = frame.getClass().getName().toLowerCase(Locale.ENGLISH).replace('.', '/') + ".jar";
-            pos = programPropsFileStr.toLowerCase(Locale.ENGLISH).indexOf(s);
+            
+            s = (frame.getClass().getName().replace('.', '/') + ".jar").toLowerCase(Locale.ENGLISH);
+            pos = programPropsFileStr.toLowerCase().indexOf(s);
             if (pos != -1) {
                 programPropsFileStr = programPropsFileStr.substring(0, pos);
             }
