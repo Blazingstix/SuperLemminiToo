@@ -21,6 +21,7 @@ import lemmini.gui.GainDialog;
 import lemmini.gui.LevelCodeDialog;
 import lemmini.gui.PlayerDialog;
 import lemmini.sound.Music;
+import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 
 /*
@@ -62,8 +63,7 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
     
     /** height of menu and icon bar in pixels */
     private static final int WIN_OFS = 120;
-    private static final boolean ALLOW_LEVEL_PATCHING = false;
-    public static final String REVISION = "0.90b";
+    public static final String REVISION = "0.91";
     
     private static final long serialVersionUID = 0x01;
     
@@ -98,6 +98,7 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
     private JMenuItem jMenuItemCursor = null;
     private JMenuItem jMenuItemSwap = null;
     private JMenuItem jMenuItemFaster = null;
+    private JMenuItem jMenuNoPercentages = null;
     private JMenuItem jMenuItemExit = null;
     private JMenuItem jMenuItemManagePlayer = null;
     private JMenuItem jMenuItemLoad = null;
@@ -349,7 +350,7 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
                             }
                         }
                         // else: no success
-                        JOptionPane.showMessageDialog(Core.getCmp(), "Wrong format!", "Loading replay failed.", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(Core.getCmp(), "Wrong format!", "Load Replay", JOptionPane.ERROR_MESSAGE);
                     } catch (Exception ex) {
                         ToolBox.showException(ex);
                     }
@@ -541,7 +542,7 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
             @Override
             public void actionPerformed(java.awt.event.ActionEvent e) {
                 GameController.setSwapButtons(jMenuItemSwap.isSelected());
-                Core.getProgramProps().setBoolean("swapButtons", GameController.isAdvancedSelect());
+                Core.getProgramProps().setBoolean("swapButtons", GameController.doSwapButtons());
             }
         });
         jMenuItemSwap.setSelected(GameController.doSwapButtons());
@@ -558,12 +559,26 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
             }
         });
         jMenuItemFaster.setSelected(GameController.isFasterFastForward());
+        
+        jMenuNoPercentages = new JCheckBoxMenuItem("Never show percentages", false);
+        jMenuNoPercentages.addActionListener(new java.awt.event.ActionListener() {
+            /* (non-Javadoc)
+             * @see java.awt.event.ActionListener#actionPerformed(java.awt.event.ActionEvent)
+             */
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                GameController.setNoPercentages(jMenuNoPercentages.isSelected());
+                Core.getProgramProps().setBoolean("noPercentages", GameController.isNoPercentages());
+            }
+        });
+        jMenuNoPercentages.setSelected(GameController.isNoPercentages());
 
         jMenuOptions = new JMenu();
         jMenuOptions.setText("Options");
         jMenuOptions.add(jMenuItemCursor);
         jMenuOptions.add(jMenuItemSwap);
         jMenuOptions.add(jMenuItemFaster);
+        jMenuOptions.add(jMenuNoPercentages);
 
         jMenuBar = new JMenuBar();
         jMenuBar.add(jMenuFile);
@@ -604,11 +619,15 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
                     name = Core.getResourcePath() + "/temp.ini";
                 }
                 if (ToolBox.getExtension(name).equalsIgnoreCase("ini")) {
-                    String id = ToolBox.getFileIDString(name, 5);
+                    String id = ToolBox.getFileID(name, 5);
                     if (id.equalsIgnoreCase("# LVL")) {
                         // this is a hack - maybe find a better way
+                        Props levelProps = new Props();
+                        levelProps.load(name);
+                        String style = levelProps.get("style", null);
+                        String specialStyle = levelProps.get("specialStyle", null);
                         GameController.getLevelPack(0).getInfo(0, 0).setFileName(name);
-                        GameController.getLevelPack(0).getInfo(0, 0).setMusic(Music.getRandomTrack());
+                        GameController.getLevelPack(0).getInfo(0, 0).setMusic(Music.getRandomTrack(style, specialStyle));
                         GameController.requestChangeLevel(0, 0, 0, false);
                         jMenuItemRestart.setEnabled(true);
                         if (changeLvlPath) {
@@ -617,7 +636,7 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
                         return;
                     }
                 }
-                JOptionPane.showMessageDialog(Core.getCmp(), "Wrong format!", "Unable to load level.", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(Core.getCmp(), "Wrong format!", "Load Level", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 ToolBox.showException(ex);
             }
@@ -797,44 +816,12 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
 
     }
 
-
-    /**
-     * Development function: patch current level x offset in the level configuration file.
-     * Works only in cheat mode.
-     * @param lvlPath path of level configuration files
-     */
-    private void patchLevel(final String lvlPath) {
-        if (!ALLOW_LEVEL_PATCHING) {
-            return;
-        }
-        List<String> lines = new ArrayList<>(512);
-        try (BufferedReader r = new BufferedReader(new FileReader(lvlPath))) {
-            String l;
-            while ((l = r.readLine()) != null) {
-                lines.add(l);
-            }
-        } catch (FileNotFoundException ex) {
-        } catch (IOException ex) {
-        }
-        try (FileWriter sw = new FileWriter(lvlPath)) {
-            for (String s : lines) {
-                if (s.startsWith("xPos =")) {
-                    sw.write("xPos = " + GameController.getXPos() + "\r\n");
-                } else {
-                    sw.write(s + "\r\n");
-                }
-            }
-        } catch (FileNotFoundException ex) {
-        } catch (IOException ex) {
-        }
-    }
-
     /* (non-Javadoc)
      * @see java.awt.event.KeyListener#keyPressed(java.awt.event.KeyEvent)
      */
     @Override
-    public void keyPressed(final KeyEvent keyevent) {
-        int code = keyevent.getKeyCode();
+    public void keyPressed(final KeyEvent keyEvent) {
+        int code = keyEvent.getKeyCode();
         switch (GameController.getGameState()) {
             case LEVEL:
                 switch (code) {
@@ -918,11 +905,6 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
                         GameController.setFastForward(!GameController.isFastForward());
                         GameController.pressIcon(Icons.Type.FFWD);
                         break;
-                    case KeyEvent.VK_X:
-                        if (GameController.isCheat()) {
-                            patchLevel(GameController.getLevelPack(GameController.getCurLevelPackIdx()).getInfo(GameController.getCurRating(), GameController.getCurLevelNumber()).getFileName());
-                        }
-                        break;
                     case KeyEvent.VK_T:
                         if (GameController.isCheat()) {
                             GameController.setTimed(!GameController.isTimed());
@@ -998,7 +980,6 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
                     default:
                         break;
                 }
-                keyevent.consume();
                 break;
             case BRIEFING:
             case DEBRIEFING:
@@ -1019,7 +1000,6 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
             default:
                 break;
         }
-        //System.out.println(keyevent.getKeyCode());
     }
 
     /* (non-Javadoc)

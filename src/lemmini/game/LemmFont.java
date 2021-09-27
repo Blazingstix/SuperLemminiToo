@@ -51,7 +51,6 @@ public class LemmFont {
     }
     
     private static final String FONT_INI_STR = "gfx/font/font.ini";
-    private static final int MISSING_CHAR_CODE_POINT = -1;
 
     /** width of one character in pixels */
     private static int width;
@@ -59,6 +58,8 @@ public class LemmFont {
     private static int height;
     private static Map<Integer, LemmChar> chars;
     private static Map<String, Subset> subsets;
+    private static Glyph missingChar;
+    private static Glyph[] missingCharFont;
 
     /**
      * Initialization.
@@ -106,7 +107,7 @@ public class LemmFont {
             Glyph[] glyphs = new Glyph[numChars];
             for (int c = 0; c < numChars; c++) {
                 glyphs[c] = new Glyph(glyphImg[c]);
-                int codePoint = p.getInt("subset_" + i + "_char_" + c + "_codePoint", MISSING_CHAR_CODE_POINT);
+                int codePoint = p.getInt("subset_" + i + "_char_" + c + "_codePoint", -1);
                 if (Character.isValidCodePoint(codePoint)) {
                     chars.put(codePoint, new LemmChar(name, c));
                 }
@@ -118,20 +119,15 @@ public class LemmFont {
         GraphicsContext g = img.createGraphicsContext();
         g.setColor(java.awt.Color.GREEN);
         g.drawRect(1, 1, width - 3, height - 3);
-        g.drawRect(2, 2, width - 5, height - 5);
         g.dispose();
-        Glyph[] glyph = new Glyph[]{new Glyph(img)};
-        String name = "missingchar";
-        if (subsets.containsKey(name)) {
-            for (int i = 0; i < Integer.MAX_VALUE; i++) {
-                name = "missingchar" + i;
-                if (!subsets.containsKey(name)) {
-                    break;
-                }
-            }
+        missingChar = new Glyph(img);
+        
+        img = Core.loadTranslucentImageJar("missing_char_font.png");
+        Image[] missingGlyphFontImg = ToolBox.getAnimation(img, 16);
+        missingCharFont = new Glyph[missingGlyphFontImg.length];
+        for (int i = 0; i < missingGlyphFontImg.length; i++) {
+            missingCharFont[i] = new Glyph(missingGlyphFontImg[i]);
         }
-        chars.put(MISSING_CHAR_CODE_POINT, new LemmChar(name, 0));
-        subsets.put(name, new Subset(glyph));
     }
 
     /**
@@ -151,7 +147,7 @@ public class LemmFont {
             c = s.codePointAt(i);
             
             if (!Character.isDefined(c)) {
-                drawCharacter(g, MISSING_CHAR_CODE_POINT, x, y, color);
+                drawMissingChar(g, c, x, y, color);
                 x += width;
                 continue;
             }
@@ -211,11 +207,26 @@ public class LemmFont {
     }
     
     private static void drawCharacter(GraphicsContext g, int c, int x, int y, Color color) {
-        if (!chars.containsKey(c)) {
-            c = MISSING_CHAR_CODE_POINT;
+        if (chars.containsKey(c)) {
+            LemmChar lemmChar = chars.get(c);
+            g.drawImage(subsets.get(lemmChar.subset).getGlyph(lemmChar.glyphIndex).getColor(color), x, y);
+        } else {
+            drawMissingChar(g, c, x, y, color);
         }
-        LemmChar lemmChar = chars.get(c);
-        g.drawImage(subsets.get(lemmChar.subset).getGlyph(lemmChar.glyphIndex).getColor(color), x, y);
+    }
+    
+    private static void drawMissingChar(GraphicsContext g, int c, int x, int y, Color color) {
+        g.drawImage(missingChar.getColor(color), x, y);
+        boolean bmpCodePoint = Character.isBmpCodePoint(c);
+        int digitsPerRow = (bmpCodePoint ? 2 : 3);
+        for (int i = 0; i < 2; i++) {
+            for (int j = 0; j < digitsPerRow; j++) {
+                Image hexDigit = missingCharFont[(c >>> ((digitsPerRow * 2 - 1 - (i * digitsPerRow + j)) * 4)) & 0xF].getColor(color);
+                g.drawImage(hexDigit,
+                        x + (width / 2 + (j - 1) * hexDigit.getWidth()) - (bmpCodePoint ? 0 : hexDigit.getWidth() / 2),
+                        y + (height / 2 + (i - 1) * hexDigit.getHeight()));
+            }
+        }
     }
 
     /**

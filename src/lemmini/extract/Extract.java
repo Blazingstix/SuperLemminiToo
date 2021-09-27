@@ -3,9 +3,11 @@ package lemmini.extract;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.zip.Adler32;
 import javax.swing.JFrame;
@@ -177,10 +179,10 @@ public class Extract extends Thread {
                 String[] files = sprite.saveAll(destinationPath + addSeparator(styles[3]) + styles[4], false);
                 String[] maskFiles = mask.saveAll(destinationPath + addSeparator(styles[3]) + styles[4] + "m", false);
                 for (String file : files) {
-                    createdFiles.put(file.toLowerCase(Locale.ENGLISH), null);
+                    createdFiles.put(file.toLowerCase(Locale.ROOT), null);
                 }
                 for (String maskFile : maskFiles) {
-                    createdFiles.put(maskFile.toLowerCase(Locale.ENGLISH), null);
+                    createdFiles.put(maskFile.toLowerCase(Locale.ROOT), null);
                 }
                 checkCancel();
             }
@@ -206,7 +208,7 @@ public class Extract extends Thread {
                         break;
                     }
                     // save object
-                    createdFiles.put((destinationPath + addSeparator(object[3]) + member[2]).toLowerCase(Locale.ENGLISH), null);
+                    createdFiles.put((destinationPath + addSeparator(object[3]) + member[2]).toLowerCase(Locale.ROOT), null);
                     sprite.saveAnim(destinationPath + addSeparator(object[3]) + member[2],
                             Props.parseInt(member[0]), Props.parseInt(member[1]));
                     checkCancel();
@@ -239,7 +241,7 @@ public class Extract extends Thread {
                 }
                 try {
                     copyFile(sourcePath + copy[0], destinationPath + copy[1]);
-                    createdFiles.put((destinationPath + copy[1]).toLowerCase(Locale.ENGLISH), null);
+                    createdFiles.put((destinationPath + copy[1]).toLowerCase(Locale.ROOT), null);
                 } catch (Exception ex) {
                     throw new ExtractException(String.format("Unable to copy %s%s to %s%s.", sourcePath, copy[0], destinationPath, copy[1]));
                 }
@@ -256,7 +258,7 @@ public class Extract extends Thread {
                 }
                 try {
                     copyFile(destinationPath + clone[0], destinationPath + clone[1]);
-                    createdFiles.put((destinationPath + clone[1]).toLowerCase(Locale.ENGLISH), null);
+                    createdFiles.put((destinationPath + clone[1]).toLowerCase(Locale.ROOT), null);
                 } catch (Exception ex) {
                     throw new ExtractException(String.format("Unable to clone %1$s%2$s to %1$s%3$s.", destinationPath, clone[0], clone[1]));
                 }
@@ -268,24 +270,17 @@ public class Extract extends Thread {
                 if (DO_CREATE_CRC) {
                     // create crc.ini
                     out(String.format("%nCreate crc.ini"));
-                    FileWriter fCRCList;
-                    try {
-                        fCRCList = new FileWriter(crcPath + CRC_INI_NAME);
-                    } catch (IOException ex) {
-                        throw new ExtractException(String.format("%s%s couldn't be opened.", crcPath, CRC_INI_NAME));
-                    }
-                    for (int i = 0; true; i++) {
-                        String ppath;
-                        ppath = props.get("pcrc_" + i, "");
-                        if (ppath.isEmpty()) {
-                            break;
+                    try (Writer fCRCList = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(crcPath + CRC_INI_NAME), StandardCharsets.UTF_8))) {
+                        for (int i = 0; true; i++) {
+                            String ppath;
+                            ppath = props.get("pcrc_" + i, "");
+                            if (ppath.isEmpty()) {
+                                break;
+                            }
+                            createCRCs(sourcePath, ppath, fCRCList);
                         }
-                        createCRCs(sourcePath, ppath, fCRCList);
-                    }
-                    try {
-                        fCRCList.close();
                     } catch (IOException ex) {
-                        throw new ExtractException(String.format("%s%s couldn't be closed.", crcPath, CRC_INI_NAME));
+                        throw new ExtractException(String.format("Unable to create %s%s.", crcPath, CRC_INI_NAME));
                     }
                     checkCancel();
                 }
@@ -293,24 +288,17 @@ public class Extract extends Thread {
                 // step seven: create patches and patch.ini
                 Files.createDirectories(Paths.get(patchPath));
                 out(String.format("%nCreate patch INI"));
-                FileWriter fPatchList;
-                try {
-                    fPatchList = new FileWriter(patchPath + PATCH_INI_NAME);
-                } catch (IOException ex) {
-                    throw new ExtractException(String.format("%s%s couldn't be opened.", crcPath, CRC_INI_NAME));
-                }
-                for (int i = 0; true; i++) {
-                    String ppath;
-                    ppath = props.get("ppatch_" + i, "");
-                    if (ppath.isEmpty()) {
-                        break;
+                try (Writer fPatchList = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(patchPath + PATCH_INI_NAME), StandardCharsets.UTF_8))) {
+                    for (int i = 0; true; i++) {
+                        String ppath;
+                        ppath = props.get("ppatch_" + i, "");
+                        if (ppath.isEmpty()) {
+                            break;
+                        }
+                        createPatches(referencePath, destinationPath, ppath, patchPath, fPatchList);
                     }
-                    createPatches(referencePath, destinationPath, ppath, patchPath, fPatchList);
-                }
-                try {
-                    fPatchList.close();
                 } catch (IOException ex) {
-                    throw new ExtractException(String.format("%s%s couldn't be closed.", crcPath, CRC_INI_NAME));
+                    throw new ExtractException(String.format("Unable to create %s%s.", patchPath, PATCH_INI_NAME));
                 }
                 checkCancel();
             }
@@ -362,7 +350,7 @@ public class Extract extends Thread {
                 byte[] dif = readFile(urlDif);
                 byte[] src = readFile(destinationPath + ppath[0]);
                 try {
-                    byte[] trg = Diff.patchbuffers(src, dif);
+                    byte[] trg = Diff.patchBuffers(src, dif);
                     // write new file
                     writeFile(destinationPath + ppath[0], trg);
                 } catch (DiffException ex) {
@@ -489,10 +477,10 @@ public class Extract extends Thread {
         for (File level : levels) {
             int pos;
             String fIn = root + level.getName();
-            String fOut = level.getName().toLowerCase(Locale.ENGLISH);
+            String fOut = level.getName().toLowerCase(Locale.ROOT);
             pos = fOut.lastIndexOf(".lvl"); // MUST be there because of file filter
             fOut = destination + fOut.substring(0, pos) + ".ini";
-            createdFiles.put(fOut.toLowerCase(Locale.ENGLISH), null);
+            createdFiles.put(fOut.toLowerCase(Locale.ROOT), null);
             try {
                 out(level.getName());
                 ExtractLevel.convertLevel(fIn, fOut, false, true);
@@ -514,10 +502,10 @@ public class Extract extends Thread {
      * @param dPath  The patch with the differing (to be patched) files
      * @param subDir SubDir to create patches for
      * @param pPath  The patch to write the patches to
-     * @param fPatchList FileWriter to create patch.ini
+     * @param fPatchList Writer to create patch.ini
      * @throws ExtractException
      */
-    private static void createPatches(final String sPath, final String dPath, final String sDir, final String pPath, final FileWriter fPatchList) throws ExtractException {
+    private static void createPatches(final String sPath, final String dPath, final String sDir, final String pPath, final Writer fPatchList) throws ExtractException {
         // add separators and create missing directories
         String patchSourcePath = addSeparator(sPath+sDir);
         File fSource = new File(patchSourcePath);
@@ -572,7 +560,7 @@ public class Extract extends Thread {
             if (pos == -1) {
                 pos = fnPatch.length();
             }
-            fnPatch = patchPath + subDirDecorated + fnPatch.substring(0, pos).toLowerCase(Locale.ENGLISH) + ".dif";
+            fnPatch = patchPath + subDirDecorated + fnPatch.substring(0, pos).toLowerCase(Locale.ROOT) + ".dif";
             try {
                 out(fnIn);
                 // read src file
@@ -580,7 +568,7 @@ public class Extract extends Thread {
                 byte[] trg = null;
                 // read target file
                 boolean fileExists;
-                fileExists = createdFiles.containsKey(fnOut.toLowerCase(Locale.ENGLISH));
+                fileExists = createdFiles.containsKey(fnOut.toLowerCase(Locale.ROOT));
                 if (fileExists) {
                     try {
                         trg = readFile(fnOut);
@@ -607,7 +595,7 @@ public class Extract extends Thread {
                     fPatchList.write("check_" + (checkNo++) + " = " + out + "\r\n");
                 } else {
                     // apply patch to test whether it's OK
-                    Diff.patchbuffers(trg, patch);
+                    Diff.patchBuffers(trg, patch);
                     // write patch file
                     writeFile(fnPatch, patch);
                     fPatchList.write("patch_" + (patchNo++) + " = " + out + "\r\n");
@@ -626,10 +614,10 @@ public class Extract extends Thread {
      * Create CRCs for resources (development).
      * @param rPath The root path with the files to create CRCs for
      * @param sDir SubDir to create patches for
-     * @param fCRCList FileWriter to create crc.ini
+     * @param fCRCList Writer to create crc.ini
      * @throws ExtractException
      */
-    private static void createCRCs(final String rPath, final String sDir, final FileWriter fCRCList) throws ExtractException {
+    private static void createCRCs(final String rPath, final String sDir, final Writer fCRCList) throws ExtractException {
         // add separators and create missing directories
         String rootPath = addSeparator(rPath + sDir);
         File fSource = new File(rootPath);
@@ -727,17 +715,12 @@ public class Extract extends Thread {
      * Copy a file.
      * @param source URL of source file
      * @param destination full destination file name including path
-     * @throws FileNotFoundException
      * @throws IOException
      */
-    private static void copyFile(final URL source, final String destination) throws FileNotFoundException, IOException {
-        try (InputStream fSrc = source.openStream(); FileOutputStream fDest = new FileOutputStream(destination)) {
-            byte[] buffer = new byte[4096];
-            int len;
-
-            while ((len=fSrc.read(buffer)) != -1) {
-                fDest.write(buffer, 0, len);
-            }
+    private static void copyFile(final URL source, final String destination) throws IOException {
+        try (InputStream fSrc = new BufferedInputStream(source.openStream())) {
+            Path fDest = Paths.get(destination);
+            Files.copy(fSrc, fDest, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
@@ -745,33 +728,23 @@ public class Extract extends Thread {
      * Copy a file.
      * @param source full source file name including path
      * @param destination full destination file name including path
-     * @throws FileNotFoundException
      * @throws IOException
      */
-    private static void copyFile(final String source, final String destination) throws FileNotFoundException, IOException {
-        try (FileInputStream fSrc = new FileInputStream(source); FileOutputStream fDest = new FileOutputStream(destination)) {
-            byte[] buffer = new byte[4096];
-            int len;
-
-            while ((len = fSrc.read(buffer)) != -1) {
-                fDest.write(buffer, 0, len);
-            }
-        }
+    private static void copyFile(final String source, final String destination) throws IOException {
+        Path fSrc = Paths.get(source);
+        Path fDest = Paths.get(destination);
+        Files.copy(fSrc, fDest, StandardCopyOption.REPLACE_EXISTING);
     }
 
     /**
      * Read file into an array of bytes.
      * @param fname file name
-     * @return array of byte
+     * @return array of bytes
      * @throws ExtractException
      */
     private static byte[] readFile(final String fname) throws ExtractException {
-        byte[] buf;
-        try (FileInputStream f = new FileInputStream(fname)) {
-            int len = (int) Files.size(Paths.get(fname));
-            buf = new byte[len];
-            f.read(buf);
-            return buf;
+        try {
+            return Files.readAllBytes(Paths.get(fname));
         } catch (FileNotFoundException ex) {
             throw new ExtractException(String.format("File %s not found.", fname));
         } catch (IOException ex) {
@@ -787,7 +760,7 @@ public class Extract extends Thread {
      */
     private static byte[] readFile(final URL fname) throws ExtractException {
         byte[] buf;
-        try (InputStream f = fname.openStream()) {
+        try (InputStream f = new BufferedInputStream(fname.openStream())) {
             byte[] buffer = new byte[4096];
             // URLs/InputStreams suck: we can't read a length
             int len;
@@ -801,7 +774,7 @@ public class Extract extends Thread {
 
             // reconstruct byte array from ArrayList
             buf = new byte[lbuf.size()];
-            for (int i = 0; i < lbuf.size(); i++) {
+            for (int i = 0; i < buf.length; i++) {
                 buf[i] = lbuf.get(i);
             }
 
@@ -820,8 +793,8 @@ public class Extract extends Thread {
      * @throws ExtractException
      */
     private static void writeFile(final String fname, final byte[] buf) throws ExtractException {
-        try (FileOutputStream f = new FileOutputStream(fname)) {
-            f.write(buf);
+        try {
+            Files.write(Paths.get(fname), buf);
         } catch (IOException ex) {
             throw new ExtractException(String.format("IO exception while writing file %s.", fname));
         }
@@ -830,7 +803,7 @@ public class Extract extends Thread {
     /**
      * Find a file.
      * @param fname File name (without absolute path)
-     * @return URL to file
+     * @return URL of file
      */
     public static URL findFile(final String fname) {
         URL retval = loader.getResource(fname);

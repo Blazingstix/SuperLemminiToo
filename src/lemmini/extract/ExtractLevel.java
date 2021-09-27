@@ -35,7 +35,7 @@ public class ExtractLevel {
     
     /** Scale (to convert lowres levels into hires levels) */
     private static final int SCALE = 2;
-    private static final int FAKE_OBJECT_CUTOFF = 16;
+    static final int FAKE_OBJECT_CUTOFF = 16;
     private static final int MAX_ENTRANCES = 4;
     private static final int MAX_ENTRANCES_MULTI = 2;
     private static final int MAX_GREEN_FLAGS = 1;
@@ -54,6 +54,7 @@ public class ExtractLevel {
     private static int numToRescue;
     /** Time Limit: max 0x00FF, 0x0001 to 0x0009 works best */
     private static int timeLimit;
+    private static int timeLimitSeconds;
     /** number of climbers in this level : max 0xfa (250) */
     private static int numClimbers;
     /** number of floaters in this level : max 0xfa (250) */
@@ -81,9 +82,8 @@ public class ExtractLevel {
     private static int style;
     /** special style */
     private static int specialStyle;
-    /** superlemming mode used if value is 0xff */
-    private static int superlemming;
-    private static int dummy;
+    private static int extra1;
+    private static int extra2;
     /** objects like doors - 32 objects each consists of 8 bytes */
     private static List<LvlObject> objects;
     /** terrain the Lemmings walk on etc. - 400 tiles, 4 bytes each */
@@ -122,8 +122,7 @@ public class ExtractLevel {
             throw new Exception(String.format("I/O error while reading %s.", fnIn));
         }
         // output file
-        try (FileOutputStream f = new FileOutputStream(fnOut);
-                OutputStreamWriter w = new OutputStreamWriter(f, StandardCharsets.UTF_8)) {
+        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fnOut), StandardCharsets.UTF_8))) {
             // add only file name without the path in the first line
             int p1 = fnIn.lastIndexOf("/");
             int p2 = fnIn.lastIndexOf("\\");
@@ -148,8 +147,19 @@ public class ExtractLevel {
             w.write("numLemmings = " + numLemmings + "\r\n");
             numToRescue = b.getShort() & 0xffff;
             w.write("numToRescue = " + numToRescue + "\r\n");
-            timeLimit = b.getShort() & 0xffff;
-            w.write("timeLimit = " + timeLimit + "\r\n");
+            if (classic) {
+                timeLimitSeconds = 0;
+                timeLimit = b.getShort() & 0xffff;
+                w.write("timeLimit = " + timeLimit + "\r\n");
+            } else {
+                timeLimitSeconds = b.get() & 0xff;
+                timeLimit = b.get() & 0xff;
+                w.write("timeLimitSeconds = " + (timeLimit * 60 + timeLimitSeconds) + "\r\n");
+                if (timeLimitSeconds >= 60) {
+                    w.write("#byte6Value = " + timeLimitSeconds + "\r\n");
+                    w.write("#byte7Value = " + timeLimit + "\r\n");
+                }
+            }
             numClimbers = b.getShort() & 0xffff;
             w.write("numClimbers = " + numClimbers + "\r\n");
             numFloaters = b.getShort() & 0xffff;
@@ -170,12 +180,28 @@ public class ExtractLevel {
             xPos += multi ? 72 : 160;
             xPos *= SCALE;
             w.write("xPosCenter = " + xPos + "\r\n");
-            style = b.getShort() & 0xffff;
+            if (classic) {
+                style = b.getShort() & 0xffff;
+            } else {
+                int steelType = b.get() & 0xff;
+                if (steelType != 0) {
+                    w.write("#byte26Value = " + steelType + "\r\n");
+                }
+                style = b.get() & 0xff;
+            }
             if (style >= STYLES.length) {
                 throw new Exception(fnIn + " uses an invalid style.");
             }
             w.write("style = " + STYLES[style] + "\r\n");
-            specialStyle = (b.getShort() & 0xffff) - 1;
+            if (classic) {
+                specialStyle = (b.getShort() & 0xffff) - 1;
+            } else {
+                int music = b.get() & 0xff;
+                if (music != 0) {
+                    w.write("#byte28Value = " + music + "\r\n");
+                }
+                specialStyle = (b.get() & 0xff) - 1;
+            }
             if (specialStyle >= SPECIAL_STYLES.length && specialStyle != 101) {
                 throw new Exception(fnIn + " uses an invalid special style.");
             }
@@ -184,17 +210,40 @@ public class ExtractLevel {
             } else if (specialStyle > -1) {
                 w.write("specialStyle = " + SPECIAL_STYLES[specialStyle] + "\r\n");
             }
-            superlemming = b.get();
-            if ((classic && superlemming != 0) || superlemming == -1) {
-                w.write("superlemming = true\r\n");
-            }
-            if (superlemming != 0 && superlemming != -1) {
-                w.write("#byte14Value = " + superlemming + "\r\n");
-            }
-            dummy = b.get();
-            if (!(superlemming == 0 && dummy == 0)
-                    && !(superlemming == -1 && dummy == -1)) {
-                w.write("#byte15Value = " + dummy + "\r\n");
+            extra1 = b.get();
+            extra2 = b.get();
+            switch (extra1) {
+                case 0:
+                    if (extra2 != 0) {
+                        w.write("#byte31Value = " + extra2 + "\r\n");
+                    }
+                    break;
+                case -1:
+                    w.write("superlemming = true\r\n");
+                    if (extra2 != -1) {
+                        w.write("#byte31Value = " + extra2 + "\r\n");
+                    }
+                    break;
+                case 66:
+                    if (!classic) {
+                        switch (extra2) {
+                            case 1:
+                            case 9:
+                            case 10:
+                                w.write("superlemming = true\r\n");
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    /* falls through */
+                default:
+                    if (classic) {
+                        w.write("superlemming = true\r\n");
+                    }
+                    w.write("#byte30Value = " + extra1 + "\r\n");
+                    w.write("#byte31Value = " + extra2 + "\r\n");
+                    break;
             }
             if (classic) {
                 w.write("forceNormalTimerSpeed = true\r\n");
@@ -202,7 +251,7 @@ public class ExtractLevel {
             }
             // read objects
             w.write("\r\n# Objects\r\n");
-            w.write("# ID, X position, Y position, paint mode, flags\r\n");
+            w.write("# ID, X position, Y position, paint mode, flags, object-specific modifier (optional)\r\n");
             w.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
             w.write("# Flags: 1 = upside down, 2 = fake (combining allowed)\r\n");
             byte[][] bytes = new byte[32][8];
@@ -229,7 +278,7 @@ public class ExtractLevel {
                     sum += bytes[i][j] & 0xff;
                 }
                 if (sum != 0) {
-                    LvlObject obj = new LvlObject(bytes[i], SCALE);
+                    LvlObject obj = new LvlObject(bytes[i], SCALE, classic);
                     objects.add(obj);
                     if (classic) {
                         if (obj.id == LvlObject.ENTRANCE_ID) {
@@ -246,12 +295,19 @@ public class ExtractLevel {
                     }
                     int flags = obj.upsideDown ? 1 : 0;
                     flags |= obj.fake ? 2 : 0;
-                    w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + flags + "\r\n");
-                    if ((bytes[i][6] & 0x3f) != 0) {
-                        w.write("object_" + i + "_byte6Value = " + bytes[i][6] + "\r\n");
+                    w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + flags);
+                    if (!classic && obj.id == LvlObject.ENTRANCE_ID && (bytes[i][6] & 0x20) != 0) {
+                        w.write(", 1");
+                    }
+                    w.write("\r\n");
+                    if (!classic && bytes[i][4] != 0) {
+                        w.write("#object_" + i + "_byte4Value = " + bytes[i][4] + "\r\n");
+                    }
+                    if ((bytes[i][6] & (classic ? 0x3f : (obj.id == LvlObject.ENTRANCE_ID) ? 0x0f : 0x2f)) != 0) {
+                        w.write("#object_" + i + "_byte6Value = " + bytes[i][6] + "\r\n");
                     }
                     if ((bytes[i][7] & 0x7f) != 0x0f) {
-                        w.write("object_" + i + "_byte7Value = " + bytes[i][7] + "\r\n");
+                        w.write("#object_" + i + "_byte7Value = " + bytes[i][7] + "\r\n");
                     }
                 } else {
                     w.write("object_" + i + " = -1, 0, 0, 0, 0\r\n");
@@ -338,10 +394,10 @@ public class ExtractLevel {
                     sum += bytes[i][j] & 0xff;
                 }
                 if (sum != 0) {
-                    Steel stl = new Steel(bytes[i], SCALE);
+                    Steel stl = new Steel(bytes[i], SCALE, classic);
                     steel.add(stl);
                     w.write("steel_" + i + " = " + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height + "\r\n");
-                    if (bytes[i][3] != 0) {
+                    if (classic && bytes[i][3] != 0) {
                         w.write("#steel_" + i + "_byte3Value = " + bytes[i][3] + "\r\n");
                     }
                 } else {
@@ -401,9 +457,10 @@ class LvlObject {
     /**
      * Constructor.
      * @param b buffer
+     * @param classic
      * @param scale Scale (to convert lowres levels into hires levels)
      */
-    LvlObject(final byte[] b, final int scale) {
+    LvlObject(final byte[] b, final int scale, final boolean classic) {
         // x pos  : min 0xFFF8, max 0x0638.  0xFFF8 = -24, 0x0000 = -16, 0x0008 = -8
         // 0x0010 = 0, 0x0018 = 8, ... , 0x0638 = 1576    note: should be multiples of 8
         xPos = ((b[0] << 8) | (b[1] & 0xff)) - 16;
@@ -414,7 +471,11 @@ class LvlObject {
         yPos *= scale;
         // obj id : min 0x0000, max 0x000F.  the object id is different in each
         // graphics set, however 0x0000 is always an exit and 0x0001 is always a start.
-        id = ((b[4] & 0xff) << 8) | (b[5] & 0xff);
+        if (classic) {
+            id = ((b[4] & 0xff) << 8) | (b[5] & 0xff);
+        } else {
+            id = b[5] & 0xff;
+        }
         // modifier : first byte can be 80 (do not overwrite existing terrain) or 40
         // (must have terrain underneath to be visible). 00 specifies always draw full graphic.
         // second byte can be 8F (display graphic upside-down) or 0F (display graphic normally)
@@ -426,7 +487,7 @@ class LvlObject {
             paintMode |= MODE_VIS_ON_TERRAIN;
         }
         upsideDown = (b[7] & 0x80) != 0;
-        fake = false;
+        fake = classic ? false : ((b[6] & 0x10) != 0);
     }
 }
 
@@ -497,18 +558,30 @@ class Steel {
      * @param b buffer
      * @param scale Scale (to convert lowres levels into hires levels)
      */
-    Steel(final byte[] b, final int scale) { // note: last byte is always 0
+    Steel(final byte[] b, final int scale, final boolean classic) {
         // xpos: 9-bit value: 0x000-0x178).  0x000 = -16, 0x178 = 1580
         xPos = (((b[0] & 0xff) << 1) | ((b[1] & 0x80) >> 7)) * 4 - 16;
+        if (!classic) {
+            xPos -= (b[3] & 0xc0) >>> 6;
+        }
         xPos *= scale;
         // ypos: 0x00-0x27. 0x00 = 0, 0x27 = 156 - each hex value represents 4 pixels
         yPos = (b[1] & 0x7f) * 4;
+        if (!classic) {
+            yPos -= (b[3] & 0x30) >>> 4;
+        }
         yPos *= scale;
         // area: 0x00-0xFF.  first nibble is the x-size, from 0-F (represents 4 pixels)
         // second nibble is the y-size. 0x00 = (4,4), 0x11 = (8,8), 0x7F = (32,64)
         width = ((b[2] & 0xf0) >> 4) * 4 + 4;
+        if (!classic) {
+            width -= (b[3] & 0x0c) >>> 2;
+        }
         width *= scale;
         height = (b[2] & 0xf) * 4 + 4;
+        if (!classic) {
+            height -= b[3] & 0x03;
+        }
         height *= scale;
     }
 }

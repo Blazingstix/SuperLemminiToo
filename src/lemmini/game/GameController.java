@@ -116,6 +116,7 @@ public class GameController {
     private static boolean advancedSelect;
     private static boolean swapButtons;
     private static boolean fasterFastForward;
+    private static boolean noPercentages;
     /** graphics object for the foreground image */
     private static GraphicsContext fgGfx;
     /** flag: fast forward mode is active */
@@ -486,7 +487,7 @@ public class GameController {
         numBuilders = level.getNumBuilders();
         numBashers = level.getNumBashers();
         numMiners = level.getNumMiners();
-        numDiggers = level.getMumDiggers();
+        numDiggers = level.getNumDiggers();
         xPosCenter = level.getXPosCenter();
         width = level.getWidth();
         bgWidths = level.getBgWidths();
@@ -1080,7 +1081,7 @@ public class GameController {
             releaseCtr = releaseBase;
             if (level.getNumEntrances() != 0) {
                 Entrance e = level.getEntrance(TrapDoor.getNext());
-                Lemming l = new Lemming(e.xPos + 2, e.yPos + 20, Lemming.Direction.RIGHT);
+                Lemming l = new Lemming(e.xPos + 2, e.yPos + 20, e.leftEntrance ? Lemming.Direction.LEFT : Lemming.Direction.RIGHT);
                 synchronized (lemmings) {
                     lemmings.add(l);
                 }
@@ -1485,21 +1486,7 @@ public class GameController {
                 case LOAD_REPLAY:
                     try {
                         changeLevel(nextLevelPack, nextRating, nextLevelNumber, transitionState == TransitionState.LOAD_REPLAY);
-                        int numLemmings = level.getNumLemmings();
-                        String lemmingWord = (numLemmings == 1) ? "Lemming" : "Lemmings";
-                        if (level.getNumLemmings() <= 100) {
-                            Core.setTitle(String.format("SuperLemmini - %s - Save %d%% of %d %s",
-                                    level.getLevelName().trim(),
-                                    level.getNumToRescue() * 100 / numLemmings,
-                                    numLemmings,
-                                    lemmingWord));
-                        } else {
-                            Core.setTitle(String.format("SuperLemmini - %s - Save %d of %d %s",
-                                    level.getLevelName().trim(),
-                                    level.getNumToRescue(),
-                                    numLemmings,
-                                    lemmingWord));
-                        }
+                        setTitle();
                     } catch (ResourceException ex) {
                         Core.resourceError(ex.getMessage());
                     } catch (LemmException ex) {
@@ -1522,9 +1509,26 @@ public class GameController {
             Fader.fade(g);
         }
         if (gameState == State.LEVEL_END
-                || gameState == State.LEVEL
-                && transitionState != TransitionState.NONE) {
+                || (gameState == State.LEVEL && transitionState != TransitionState.NONE)) {
             fadeSound();
+        }
+    }
+    
+    private static void setTitle() {
+        int numLemmings = level.getNumLemmings();
+        String lemmingWord = (numLemmings == 1) ? "Lemming" : "Lemmings";
+        if (noPercentages || numLemmings > 100) {
+            Core.setTitle(String.format("SuperLemmini - %s - Save %d of %d %s",
+                    level.getLevelName().trim(),
+                    level.getNumToRescue(),
+                    numLemmings,
+                    lemmingWord));
+        } else {
+            Core.setTitle(String.format("SuperLemmini - %s - Save %d%% of %d %s",
+                    level.getLevelName().trim(),
+                    level.getNumToRescue() * 100 / numLemmings,
+                    numLemmings,
+                    lemmingWord));
         }
     }
 
@@ -1614,25 +1618,9 @@ public class GameController {
             if (val < 0) {
                 val = 0;
             }
-            if (val > 999) {
-                val = 999;
-            }
-            //g.drawImage(NumFont.numImage(val),Icons.WIDTH*i+8,y);
-            if (val >= 100) {
-                g.drawImage(NumFont.numImage(val / 100),
-                        Icons.WIDTH * i + Icons.WIDTH / 2 - (int) (NumFont.getWidth() * 1.5), y);
-                g.drawImage(NumFont.numImage(val % 100 / 10),
-                        Icons.WIDTH * i + Icons.WIDTH / 2 - NumFont.getWidth() / 2, y);
-                g.drawImage(NumFont.numImage(val % 10),
-                        Icons.WIDTH * i + Icons.WIDTH / 2 + NumFont.getWidth() / 2, y);
-            } else {
-                g.drawImage(NumFont.numImage(val / 10),
-                        Icons.WIDTH * i + Icons.WIDTH / 2 - NumFont.getWidth(), y);
-                g.drawImage(NumFont.numImage(val % 10),
-                        Icons.WIDTH * i + Icons.WIDTH / 2, y);
-            }
+            Image numImage = NumFont.numImage(val);
+            g.drawImage(numImage, Icons.WIDTH * i + Icons.WIDTH / 2 - numImage.getWidth() / 2, y);
         }
-
     }
 
     /**
@@ -2028,6 +2016,24 @@ public class GameController {
     
     public static boolean isFasterFastForward() {
         return fasterFastForward;
+    }
+    
+    public static void setNoPercentages(boolean np) {
+        noPercentages = np;
+        switch (gameState) {
+            case BRIEFING:
+            case LEVEL:
+            case DEBRIEFING:
+            case LEVEL_END:
+                setTitle();
+                break;
+            default:
+                break;
+        }
+    }
+    
+    public static boolean isNoPercentages() {
+        return noPercentages;
     }
 
     /**

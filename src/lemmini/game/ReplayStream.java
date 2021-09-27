@@ -5,6 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JOptionPane;
+import lemmini.tools.ToolBox;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -115,9 +117,7 @@ public class ReplayStream {
      * @return replay information
      */
     public ReplayLevelInfo load(final String fname) {
-        try (FileInputStream f = new FileInputStream(fname);
-                InputStreamReader r = new InputStreamReader(f, StandardCharsets.UTF_8);
-                BufferedReader br = new BufferedReader(r)) {
+        try (BufferedReader br = ToolBox.getBufferedReader(fname)) {
             List<ReplayEvent> ev = new ArrayList<>(256);
             String line = br.readLine();
             if (!line.equals("#REPLAY NEW")) {
@@ -132,6 +132,7 @@ public class ReplayStream {
             } else {
                 return null;
             }
+            
             line = br.readLine();
             if (line.startsWith("#REVISION ")) {
                 revision = line.substring(10).trim();
@@ -202,6 +203,13 @@ public class ReplayStream {
                 }
             }
             events = ev;
+            if (!revision.equals(CURRENT_REVISION)) {
+                JOptionPane.showMessageDialog(Core.getCmp(),
+                        "This replay was created with a potentially incompatible version of SuperLemmini. "
+                        + "For this reason, the replay might not play properly.",
+                        "Load Replay",
+                        JOptionPane.WARNING_MESSAGE);
+            }
             return rli;
         } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException e) {
             return null;
@@ -214,8 +222,7 @@ public class ReplayStream {
      * @return true if save OK, false otherwise
      */
     public boolean save(final String fname) {
-        try (FileOutputStream f = new FileOutputStream(fname);
-                OutputStreamWriter w = new OutputStreamWriter(f, StandardCharsets.UTF_8)) {
+        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fname), StandardCharsets.UTF_8))) {
             w.write("#REPLAY NEW\r\n");
             w.write("#FORMAT " + CURRENT_FORMAT + "\r\n");
             w.write("#REVISION " + CURRENT_REVISION + "\r\n");

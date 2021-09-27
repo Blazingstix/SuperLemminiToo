@@ -134,7 +134,7 @@ public class LevelPack {
             mods = new String[0];
         }
         // read code seed
-        codeSeed = props.get("codeSeed", "").trim().toUpperCase(Locale.ENGLISH);
+        codeSeed = props.get("codeSeed", "").trim().toUpperCase(Locale.ROOT);
         // read code level offset
         codeOffset = props.getInt("codeOffset", 0);
         // read max falling distance
@@ -193,7 +193,7 @@ public class LevelPack {
                 rating = Normalizer.normalize(rating, Normalizer.Form.NFKC);
             }
             do {
-                levelStr = props.getArray(rating.toLowerCase(Locale.ENGLISH) + "_" + idx, null);
+                levelStr = props.getArray(rating.toLowerCase(Locale.ROOT) + "_" + idx, null);
                 // filename, music number
                 if (levelStr != null && levelStr.length >= 2) {
                     // get name from INI file
@@ -220,12 +220,12 @@ public class LevelPack {
      * @return String formed from level pack and rating
      */
     public static String getID(String pack, String rating) {
-        pack = pack.toLowerCase(Locale.ENGLISH);
+        pack = pack.toLowerCase(Locale.ROOT);
         if (!Normalizer.isNormalized(pack, Normalizer.Form.NFKC)) {
             pack = Normalizer.normalize(pack, Normalizer.Form.NFKC);
         }
         
-        rating = rating.toLowerCase(Locale.ENGLISH);
+        rating = rating.toLowerCase(Locale.ROOT);
         if (!Normalizer.isNormalized(rating, Normalizer.Form.NFKC)) {
             pack = Normalizer.normalize(rating, Normalizer.Form.NFKC);
         }

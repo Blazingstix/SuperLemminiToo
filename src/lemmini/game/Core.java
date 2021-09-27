@@ -59,7 +59,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.90";
+    private static final String REVISION = "0.91";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
 
@@ -103,11 +103,11 @@ public class Core {
             } catch (UnsupportedEncodingException ex) {
             }
             // special handling for JAR
-            pos = programPropsFileStr.toLowerCase(Locale.ENGLISH).indexOf("file:");
+            pos = programPropsFileStr.toLowerCase(Locale.ROOT).indexOf("file:");
             if (pos != -1) {
                 programPropsFileStr = programPropsFileStr.substring(pos + 5);
             }
-            pos = programPropsFileStr.toLowerCase(Locale.ENGLISH).indexOf(s.toLowerCase(Locale.ENGLISH));
+            pos = programPropsFileStr.toLowerCase(Locale.ROOT).indexOf(s.toLowerCase(Locale.ROOT));
             if (pos != -1) {
                 programPropsFileStr = programPropsFileStr.substring(0, pos);
             }
@@ -117,7 +117,7 @@ public class Core {
              *  for the first path separator...
              */
             
-            s = (frame.getClass().getName().replace('.', '/') + ".jar").toLowerCase(Locale.ENGLISH);
+            s = (frame.getClass().getName().replace('.', '/') + ".jar").toLowerCase(Locale.ROOT);
             pos = programPropsFileStr.toLowerCase().indexOf(s);
             if (pos != -1) {
                 programPropsFileStr = programPropsFileStr.substring(0, pos);
@@ -389,6 +389,16 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
+    public static Image loadOpaqueImage(final String fname) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImage(fname), Transparency.OPAQUE);
+    }
+
+    /**
+     * Load an image from the resource path.
+     * @param fname file name
+     * @return Image
+     * @throws ResourceException
+     */
     public static Image loadBitmaskImage(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImage(fname), Transparency.BITMASK);
     }
@@ -401,16 +411,6 @@ public class Core {
      */
     public static Image loadTranslucentImage(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImage(fname), Transparency.TRANSLUCENT);
-    }
-
-    /**
-     * Load an image from the resource path.
-     * @param fname file name
-     * @return Image
-     * @throws ResourceException
-     */
-    public static Image loadOpaqueImage(final String fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(fname), Transparency.OPAQUE);
     }
 
     /**
@@ -436,6 +436,16 @@ public class Core {
      */
     public static Image loadOpaqueImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.OPAQUE);
+    }
+
+    /**
+     * Load an image from inside the JAR or the directory of the main class.
+     * @param fname
+     * @return Image
+     * @throws ResourceException
+     */
+    public static Image loadBitmaskImageJar(final String fname) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.BITMASK);
     }
 
     /**

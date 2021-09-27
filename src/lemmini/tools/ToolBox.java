@@ -3,12 +3,11 @@ package lemmini.tools;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -306,41 +305,18 @@ public class ToolBox {
         }
         return path.substring(p + 1);
     }
-
-    /**
-     * Returns the first few bytes of a file to check its type.
-     * @param fname Filename of the file
-     * @param num Number of bytes to return
-     * @return Array of bytes (size num) from the beginning of the file
-     */
-    public static byte[] getFileID(final String fname, final int num) {
-        byte[] buf = new byte[num];
-        File f = new File(fname);
-        if (f.length() < num) {
-            return null;
-        }
-        try (FileInputStream fi = new FileInputStream(fname)) {
-            fi.read(buf);
-        } catch (Exception ex) {
-            return null;
-        }
-        return buf;
-    }
      
     /**
      * Returns the first few characters from the first line of a file to check its type.
      * @param fname Filename of the file
-     * @param num Number of bytes to return
-     * @return Array of bytes (size num) from the beginning of the file
+     * @param num Number of characters to return
+     * @return String from the beginning of the file
      */
-    public static String getFileIDString(final String fname, final int num) {
-        try (BufferedReader fi = new BufferedReader(new InputStreamReader(new FileInputStream(fname), StandardCharsets.UTF_8))) {
-            String s = fi.readLine();
+    public static String getFileID(final String fname, final int num) {
+        try (BufferedReader r = ToolBox.getBufferedReader(fname)) {
+            String s = r.readLine();
             if (s != null) {
-                if (s.charAt(0) == 0xFEFF) {
-                    s = s.substring(1);
-                }
-                if (s.length() < num) {
+                if (s.length() <= num) {
                     return s;
                 } else {
                     return s.substring(0, num);
@@ -348,9 +324,80 @@ public class ToolBox {
             } else {
                 return null;
             }
-        } catch (Exception ex) {
+        } catch (IOException ex) {
             return null;
         }
+    }
+    
+    public static BufferedReader getBufferedReader(final String fname) throws IOException {
+        BufferedInputStream in = null;
+        try {
+            in = new BufferedInputStream(new FileInputStream(fname));
+            return getBufferedReader(in);
+        } catch (IOException | SecurityException | UnsupportedCharsetException ex) {
+            if (in != null) {
+                in.close();
+            }
+            throw ex;
+        }
+    }
+    
+    public static BufferedReader getBufferedReader(final URL file) throws IOException {
+        BufferedInputStream in = null;
+        try {
+            in = new BufferedInputStream(file.openStream());
+            return getBufferedReader(in);
+        } catch (IOException | SecurityException | UnsupportedCharsetException ex) {
+            if (in != null) {
+                in.close();
+            }
+            throw ex;
+        }
+    }
+    
+    private static BufferedReader getBufferedReader(final BufferedInputStream in) throws IOException {
+        Charset encoding = StandardCharsets.UTF_8;
+        byte[] b = new byte[4];
+        in.mark(b.length);
+        int count = in.read(b);
+        in.reset();
+        switch (count) {
+            case 4:
+                if ((b[0] & 0xFF) == 0x00 && (b[1] & 0xFF) == 0x00 && (b[2] & 0xFF) == 0xFE && (b[3] & 0xFF) == 0xFF) {
+                    encoding = Charset.forName("UTF-32BE");
+                    in.skip(4);
+                    break;
+                } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE && (b[2] & 0xFF) == 0x00 && (b[3] & 0xFF) == 0x00) {
+                    encoding = Charset.forName("UTF-32LE");
+                    in.skip(4);
+                    break;
+                }
+                /* falls through */
+            case 3:
+                if ((b[0] & 0xFF) == 0xEF && (b[1] & 0xFF) == 0xBB && (b[2] & 0xFF) == 0xBF) {
+                    // Skip the UTF-8 BOM since Java doesn't do this automatically
+                    in.skip(3);
+                    break;
+                }
+                /* falls through */
+            case 2:
+                if ((b[0] & 0xFF) == 0xFE && (b[1] & 0xFF) == 0xFF) {
+                    encoding = StandardCharsets.UTF_16BE;
+                    in.skip(2);
+                    break;
+                } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE) {
+                    encoding = StandardCharsets.UTF_16LE;
+                    in.skip(2);
+                    break;
+                }
+                break;
+            default:
+                break;
+        }
+        
+        BufferedReader r = new BufferedReader(new InputStreamReader(in, encoding));
+        r.mark(0);
+        return r;
     }
 
     /**

@@ -299,7 +299,7 @@ public class ExtractSPR {
             String fn = fname + "_" + (animNum++) + ".png";
             // save png
             savePng(anim, fn);
-            files.add(fn.toLowerCase(Locale.ENGLISH));
+            files.add(fn.toLowerCase(Locale.ROOT));
             // remember new size
             if (idx < images.length) {
                 width = images[idx].getWidth();

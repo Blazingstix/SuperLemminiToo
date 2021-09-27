@@ -2,6 +2,8 @@ package lemmini.sound;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.text.Normalizer;
+import java.text.Normalizer;
 import java.util.Locale;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
@@ -61,8 +63,6 @@ public class Music {
     private static WaveMusic waveMusic;
     /** music gain */
     private static double gain = 1.0;
-    /** array of file names */
-    private static String[] musicFiles;
     private static MusicPlayer musicPlayer;
     private static boolean midiAvailable;
 
@@ -81,14 +81,6 @@ public class Music {
             midiAvailable = true;
         } catch (LemmException e) {
             midiAvailable = false;
-        }
-
-        // read available music files for random mode
-        File dir = new File(Core.getResourcePath(), "music");
-        File[] files = dir.listFiles(new MusicFileFilter());
-        musicFiles = new String[files.length];
-        for (int i = 0; i < files.length; i++) {
-            musicFiles[i] = files[i].getName();
         }
     }
 
@@ -126,11 +118,37 @@ public class Music {
 
     /**
      * Get file name of a random track.
+     * @param style
+     * @param specialStyle
      * @return file name of a random track
      */
-    public static String getRandomTrack() {
-        double r = Math.random() * musicFiles.length;
-        return musicFiles[(int) r];
+    public static String getRandomTrack(final String style, final String specialStyle) {
+        File dir = new File(Core.getResourcePath(), "music");
+        MusicFileFilter filter = new MusicFileFilter();
+        
+        if (specialStyle != null && !specialStyle.isEmpty()) {
+            File dir2 = new File(dir, "special");
+            File[] files = dir2.listFiles(filter);
+            for (File file : files) {
+                String name = Core.removeExtension(file.getName());
+                if (specialStyle.equalsIgnoreCase(name)) {
+                    return "special/" + file.getName();
+                }
+            }
+        }
+        
+        if (style != null && !style.isEmpty()) {
+            File dir2 = new File(dir, style);
+            File[] files = dir2.listFiles(filter);
+            if (files != null && files.length > 0) {
+                double r = Math.random() * files.length;
+                return style + "/" + files[(int) r].getName();
+            }
+        }
+        
+        File[] files = dir.listFiles(filter);
+        double r = Math.random() * files.length;
+        return files[(int) r].getName();
     }
 
     /**
@@ -213,7 +231,7 @@ class MusicFileFilter implements FileFilter {
             return false;
         }
         for (String ext : Core.MUSIC_EXTENSIONS) {
-            if (f.getName().toLowerCase(Locale.ENGLISH).endsWith("." + ext)) {
+            if (f.getName().toLowerCase(Locale.ROOT).endsWith("." + ext)) {
                 return true;
             }
         }

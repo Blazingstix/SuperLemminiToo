@@ -233,7 +233,7 @@ public abstract class AbstractGameEngine implements Runnable {
                                     return;
                                 }
                                 // else: no success
-                                JOptionPane.showMessageDialog(Core.getCmp(), "Error!", "Unable to save replay.", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(Core.getCmp(), "Unable to save replay.", "Error", JOptionPane.ERROR_MESSAGE);
                             } catch (HeadlessException ex) {
                                 ToolBox.showException(ex);
                             }
@@ -693,11 +693,11 @@ public abstract class AbstractGameEngine implements Runnable {
                             lemmingName = "";
                         }
                         String in;
-                        if (GameController.getNumLemmingsMax() <= 100) {
+                        if (GameController.isNoPercentages() || GameController.getNumLemmingsMax() > 100) {
+                            in = Integer.toString(GameController.getNumLeft());
+                        } else {
                             int saved = GameController.getNumLeft() * 100 / GameController.getNumLemmingsMax();
                             in = String.format("%02d%%", saved);
-                        } else {
-                            in = Integer.toString(GameController.getNumLeft());
                         }
                         String status = String.format("%-15s OUT %-4d IN %-4s TIME %s", lemmingName, GameController.getLemmings().size(), in, GameController.getTimeString());
                         LemmFont.strImage(outStrGfx, status);

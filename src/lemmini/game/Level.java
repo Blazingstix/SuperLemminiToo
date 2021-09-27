@@ -48,6 +48,10 @@ public class Level {
     /** array of default special styles */
     private static final String[] SPECIAL_STYLES = {"awesome", "menace", "beastii", "beasti",
         "covox", "prima", "apple"};
+    private static final int DEFAULT_TOP_BOUNDARY = 8;
+    private static final int DEFAULT_BOTTOM_BOUNDARY = 20;
+    private static final int DEFAULT_LEFT_BOUNDARY = 0;
+    private static final int DEFAULT_RIGHT_BOUNDARY = -16;
 
     /** array of normal sprite objects - no transparency, drawn behind foreground image */
     private SpriteObject[] sprObjBehind;
@@ -118,6 +122,10 @@ public class Level {
     private Props props;
     private Props props2;
     private int levelWidth;
+    private int topBoundary;
+    private int bottomBoundary;
+    private int leftBoundary;
+    private int rightBoundary;
 
     public Level() {
         objects = new ArrayList<>(64);
@@ -148,7 +156,10 @@ public class Level {
         maxFallDistance = p.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
         classicSteel = p.getBoolean("classicSteel", false);
         levelWidth = p.getInt("width", DEFAULT_WIDTH);
-        // read configuration in big endian word
+        topBoundary = p.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
+        bottomBoundary = p.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
+        leftBoundary = p.getInt("leftBoundary", DEFAULT_LEFT_BOUNDARY);
+        rightBoundary = p.getInt("rightBoundary", DEFAULT_RIGHT_BOUNDARY);
         releaseRate = p.getInt("releaseRate", 0);
         //out("releaseRate = " + releaseRate);
         numLemmings = p.getInt("numLemmings", 1);
@@ -451,7 +462,7 @@ public class Level {
             // check for entrances
             if (spr.getType() == SpriteObject.Type.ENTRANCE && !o.fake) {
                 Entrance e = new Entrance(o.xPos + spr.getWidth() / 2 + spr.getMaskOffsetX(),
-                        o.yPos + spr.getMaskOffsetY());
+                        o.yPos + spr.getMaskOffsetY(), (o.objSpecificModifier & LvlObject.OPTION_ENTRANCE_LEFT) != 0);
                 e.id = oCombined.size();
                 entrance.add(e);
             }
@@ -1212,7 +1223,7 @@ public class Level {
      * Get number of diggers in this level.
      * @return number of diggers in this level
      */
-    public int getMumDiggers() {
+    public int getNumDiggers() {
         return numDiggers;
     }
 
@@ -1262,6 +1273,22 @@ public class Level {
     
     public int getWidth() {
         return levelWidth;
+    }
+    
+    public int getTopBoundary() {
+        return topBoundary;
+    }
+    
+    public int getBottomBoundary() {
+        return bottomBoundary;
+    }
+    
+    public int getLeftBoundary() {
+        return leftBoundary;
+    }
+    
+    public int getRightBoundary() {
+        return rightBoundary;
     }
     
     public int[] getBgWidths() {
@@ -1318,6 +1345,8 @@ class LvlObject {
     static final int MODE_NO_OVERWRITE = 4;
     /** paint mode: don't draw the object */
     static final int MODE_INVISIBLE = 2;
+    
+    static final int OPTION_ENTRANCE_LEFT = 1;
 
     private static final long serialVersionUID = 0x01;
 
@@ -1332,10 +1361,11 @@ class LvlObject {
     /** flag: paint the object upside down */
     boolean upsideDown;
     boolean fake;
+    int objSpecificModifier;
 
     /**
      * Constructor
-     * @param val five values as array [identifier, x position, y position, paint mode, flags]
+     * @param val five or six values as array [identifier, x position, y position, paint mode, flags]
      */
     public LvlObject(final int[] val) {
         id = val[0];
@@ -1344,6 +1374,7 @@ class LvlObject {
         paintMode = val[3];
         upsideDown = (val[4] & 0x01) != 0;
         fake = (val[4] & 0x02) != 0;
+        objSpecificModifier = (val.length >= 6) ? val[5] : 0;
     }
 }
 
@@ -1427,16 +1458,19 @@ class Entrance {
     int xPos;
     /** y position in pixels */
     int yPos;
+    boolean leftEntrance;
 
 
     /**
      * Constructor.
      * @param x x position in pixels
      * @param y y position in pixels
+     * @param left
      */
-    Entrance(final int x, final int y) {
+    Entrance(final int x, final int y, final boolean left) {
         xPos = x;
         yPos = y;
+        leftEntrance = left;
     }
 }
 

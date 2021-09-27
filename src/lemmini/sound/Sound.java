@@ -165,10 +165,12 @@ public class Sound {
         bufferSize = programProps.getInt("bufferSize", 8192);
         Quality[] rqArray = Quality.values();
         int rq = programProps.getInt("resamplingQuality", Quality.CUBIC.ordinal());
-        if (rq >= 0 && rq < rqArray.length) {
-            resamplingQuality = rqArray[rq];
+        if (rq < 0) {
+            resamplingQuality = rqArray[0];
+        } else if (rq >= rqArray.length) {
+            resamplingQuality = rqArray[rqArray.length - 1];
         } else {
-            resamplingQuality = Quality.CUBIC;
+            resamplingQuality = rqArray[rq];
         }
         programProps.setDouble("sampleRate", sampleRate);
         programProps.setInt("bufferSize", bufferSize);

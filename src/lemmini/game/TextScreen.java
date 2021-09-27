@@ -128,7 +128,7 @@ public class TextScreen {
                         textDialog.init();
                         textDialog.fillBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN));
                         textDialog.printCentered("A game engine for Lemmings(tm) in Java", -1, RED);
-                        textDialog.printCentered("Release " + Lemmini.REVISION + " 05/2014", 0, BLUE);
+                        textDialog.printCentered("Release " + Lemmini.REVISION + " 06/2014", 0, BLUE);
                         textDialog.printCentered("Coded by Ryan Sakowski 2013-2014", 1, BROWN);
                         textDialog.printCentered("Original Lemmini by Volker Oth 2005-2010", 2, VIOLET);
                         textDialog.printCentered("Original website: www.lemmini.de", 3, GREEN);
@@ -162,10 +162,10 @@ public class TextScreen {
         textDialog.print(String.format("Level %d", GameController.getCurLevelNumber() + 1), -21, -2, RED);
         textDialog.print(level.getLevelName(), -11, -2, RED);
         textDialog.print(String.format("Number of Lemmings %d", level.getNumLemmings()), -9, 0, BLUE);
-        if (level.getNumLemmings() <= 100) {
-            textDialog.print(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), -9, 1, GREEN);
-        } else {
+        if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
             textDialog.print(String.format("%d to be saved", level.getNumToRescue()), -9, 1, GREEN);
+        } else {
+            textDialog.print(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), -9, 1, GREEN);
         }
         textDialog.print(String.format("Release Rate %d", level.getReleaseRate()), -9, 2, BROWN);
         int minutes = level.getTimeLimitSeconds() / 60;
@@ -208,12 +208,12 @@ public class TextScreen {
         } else {
             textDialog.printCentered("All lemmings accounted for.", -7, TURQUOISE);
         }
-        if (numLemmings <= 100) {
+        if (GameController.isNoPercentages() || numLemmings > 100) {
+            textDialog.print(String.format("You needed:  %d", toRescue), -7, -5, VIOLET);
+            textDialog.print(String.format("You rescued: %d", rescued), -7, -4, VIOLET);
+        } else {
             textDialog.print(String.format("You needed:  %d%%", toRescuePercent), -7, -5, VIOLET);
             textDialog.print(String.format("You rescued: %d%%", rescuedPercent), -7, -4, VIOLET);
-        } else {
-            textDialog.print(String.format("You needed:  %d", toRescuePercent), -7, -5, VIOLET);
-            textDialog.print(String.format("You rescued: %d", rescuedPercent), -7, -4, VIOLET);
         }
         String pointWord = (score == 1) ? "point" : "points";
         textDialog.print(String.format("Your score: %d %s", score, pointWord), -10, -3, VIOLET);

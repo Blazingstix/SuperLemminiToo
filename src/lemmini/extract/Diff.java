@@ -232,7 +232,7 @@ public class Diff {
      * @return target buffer created from a source buffer and a buffer of differences
      * @throws DiffException
      */
-    public static byte[] patchbuffers(final byte[] bsrc, final byte[] bpatch) throws DiffException {
+    public static byte[] patchBuffers(final byte[] bsrc, final byte[] bpatch) throws DiffException {
         Buffer src = new Buffer(bsrc);
         Buffer patch = new Buffer(bpatch);
         // calculate src crc
@@ -240,7 +240,7 @@ public class Diff {
         crc.update(src.getData());
         // analyze header
         if (patch.getDWord() != Diff.HEADER_ID) {
-            throw new DiffException("No header id found in patch");
+            throw new DiffException("No header ID found in patch.");
         }
         int lenSrc = getLen(patch);
         if (lenSrc != src.length()) {

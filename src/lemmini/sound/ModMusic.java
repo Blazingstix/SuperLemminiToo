@@ -129,13 +129,11 @@ public class ModMusic implements Runnable, MusicPlayer {
                         int ox = ix * 2;
                         if (ibuf[ix] > Short.MAX_VALUE) {
                             ibuf[ix] = Short.MAX_VALUE;
-                        }
-                        if (ibuf[ix] < Short.MIN_VALUE) {
+                        } else if (ibuf[ix] < Short.MIN_VALUE) {
                             ibuf[ix] = Short.MIN_VALUE;
                         }
-                        obuf[ox]     = (byte) (ibuf[ix] & 0xFF);
+                        obuf[ox]     = (byte)  ibuf[ix];
                         obuf[ox + 1] = (byte) (ibuf[ix] >> 8);
-                        ibuf[ix]     = 0;
                     }
                     line.write(obuf, 0, count * 4);
                     remain -= count;

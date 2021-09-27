@@ -25,7 +25,7 @@ import java.util.Properties;
  */
 
 /**
- * Property class to ease use of ini files to save/load properties.
+ * Property class to ease use of INI files to save/load properties.
  *
  * @author Volker Oth
  */
@@ -249,8 +249,7 @@ public class Props {
      * @return True if OK, false if exception occurred
      */
     public boolean save(final String fname) {
-        try (FileOutputStream f = new FileOutputStream(fname);
-                OutputStreamWriter w = new OutputStreamWriter(f, StandardCharsets.UTF_8)) {
+        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fname), StandardCharsets.UTF_8))) {
             hash.store(w, header);
             return true;
         } catch (FileNotFoundException e) {
@@ -265,9 +264,8 @@ public class Props {
      * @param file File handle of property file
      * @return True if OK, false if exception occurred
      */
-    public boolean load(final URL file) {
-        try (InputStream f = file.openStream();
-                InputStreamReader r = new InputStreamReader(f, StandardCharsets.UTF_8)) {
+    public boolean load(final String fname) {
+        try (Reader r = ToolBox.getBufferedReader(fname)) {
             hash.load(r);
             return true;
         } catch (FileNotFoundException e) {
@@ -276,15 +274,14 @@ public class Props {
             return false;
         }
     }
-
+    
     /**
      * Load property file
-     * @param fname File name of property file
+     * @param file URL of property file
      * @return True if OK, false if exception occurred
      */
-    public boolean load(final String fname) {
-        try (FileInputStream f = new FileInputStream(fname);
-                InputStreamReader r = new InputStreamReader(f, StandardCharsets.UTF_8)) {
+    public boolean load(final URL file) {
+        try (Reader r = ToolBox.getBufferedReader(file)) {
             hash.load(r);
             return true;
         } catch (FileNotFoundException e) {
@@ -312,12 +309,14 @@ public class Props {
                 return 0;
             }
             int radix;
-            switch (Character.toLowerCase(s.charAt(index))) {
+            switch (s.charAt(index)) {
+                case 'X':
                 case 'x':
                     // hex
                     radix = 16;
                     index++;
                     break;
+                case 'B':
                 case 'b':
                     // binary
                     radix = 2;
@@ -330,7 +329,7 @@ public class Props {
             }
             
             if (isSign(s.charAt(index))) {
-                throw new NumberFormatException("Sign is not permitted after the radix prefix.");
+                throw new NumberFormatException("Sign character in wrong position");
             }
             
             long retval = Long.parseLong((hasSign ? s.substring(0, 1) : "") + s.substring(index), radix);

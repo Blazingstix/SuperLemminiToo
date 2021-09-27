@@ -177,10 +177,6 @@ public class Lemming {
     /** explosion counter is decreased every 31.2 frames */
     private static final int[] MAX_EXPLODE_CTR = {31, 31, 32, 31, 31};
     private static final int EXPLODER_LIFE = 102;
-    private static final int TOP_BOUNDARY = 8;
-    private static final int BOTTOM_BOUNDARY = 20;
-    private static final int LEFT_BOUNDARY = 0;
-    private static final int RIGHT_BOUNDARY = -16;
     private static final int DEF_TEMPLATE_COLOR = 0xffff00ff;
 
     /** resource (animation etc.) for the current Lemming */
@@ -668,7 +664,7 @@ public class Lemming {
                                 checkMask |= Stencil.MSK_STEEL;
                                 checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
                             }
-                            if (y >= TOP_BOUNDARY + 10) {
+                            if (y >= GameController.getLevel().getTopBoundary() + 10) {
                                 m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 1, checkMask);
                             }
                             break;
@@ -740,7 +736,7 @@ public class Lemming {
                             newType = Type.SHRUGGER;
                             break;
                         }
-                        if (y < TOP_BOUNDARY + 2) {
+                        if (y < GameController.getLevel().getTopBoundary() + 2) {
                             newType = Type.WALKER;
                             break;
                         }
@@ -827,12 +823,12 @@ public class Lemming {
                 }
                 if (!flapper) {
                     if (dir == Direction.RIGHT) {
-                        if (x < GameController.getWidth() + RIGHT_BOUNDARY - 16
+                        if (x < GameController.getWidth() + GameController.getLevel().getRightBoundary() - 16
                                 && (GameController.getStencil().getMask(x + 16, y) & Stencil.MSK_BRICK) == 0) {
                             x += WALKER_STEP;
                         }
                     } else if (dir == Direction.LEFT) {
-                        if (x >= LEFT_BOUNDARY + 16 &&
+                        if (x >= GameController.getLevel().getLeftBoundary() + 16 &&
                                 (GameController.getStencil().getMask(x - 16, y) & Stencil.MSK_BRICK) == 0) {
                             x -= WALKER_STEP;
                         }
@@ -867,7 +863,8 @@ public class Lemming {
                     GameController.sound.play(Sound.Effect.EXPLODE, getPan());
                     if (!GameController.getLevel().getClassicSteel()) {
                         m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, Stencil.MSK_STEEL);
-                    } else if (x >= LEFT_BOUNDARY && x < GameController.getWidth() + RIGHT_BOUNDARY
+                    } else if (x >= GameController.getLevel().getLeftBoundary()
+                            && x < GameController.getWidth() + GameController.getLevel().getRightBoundary()
                             && y < Level.DEFAULT_HEIGHT
                             && (stencil.getMask(x, y) & Stencil.MSK_STEEL) == 0
                             && (stencil.getMask(x, y) & Stencil.MSK_EXIT) == 0 && !drowner) {
@@ -888,8 +885,8 @@ public class Lemming {
                 break;
 
         }
-        if (y < TOP_BOUNDARY) {
-            y = TOP_BOUNDARY;
+        if (y < GameController.getLevel().getTopBoundary()) {
+            y = GameController.getLevel().getTopBoundary();
         }
         
         if (!hasDied && type != Type.EXPLODER) {
@@ -1218,8 +1215,10 @@ public class Lemming {
         int xm = x;
         int ym = y;
         int retval;
-        if (xm >= LEFT_BOUNDARY && xm < GameController.getWidth() + RIGHT_BOUNDARY
-                && ym >= TOP_BOUNDARY && ym < Level.DEFAULT_HEIGHT) {
+        if (xm >= GameController.getLevel().getLeftBoundary()
+                && xm < GameController.getWidth() + GameController.getLevel().getRightBoundary()
+                && ym >= GameController.getLevel().getTopBoundary()
+                && ym < Level.DEFAULT_HEIGHT) {
             retval = GameController.getStencil().getMask(xm, ym);
         } else {
             retval = Stencil.MSK_EMPTY;
@@ -1235,8 +1234,10 @@ public class Lemming {
         int xm = x;
         int ym = y;
         int retval;
-        if (xm >= LEFT_BOUNDARY && xm < GameController.getWidth() + RIGHT_BOUNDARY
-                && ym >= TOP_BOUNDARY && ym < Level.DEFAULT_HEIGHT) {
+        if (xm >= GameController.getLevel().getLeftBoundary()
+                && xm < GameController.getWidth() + GameController.getLevel().getRightBoundary()
+                && ym >= GameController.getLevel().getTopBoundary()
+                && ym < Level.DEFAULT_HEIGHT) {
             retval = GameController.getStencil().getMaskObjectID(xm, ym);
         } else {
             retval = -1;
@@ -1343,7 +1344,8 @@ public class Lemming {
      * @return true if mining is possible, false otherwise.
      */
     private boolean canMine(final boolean start, final boolean playSound) {
-        if (x < LEFT_BOUNDARY || x >= GameController.getWidth() + RIGHT_BOUNDARY) {
+        if (x < GameController.getLevel().getLeftBoundary()
+                || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             if (!start && playSound) {
                 GameController.sound.play(Sound.Effect.STEEL, getPan());
             }
@@ -1409,7 +1411,8 @@ public class Lemming {
      * @return number of free pixels below the lemming
      */
     private int freeBelow(final int step) {
-        if (x < LEFT_BOUNDARY || x >= GameController.getWidth() + RIGHT_BOUNDARY) {
+        if (x < GameController.getLevel().getLeftBoundary()
+                || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             return 0;
         }
         int free = 0;
@@ -1443,11 +1446,12 @@ public class Lemming {
     private boolean flipDirBorder() {
         boolean flip = false;
         if (lemRes.dirs > 1) {
-            if (x < LEFT_BOUNDARY && dir == Direction.LEFT) {
-                x = LEFT_BOUNDARY - 1;
+            if (x < GameController.getLevel().getLeftBoundary() && dir == Direction.LEFT) {
+                x = GameController.getLevel().getLeftBoundary() - 1;
                 flip = true;
-            } else if (x >= GameController.getWidth() + RIGHT_BOUNDARY && dir == Direction.RIGHT) {
-                x = GameController.getWidth() + RIGHT_BOUNDARY;
+            } else if (x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()
+                    && dir == Direction.RIGHT) {
+                x = GameController.getWidth() + GameController.getLevel().getRightBoundary();
                 flip = true;
             }
         }
@@ -1462,8 +1466,8 @@ public class Lemming {
      * @return number of free pixels above the lemming
      */
     private boolean freeAboveBuilder() {
-        if (dir == Direction.LEFT && x - 3 < LEFT_BOUNDARY
-                || dir == Direction.RIGHT && x + 4 >= GameController.getWidth() + RIGHT_BOUNDARY) {
+        if (dir == Direction.LEFT && x - 3 < GameController.getLevel().getLeftBoundary()
+                || dir == Direction.RIGHT && x + 4 >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             return false;
         }
 
@@ -1489,7 +1493,9 @@ public class Lemming {
      * @return number of free pixels above the lemming
      */
     private boolean freeAboveClimber() {
-        if (x < LEFT_BOUNDARY || x >= GameController.getWidth() + RIGHT_BOUNDARY || x <= TOP_BOUNDARY) {
+        if (x < GameController.getLevel().getLeftBoundary()
+                || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()
+                || x <= GameController.getLevel().getTopBoundary()) {
             return false;
         }
         
@@ -1509,7 +1515,7 @@ public class Lemming {
      * @return true if Lemming has fallen to/through the bottom of the level, false otherwise
      */
     private boolean crossedLowerBorder() {
-        if (y >= Level.DEFAULT_HEIGHT + BOTTOM_BOUNDARY) {
+        if (y >= Level.DEFAULT_HEIGHT + GameController.getLevel().getBottomBoundary()) {
             hasDied = true;
             GameController.sound.play(Sound.Effect.DIE, getPan());
             return true;
@@ -1522,7 +1528,8 @@ public class Lemming {
      * @return number of pixels of walkable ground above the Lemming's foot.
      */
     private int aboveGround() {
-        if (x < LEFT_BOUNDARY || x >= GameController.getWidth() + RIGHT_BOUNDARY) {
+        if (x < GameController.getLevel().getLeftBoundary()
+                || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             return Level.DEFAULT_HEIGHT + 1;
         }
 
@@ -1535,7 +1542,7 @@ public class Lemming {
         pos += ym * GameController.getWidth();
         int levitation;
         for (levitation = 0; levitation < WALKER_OBSTACLE_HEIGHT; levitation++, pos -= GameController.getWidth(), ym--) {
-            if (ym < TOP_BOUNDARY - 1) {
+            if (ym < GameController.getLevel().getTopBoundary() - 1) {
                 return WALKER_OBSTACLE_HEIGHT + 1; // forbid leaving level to the top
             }
             if ((stencil.getMask(pos) & Stencil.MSK_BRICK) == 0) {
@@ -1550,11 +1557,12 @@ public class Lemming {
      * @return true if climber reached a plateau he can walk on, false otherwise
      */
     private boolean reachedPlateau(final int hand) {
-        if (x - 2 < LEFT_BOUNDARY || x + 2 >= GameController.getWidth() + RIGHT_BOUNDARY) {
+        if (x - 2 < GameController.getLevel().getLeftBoundary()
+                || x + 2 >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             return false;
         }
         int ym = y - hand;
-        if (ym >= Level.DEFAULT_HEIGHT || ym <= -4) {
+        if (ym >= Level.DEFAULT_HEIGHT || ym <= GameController.getLevel().getTopBoundary() - 12) {
             return true;
         } else if (ym < 0) {
             return false;
@@ -1813,7 +1821,7 @@ public class Lemming {
                     }
                     break;
                 case BUILDER:
-                    if (y < TOP_BOUNDARY + 2) {
+                    if (y < GameController.getLevel().getTopBoundary() + 2) {
                         canSet = 0;
                     } else {
                         changeType(type, skill);
