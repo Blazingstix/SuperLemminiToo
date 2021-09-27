@@ -78,9 +78,9 @@ public class ModMusic implements Runnable, MusicPlayer {
             throw new LemmException(fn + " (IO exception)");
         }
         Module module = new Module(songData);
-        int sampleRate = Math.min(Math.max((int) Sound.SAMPLE_RATE, 8000), 128000);
+        int sampleRate = Math.min(Math.max((int) GameController.sound.getSampleRate(), 8000), 128000);
         ibxm = new IBXM(module, sampleRate);
-        switch (Sound.RESAMPLING_QUALITY) {
+        switch (GameController.sound.getResamplingQuality()) {
             case CUBIC:
                 ibxm.setInterpolation(Channel.SINC);
                 break;
@@ -106,14 +106,14 @@ public class ModMusic implements Runnable, MusicPlayer {
     public void run() {
         try {
             AudioFormat af = new AudioFormat(ibxm.getSampleRate(), 16, 2, true, false);
-            DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af, Sound.BUFFER_SIZE);
-            line = (SourceDataLine) GameController.sound.getLine(lineInfo);
-            int buflen = Math.max(line.getBufferSize() / 2, ibxm.getMixBufferLength());
-            if (buflen % 2 > 0) {
-                buflen += 2 - buflen % 2;
+            int bufferSize = Math.max(GameController.sound.getBufferSize() / 2, ibxm.getMixBufferLength());
+            if (bufferSize % 2 > 0) {
+                bufferSize += 2 - bufferSize % 2;
             }
-            int[] ibuf = new int[buflen];
-            byte[] obuf = new byte[buflen * 2];
+            DataLine.Info lineInfo = new DataLine.Info(SourceDataLine.class, af, bufferSize * 2);
+            line = (SourceDataLine) GameController.sound.getLine(lineInfo);
+            int[] ibuf = new int[bufferSize];
+            byte[] obuf = new byte[bufferSize * 2];
             line.open();
             line.start();
             setGain(Music.getGain());

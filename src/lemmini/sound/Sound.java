@@ -122,11 +122,6 @@ public class Sound {
         LINEAR,
         CUBIC;
     }
-    
-    /** default sampling frequency */
-    public static final float SAMPLE_RATE = 44100.0f;
-    public static final int BUFFER_SIZE = 8192;
-    public static final Quality RESAMPLING_QUALITY = Quality.CUBIC;
 
     /** maximum number of sounds played in parallel */
     private static final int MAX_SIMUL_SOUNDS = 7;
@@ -156,18 +151,35 @@ public class Sound {
     static Mixer[] mixers;
     /** number of samples to be used */
     static int sampleNum;
+    private final float sampleRate;
+    private final int bufferSize;
+    private final Quality resamplingQuality;
 
     /**
      * Constructor.
      * @throws ResourceException
      */
     public Sound() throws ResourceException {
+        Props programProps = Core.getProgramProps();
+        sampleRate = (float) programProps.getDouble("sampleRate", 44100.0);
+        bufferSize = programProps.getInt("bufferSize", 8192);
+        Quality[] rqArray = Quality.values();
+        int rq = programProps.getInt("resamplingQuality", Quality.CUBIC.ordinal());
+        if (rq >= 0 && rq < rqArray.length) {
+            resamplingQuality = rqArray[rq];
+        } else {
+            resamplingQuality = Quality.CUBIC;
+        }
+        programProps.setDouble("sampleRate", sampleRate);
+        programProps.setInt("bufferSize", bufferSize);
+        programProps.setInt("resamplingQuality", resamplingQuality.ordinal());
+        
         gain = 1.0;
         sampleNames = new ArrayList<>(64);
         
-        format = new AudioFormat(SAMPLE_RATE, 16, 2, true, false);
+        format = new AudioFormat(sampleRate, 16, 2, true, false);
         //info = new DataLine.Info(Clip.class, format);
-        info = new DataLine.Info(SourceDataLine.class, format, BUFFER_SIZE);
+        info = new DataLine.Info(SourceDataLine.class, format, bufferSize);
         
         PitchedEffect[] peValues = PitchedEffect.values();
         pitchBuffers = new byte[peValues.length][][];
@@ -296,7 +308,7 @@ public class Sound {
                         origPitchFormats[j] = currentFormat;
                     }
                 }
-                soundBuffers[i] = resample(soundBuffers[i], currentFormat, format.getSampleRate());
+                soundBuffers[i] = resample(soundBuffers[i], currentFormat, format.getSampleRate(),  resamplingQuality);
             }
         } catch (UnsupportedAudioFileException | IOException ex) {
             throw new ResourceException(fName);
@@ -307,7 +319,7 @@ public class Sound {
                 if (pitchedSampleID[i] >= 0) {
                     // create buffers for pitching
                     // note that bit size and channels have to be the same for all pitched buffers
-                    createPitched(peValues[i], origPitchFormats[i], format.getSampleRate(),
+                    createPitched(peValues[i], origPitchFormats[i], format.getSampleRate(), resamplingQuality,
                             origPitchBuffers[i], pitchBuffers[i]);
                 } else {
                     pitchBuffers = null;
@@ -463,9 +475,10 @@ public class Sound {
      * @param buffer byte array containing source sample
      * @param af
      * @param newSampleRate
+     * @param quality
      * @return sample converted to newSampleRate stored in byte array
      */
-    public static byte[] resample(final byte[] buffer, final AudioFormat af, final float newSampleRate) {
+    public static byte[] resample(final byte[] buffer, final AudioFormat af, final float newSampleRate, final Quality quality) {
         float sampleRate = af.getSampleRate();
         if (sampleRate == newSampleRate) {
             return buffer;
@@ -512,7 +525,7 @@ public class Sound {
                 int sample3 = 0;
                 for (int sb = 0; sb < bytesPerSample; sb++) {
                     boolean signBit = signed && sb == (bigEndian ? 0 : bytesPerSample - 1);
-                    switch (RESAMPLING_QUALITY) {
+                    switch (quality) {
                         case CUBIC:
                             if (pos - 1 >= 0) {
                                 sample0 |= (buffer[(pos - 1) * frameSize + c * bytesPerSample + sb]
@@ -547,7 +560,7 @@ public class Sound {
                     }
                 }
                 int newSample;
-                switch (RESAMPLING_QUALITY) {
+                switch (quality) {
                     case CUBIC:
                         double a0 = -0.5 * sample0 + 1.5 * sample1 - 1.5 * sample2 + 0.5 * sample3;
                         double a1 = sample0 - 2.5 * sample1 + 2 * sample2 - 0.5 * sample3;
@@ -652,11 +665,12 @@ public class Sound {
      * @param newBuffers
      */
     public static void createPitched(final PitchedEffect pe, final AudioFormat af,
-            final float newSampleRate, final byte[] oldBuffer, final byte[][] newBuffers) {
+            final float newSampleRate, final Quality quality,
+            final byte[] oldBuffer, final byte[][] newBuffers) {
         for (int i = 0; i < pe.getNumPitches(); i++) {
             double dpitch = Math.pow(pe.getBase(), (i + pe.getExpNumeratorOffset()) / pe.getExpDenominator());
             float newSpeed = (float) (newSampleRate / dpitch);
-            newBuffers[i] = resample(oldBuffer, af, newSpeed);
+            newBuffers[i] = resample(oldBuffer, af, newSpeed, quality);
         }
     }
 
@@ -700,6 +714,18 @@ public class Sound {
         for (LineHandler lh : lineHandlers) {
             lh.setGain(gn);
         }
+    }
+    
+    public float getSampleRate() {
+        return sampleRate;
+    }
+    
+    public int getBufferSize() {
+        return bufferSize;
+    }
+    
+    public Quality getResamplingQuality() {
+        return resamplingQuality;
     }
     
     private class LineHandler implements Runnable, Closeable {

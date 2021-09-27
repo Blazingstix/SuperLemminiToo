@@ -55,7 +55,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
                             true,
                             false);
                 }
-                info = new DataLine.Info(SourceDataLine.class, format, Sound.BUFFER_SIZE);
+                info = new DataLine.Info(SourceDataLine.class, format, GameController.sound.getBufferSize());
             }
             in = AudioSystem.getAudioInputStream(format, in);
             in.mark(Integer.MAX_VALUE);
