@@ -59,7 +59,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.91";
+    private static final String REVISION = "0.91a";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
 

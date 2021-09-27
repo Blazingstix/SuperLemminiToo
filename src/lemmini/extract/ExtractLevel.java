@@ -300,10 +300,10 @@ public class ExtractLevel {
                         w.write(", 1");
                     }
                     w.write("\r\n");
-                    if (!classic && bytes[i][4] != 0) {
+                    if ((bytes[i][4] & (classic ? 0x80 : 0xff)) != 0) {
                         w.write("#object_" + i + "_byte4Value = " + bytes[i][4] + "\r\n");
                     }
-                    if ((bytes[i][6] & (classic ? 0x3f : (obj.id == LvlObject.ENTRANCE_ID) ? 0x0f : 0x2f)) != 0) {
+                    if ((bytes[i][6] & (classic ? 0x3f : ((obj.id == LvlObject.ENTRANCE_ID) ? 0x0f : 0x2f))) != 0) {
                         w.write("#object_" + i + "_byte6Value = " + bytes[i][6] + "\r\n");
                     }
                     if ((bytes[i][7] & 0x7f) != 0x0f) {
@@ -363,6 +363,9 @@ public class ExtractLevel {
                     Terrain ter = new Terrain(bytes[i], SCALE);
                     terrain.add(ter);
                     w.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier + "\r\n");
+                    if ((bytes[i][3] & 0x40) != 0) {
+                        w.write("#terrain_" + i + "_byte3Value = " + bytes[i][3] + "\r\n");
+                    }
                 } else {
                     w.write("terrain_" + i + " = -1, 0, 0, 0\r\n");
                 }
@@ -472,7 +475,7 @@ class LvlObject {
         // obj id : min 0x0000, max 0x000F.  the object id is different in each
         // graphics set, however 0x0000 is always an exit and 0x0001 is always a start.
         if (classic) {
-            id = ((b[4] & 0xff) << 8) | (b[5] & 0xff);
+            id = ((b[4] & 0x7f) << 8) | (b[5] & 0xff);
         } else {
             id = b[5] & 0xff;
         }
@@ -531,8 +534,8 @@ class Terrain {
         }
         yPos -= 4;
         yPos *= scale;
-        // terrain id: min 0x00, max 0x7F.  not all graphic sets have all 64 graphics.
-        id = b[3] & 0x7f;
+        // terrain id: min 0x00, max 0x3F.  not all graphic sets have all 64 graphics.
+        id = b[3] & 0x3f;
     }
 }
 
