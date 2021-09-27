@@ -61,7 +61,7 @@ public class Lemming {
         /** a Lemming drowning in the water */
         DROWNER ("DROWNER", 16, false, false, 0, 0),
         /** a Lemming killed by a trap */
-        FRIER ("FRIER", 16, false, false, 0, 0),
+        FRIER ("FRIER", 14, false, false, 0, 0),
         /** a Lemming exiting the level */
         HOMER ("HOMER", 8, false, false, 0, 0),
         /** a Lemming building stairs */

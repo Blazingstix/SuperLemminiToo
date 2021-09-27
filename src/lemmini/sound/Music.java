@@ -124,7 +124,20 @@ public class Music {
      */
     public static String getRandomTrack(final String style, final String specialStyle) {
         File dir = new File(Core.getResourcePath(), "music");
-        MusicFileFilter filter = new MusicFileFilter();
+        FileFilter filter = new FileFilter() {
+            @Override
+            public boolean accept(final File f) {
+                if (!f.isFile()) {
+                    return false;
+                }
+                for (String ext : Core.MUSIC_EXTENSIONS) {
+                    if (f.getName().toLowerCase(Locale.ROOT).endsWith("." + ext)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
         
         if (specialStyle != null && !specialStyle.isEmpty()) {
             File dir2 = new File(dir, "special");
@@ -214,28 +227,6 @@ public class Music {
      */
     public static Type getType() {
         return type;
-    }
-}
-
-/**
- * File filter for music files.
- * @author Volker Oth
- */
-class MusicFileFilter implements FileFilter {
-    /* (non-Javadoc)
-     * @see java.io.FileFilter#accept(java.io.File)
-     */
-    @Override
-    public boolean accept(final File f) {
-        if (!f.isFile()) {
-            return false;
-        }
-        for (String ext : Core.MUSIC_EXTENSIONS) {
-            if (f.getName().toLowerCase(Locale.ROOT).endsWith("." + ext)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
 

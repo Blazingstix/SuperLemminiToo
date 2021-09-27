@@ -59,11 +59,11 @@ import lemmini.tools.ToolBox;
  *
  * @author Volker Oth
  */
-public class Lemmini extends JFrame implements KeyListener, ComponentListener {
+public class Lemmini extends JFrame implements KeyListener {
     
     /** height of menu and icon bar in pixels */
     private static final int WIN_OFS = 120;
-    public static final String REVISION = "0.91a";
+    public static final String REVISION = "0.91b";
     
     private static final long serialVersionUID = 0x01;
     
@@ -113,7 +113,6 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
      */
     void init() {
         addKeyListener(this);
-        addComponentListener(this);
         try {
             boolean successful = Core.init(this, isWebstartApp, createPatches);      // initialize Core object
             if (!successful) {
@@ -1061,22 +1060,6 @@ public class Lemmini extends JFrame implements KeyListener, ComponentListener {
      */
     @Override
     public void keyTyped(final KeyEvent keyevent) {
-    }
-
-    @Override
-    public void componentResized(ComponentEvent e) {
-    }
-
-    @Override
-    public void componentMoved(ComponentEvent e) {
-    }
-
-    @Override
-    public void componentShown(ComponentEvent e) {
-    }
-
-    @Override
-    public void componentHidden(ComponentEvent e) {
     }
     
     public static void setCursor(final LemmCursor.CursorType c) {
