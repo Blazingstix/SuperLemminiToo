@@ -18,19 +18,18 @@
  */
 package lemmini;
 
+import com.ibm.icu.lang.UCharacter;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.Normalizer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.swing.JOptionPane;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
+import lemmini.graphics.GraphicsBuffer;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.gui.LevelCodeDialog;
@@ -103,14 +102,10 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     private boolean isFocused;
     private boolean mouseHasEntered;
     private boolean holdingMinimap;
-    /** image for information string display */
-    private LemmImage outStrImg;
-    /** graphics object for information string display */
-    private GraphicsContext outStrGfx;
+    /** graphics buffer for information string display */
+    private GraphicsBuffer outStrBuffer;
     /** offscreen image */
-    private LemmImage offImage;
-    /** graphics object for the offscreen image */
-    private GraphicsContext offGraphics;
+    private GraphicsBuffer offBuffer;
     /** monitoring object used for synchronized painting */
     private final Object paintSemaphore = new Object();
     private boolean drawNextFrame;
@@ -584,14 +579,13 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     public void paint(final Graphics g) {
         Graphics2D g2 = (Graphics2D) g;
         synchronized (paintSemaphore) {
-            if (offImage != null) {
+            if (offBuffer != null) {
                 g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
                         Core.isBilinear()
                                 ? RenderingHints.VALUE_INTERPOLATION_BILINEAR
                                 : RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
-                g2.drawImage(offImage.getImage(),
-                        0, 0, Core.getScaledDrawWidth(), Core.getScaledDrawHeight(),
-                        0, 0, Core.getDrawWidth(), Core.getDrawHeight(), null);
+                g2.drawImage(offBuffer.getImage().getImage(),
+                        0, 0, Core.getScaledDrawWidth(), Core.getScaledDrawHeight(), null);
             }
         }
     }
@@ -624,15 +618,15 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     }
     
     /**
-     * redraw the offscreen image, then flip buffers and force repaint.
+     * Redraw the offscreen image, then flip buffers and force repaint.
      */
     private void redraw() {
-        if (offImage == null || offGraphics == null) {
+        if (offBuffer == null) {
             return;
         }
         
         synchronized (paintSemaphore) {
-            GraphicsContext offGfx = offGraphics;
+            GraphicsContext offGfx = offBuffer.getGraphicsContext();
 
             switch (GameController.getGameState()) {
                 case INTRO:
@@ -726,6 +720,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                         offGfx.setClip(0, 0, width, height);
 
                         // draw info string
+                        LemmImage outStrImg = outStrBuffer.getImage();
+                        GraphicsContext outStrGfx = outStrBuffer.getGraphicsContext();
                         outStrGfx.clearRect(0, 0, outStrImg.getWidth(), outStrImg.getHeight());
                         if (GameController.isCheat()) {
                             Stencil stencil = GameController.getStencil();
@@ -1064,8 +1060,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                         LevelPack lp = null;
                         for (int i = 0; i < GameController.getLevelPackCount(); i++) {
                             LevelPack lpTemp = GameController.getLevelPack(i);
-                            if (Normalizer.normalize(lpTemp.getName(), Normalizer.Form.NFKC)
-                                    .equals(rli.getLevelPack())) {
+                            if (ToolBox.looselyEquals(lpTemp.getName(), rli.getLevelPack())) {
                                 lpn = i;
                                 lp = lpTemp;
                             }
@@ -1076,11 +1071,9 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             if (rnTemp < ratings.length) {
                                 rn = rnTemp;
                             }
-                            if (rn < 0 || !Normalizer.normalize(ratings[rn].trim(), Normalizer.Form.NFKC)
-                                    .equals(rli.getRatingName())) {
+                            if (rn < 0 || ToolBox.looselyEquals(ratings[rn], rli.getRatingName())) {
                                 for (int i = 0; i < ratings.length; i++) {
-                                    if (Normalizer.normalize(ratings[i], Normalizer.Form.NFKC)
-                                            .equals(rli.getRatingName())) {
+                                    if (ToolBox.looselyEquals(ratings[i], rli.getRatingName())) {
                                         rn = i;
                                     }
                                 }
@@ -1091,11 +1084,9 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                                 if (lnTemp < levels.length) {
                                     ln = lnTemp;
                                 }
-                                if (ln < 0 || !Normalizer.normalize(levels[ln].trim(), Normalizer.Form.NFKC)
-                                        .equals(rli.getLvlName())) {
+                                if (ln < 0 || ToolBox.looselyEquals(levels[ln], rli.getLvlName())) {
                                     for (int i = 0; i < levels.length; i++) {
-                                        if (Normalizer.normalize(levels[i], Normalizer.Form.NFKC)
-                                                .equals(rli.getLvlName())) {
+                                        if (ToolBox.looselyEquals(levels[i], rli.getLvlName())) {
                                             ln = i;
                                         }
                                     }
@@ -1133,14 +1124,14 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
         if (levelCode != null && !levelCode.isEmpty() && lvlPack > 0) {
             levelCode = levelCode.trim();
             // cheat mode
-            if (levelCode.toLowerCase().equals("0xdeadbeef")) {
+            if (UCharacter.toLowerCase(levelCode).equals("0xdeadbeef")) {
                 JOptionPane.showMessageDialog(getParent(), "All levels and debug mode enabled.", "Cheater!", JOptionPane.INFORMATION_MESSAGE);
                 Core.player.enableCheatMode();
                 return;
             }
 
             // real level code -> get absolute level
-            levelCode = levelCode.toUpperCase();
+            levelCode = UCharacter.toUpperCase(levelCode.toUpperCase());
             LevelPack lpack = GameController.getLevelPack(lvlPack);
             int[] codeInfo = LevelCode.getLevel(lpack.getCodeSeed(), levelCode, lpack.getCodeOffset());
             if (codeInfo != null) {
@@ -1182,14 +1173,10 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                 player = players.get(playerIdx); // remember selected player
             }
             // check for players to delete
-            for (int i = 0; i < Core.getPlayerNum(); i++) {
+            for (int i = 0; i < Core.getPlayerCount(); i++) {
                 String p = Core.getPlayer(i);
                 if (!players.contains(p)) {
-                    Path f = Core.resourcePath.resolve("players").resolve(p + ".ini");
-                    try {
-                        Files.deleteIfExists(f);
-                    } catch (IOException ex) {
-                    }
+                    Core.deletePlayer(i);
                     if (p.equals(player)) {
                         player = "default";
                     }
@@ -1266,38 +1253,17 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
             return;
         }
         
-        int w = width;
-        int h = height;
-        
         synchronized (paintSemaphore) {
-            if (offImage != null) {
-                w = Math.max(w, offImage.getWidth());
-                h = Math.max(h, offImage.getHeight());
-            }
-        }
-        if (w > 2) {
-            w = Integer.highestOneBit((w - 1) << 1);
-        }
-        if (h > 2) {
-            h = Integer.highestOneBit((h - 1) << 1);
-        }
-        
-        synchronized (paintSemaphore) {
-            if (offImage == null || w > offImage.getWidth() || h > offImage.getHeight()) {
-                if (offGraphics != null) {
-                    offGraphics.dispose();
-                }
-                offImage = ToolBox.createOpaqueImage(w, h);
-                offGraphics = offImage.createGraphicsContext();
-                offGraphics.setBackground(new Color(0, 0, 0));
+            if (offBuffer == null) {
+                offBuffer = new GraphicsBuffer(width, height, Transparency.OPAQUE, true);
+            } else {
+                offBuffer.setSize(width, height);
             }
             
-            if (outStrImg == null || w > outStrImg.getWidth()) {
-                if (outStrGfx != null) {
-                    outStrGfx.dispose();
-                }
-                outStrImg = ToolBox.createTranslucentImage(w, LemmFont.getHeight());
-                outStrGfx = outStrImg.createGraphicsContext();
+            if (outStrBuffer == null) {
+                outStrBuffer = new GraphicsBuffer(width, LemmFont.getHeight(), Transparency.TRANSLUCENT, true);
+            } else {
+                outStrBuffer.setSize(width, LemmFont.getHeight());
             }
 
             menuOffsetX = Math.max(0, (width - getMinimumSize().width) / 2);

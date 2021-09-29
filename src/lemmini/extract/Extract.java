@@ -1,5 +1,6 @@
 package lemmini.extract;
 
+import com.ibm.icu.lang.UCharacter;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -479,7 +480,7 @@ public class Extract implements Runnable {
         try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, "*.LVL")) {
             for (Path level : levels) {
                 Path fIn = r.resolve(level.getFileName());
-                String fOutStr = level.getFileName().toString().toLowerCase(Locale.ROOT);
+                String fOutStr = UCharacter.toLowerCase(Locale.ROOT, level.getFileName().toString());
                 Path fOut = dest.resolve(FilenameUtils.removeExtension(fOutStr) + ".ini");
                 createdFiles.add(fOut);
                 out(level.getFileName().toString());
@@ -546,7 +547,7 @@ public class Extract implements Runnable {
                     if (pos == StringUtils.INDEX_NOT_FOUND) {
                         pos = fileName.length();
                     }
-                    Path fnPatch = patchPath.resolve(subDirDecorated + fileName.substring(0, pos).toLowerCase(Locale.ROOT) + ".dif");
+                    Path fnPatch = patchPath.resolve(subDirDecorated + UCharacter.toLowerCase(Locale.ROOT, fileName.substring(0, pos)) + ".dif");
                     out(fnIn.toString());
                     // read sourceFile file
                     byte[] src = readFile(fnIn);

@@ -1,5 +1,6 @@
 package lemmini.sound;
 
+import com.ibm.icu.lang.UCharacter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -93,7 +94,7 @@ public class Music {
         close();
         playing = false;
         Path fName2 = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
-        switch (FilenameUtils.getExtension(fName2.getFileName().toString().toLowerCase(Locale.ROOT))) {
+        switch (UCharacter.toLowerCase(Locale.ROOT, FilenameUtils.getExtension(fName2.getFileName().toString()))) {
             case "mid":
                 if (!midiAvailable) {
                     throw new LemmException("MIDI not supported.");
@@ -130,7 +131,7 @@ public class Music {
                     return false;
                 }
                 for (String ext : Core.MUSIC_EXTENSIONS) {
-                    String lowercaseName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
+                    String lowercaseName = UCharacter.toLowerCase(Locale.ROOT, entry.getFileName().toString());
                     if (lowercaseName.endsWith("." + ext) && !lowercaseName.endsWith("_intro." + ext)) {
                         return true;
                     }

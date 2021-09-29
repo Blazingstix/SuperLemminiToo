@@ -1,11 +1,14 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.text.BreakIterator;
+import com.ibm.icu.text.Normalizer2;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
@@ -113,7 +116,7 @@ public class LemmFont {
             for (int c = 0; c < numChars; c++) {
                 glyphs[c] = new Glyph(glyphImg[c]);
                 int codePoint = p.getInt("subset_" + i + "_char_" + c + "_codePoint", -1);
-                if (Character.isValidCodePoint(codePoint)) {
+                if (UCharacter.isValidCodePoint(codePoint)) {
                     chars.put(codePoint, new LemmChar(name, c));
                 }
             }
@@ -150,16 +153,14 @@ public class LemmFont {
      * @param color Color
      */
     public static void strImage(final GraphicsContext g, String s, int x, final int y, final Color color) {
-        s = Normalizer.normalize(s, Normalizer.Form.NFC);
+        s = Normalizer2.getNFCInstance().normalize(s);
         
-        for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
+        for (int c, i = 0; i < s.length(); i += UCharacter.charCount(c)) {
             c = s.codePointAt(i);
             
-            if (!Character.isDefined(c)) {
-                drawMissingChar(g, c, x, y, color);
-                x += width;
-            } else if (Character.isIdentifierIgnorable(c)) {
-            } else if (Character.isSpaceChar(c) || Character.isISOControl(c)) {
+            if (!UCharacter.isLegal(c) || UCharacter.isIdentifierIgnorable(c)) {
+                // do nothing
+            } else if (UCharacter.isUWhiteSpace(c)) {
                 x += width;
             } else {
                 drawCharacter(g, c, x, y, color);
@@ -227,7 +228,7 @@ public class LemmFont {
     
     private static void drawMissingChar(GraphicsContext g, int c, int x, int y, Color color) {
         g.drawImage(missingChar.getColor(color), x, y);
-        boolean bmpCodePoint = Character.isBmpCodePoint(c);
+        boolean bmpCodePoint = UCharacter.isBMP(c);
         int digitsPerRow = (bmpCodePoint ? 2 : 3);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < digitsPerRow; j++) {
@@ -262,57 +263,117 @@ public class LemmFont {
      */
     public static int getCharCount(final String s) {
         int charCount = 0;
-        for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
+        for (int c, i = 0; i < s.length(); i += UCharacter.charCount(c)) {
             c = s.codePointAt(i);
-            if (!Character.isIdentifierIgnorable(s.codePointAt(i))) {
+            if (UCharacter.isLegal(c) && !UCharacter.isIdentifierIgnorable(c)) {
                 charCount++;
             }
         }
         return charCount;
     }
     
-    public static String[] split(final String s) {
-        /*List<String> sl = new ArrayList<>(4);
+    /**
+     * Split a string into multiple lines at newline characters and, if
+     * necessary to prevent the length of a line from exceeding maxLineLength,
+     * at legal word-wrapping positions. If word wrapping occurs immediately
+     * after a soft hyphen, then the soft hyphen will be converted to a real
+     * hyphen.
+     * @param s string to split
+     * @param maxLineLength maximum number of characters allowed per line; 0 if
+     * no word wrapping should be performed
+     * @return an array of strings, one string for each line
+     */
+    public static String[] split(String s, int maxLineLength) {
+        s = Normalizer2.getNFCInstance().normalize(s);
+        
+        boolean wordWrap = maxLineLength > 0;
+        List<String> sl = new ArrayList<>(4);
+        BreakIterator bi = BreakIterator.getLineInstance(Locale.ROOT);
+        bi.setText(s);
         int lastBreak = 0;
         int lineLength = 0;
         int i = 0;
-        for (int c; i < s.length(); i += Character.charCount(c)) {
+        for (int c; i < s.length(); ) {
             c = s.codePointAt(i);
-            int type = Character.getType(c);
+            int type = UCharacter.getType(c);
             boolean breakHere = false;
-            boolean windowsBreak = false;
+            int charsToSkip = 0;
+            boolean replaceSoftHyphen = false;
             
-            if (type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR) {
+            // break here if this character is a newline character
+            if (type == UCharacter.LINE_SEPARATOR || type == UCharacter.PARAGRAPH_SEPARATOR) {
                 breakHere = true;
-            } else if (Character.isISOControl(c)) {
+                charsToSkip = 1;
+            } else if (UCharacter.isISOControl(c)) {
                 switch (c) {
                     case '\r':
-                        windowsBreak = i < s.length() - 1 && s.codePointAt(i + 1) == '\n';*/
-                        /* falls through */
-                    /*case '\n':
+                        breakHere = true;
+                        if (i < s.length() - 1 && s.charAt(i + 1) == '\n') {
+                            // Windows newline sequence: skip 2 characters rather than 1
+                            charsToSkip = 2;
+                        } else {
+                            charsToSkip = 1;
+                        }
+                        break;
+                    case '\n':
                     case 0x0b:
                     case 0x0c:
                     case 0x85:
                         breakHere = true;
+                        charsToSkip = 1;
                         break;
                     default:
-                        if (Character.isIdentifierIgnorable(c)) {
+                        if (UCharacter.isIdentifierIgnorable(c)) {
+                            i += UCharacter.charCount(c);
                             continue;
                         }
                         break;
                 }
-            } else if (Character.isIdentifierIgnorable(c)) {
+            } else if (UCharacter.isIdentifierIgnorable(c)) {
+                i += UCharacter.charCount(c);
                 continue;
+            }
+            if (!breakHere && wordWrap) {
+                // check whether the line should be broken here
+                boolean repeatLoop;
+                do {
+                    repeatLoop = false;
+                    if (i > lastBreak && lineLength >= maxLineLength) {
+                        if (!bi.isBoundary(i)) {
+                            int previous = bi.previous();
+                            if (previous != BreakIterator.DONE && previous > lastBreak) {
+                                lineLength -= getCharCount(s.substring(previous, i));
+                                i = previous;
+                            }
+                        }
+                        if (s.charAt(i - 1) == '\u00ad') {
+                            if (lineLength >= maxLineLength) {
+                                i--;
+                                repeatLoop = true;
+                                continue;
+                            }
+                            replaceSoftHyphen = true;
+                        }
+                        breakHere = true;
+                        charsToSkip = 0;
+                    }
+                } while (repeatLoop);
             }
             
             if (breakHere) {
-                sl.add(s.substring(lastBreak, i));
-                if (windowsBreak) {
-                    i += Character.charCount(c);
+                if (replaceSoftHyphen) {
+                    // replace soft hyphen with a real hyphen
+                    sl.add(s.substring(lastBreak, i - 1) + "-");
+                } else {
+                    sl.add(s.substring(lastBreak, i));
                 }
-                lastBreak = i + Character.charCount(c);
+                for (int j = 0; j < charsToSkip; j++) {
+                    i = i + UCharacter.charCount(s.codePointAt(i));
+                }
+                lastBreak = i;
                 lineLength = 0;
             } else {
+                i = i + UCharacter.charCount(s.codePointAt(i));
                 lineLength++;
             }
         }
@@ -320,8 +381,7 @@ public class LemmFont {
         if (i > lastBreak) {
             sl.add(s.substring(lastBreak, i));
         }
-        return sl.toArray(ArrayUtils.EMPTY_STRING_ARRAY);*/
-        return s.split("\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]");
+        return sl.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
     }
     
     private static class Subset {

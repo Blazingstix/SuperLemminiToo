@@ -1,11 +1,16 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.lang.UProperty;
+import com.ibm.icu.text.Normalizer2;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import lemmini.tools.Props;
+import org.apache.commons.io.FilenameUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -34,8 +39,6 @@ public class Player {
 
     /** property class to store player settings persistently */
     private Props props;
-    /** name of the INI file used for persistence */
-    private Path iniFilePath;
     /** used to store level progress */
     private Map<String, LevelGroup> lvlGroups;
     /** cheat mode enabled? */
@@ -58,7 +61,7 @@ public class Player {
             Files.createDirectories(dest);
         } catch (IOException ex) {
         }
-        iniFilePath = Core.resourcePath.resolve("players").resolve(name + ".ini");
+        Path iniFilePath = getPlayerINIFilePath(name);
 
         if (props.load(iniFilePath)) { // might exist or not - if not, it's created
             // file exists, now extract entries
@@ -124,7 +127,7 @@ public class Player {
             }
             idx++;
         }
-        props.save(iniFilePath);
+        props.save(getPlayerINIFilePath(name));
     }
 
     /**
@@ -219,6 +222,135 @@ public class Player {
         return cheat;
     }
     
+    public static Path getPlayerINIFilePath(final String name) {
+        Path retFile = Core.resourcePath.resolve("players").resolve(addEscapes(name) + ".ini");
+        PlayerFilter filter = new PlayerFilter(name);
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(Core.resourcePath.resolve("players"), filter)) {
+            for (Path file : files) {
+                retFile = file;
+                break;
+            }
+        } catch (IOException ex) {
+        }
+        
+        return retFile;
+    }
+    
+    public static void deletePlayerINIFile(final String name) {
+        PlayerFilter filter = new PlayerFilter(name);
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(Core.resourcePath.resolve("players"), filter)) {
+            for (Path file : files) {
+                Files.deleteIfExists(file);
+            }
+        } catch (IOException ex) {
+        }
+    }
+    
+    /**
+     * Converts certain characters and names to escape sequences to ensure
+     * compatibility with various file systems.
+     * @param s 
+     * @return 
+     */
+    public static String addEscapes(final String s) {
+        StringBuilder sb = new StringBuilder(s.length() * 2);
+        boolean convertAllChars;
+        switch (UCharacter.toLowerCase(Locale.ROOT, s)) {
+            // The file names below are illegal in Windows file systems, so
+            // escape every character if the player name matches any of these.
+            case "com0":
+            case "com1":
+            case "com2":
+            case "com3":
+            case "com4":
+            case "com5":
+            case "com6":
+            case "com7":
+            case "com8":
+            case "com9":
+            case "lpt0":
+            case "lpt1":
+            case "lpt2":
+            case "lpt3":
+            case "lpt4":
+            case "lpt5":
+            case "lpt6":
+            case "lpt7":
+            case "lpt8":
+            case "lpt9":
+            case "aux":
+            case "con":
+            case "nul":
+            case "prn":
+                convertAllChars = true;
+                break;
+            default:
+                convertAllChars = false;
+                break;
+        }
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            boolean convertChar;
+            if (convertAllChars) {
+                convertChar = true;
+            } else {
+                switch (c) {
+                    // Escape these characters since they're illegal in
+                    // Windows file names.
+                    case '"':
+                    case '*':
+                    case '/': // also illegal in UNIX file names
+                    case ':': // also illegal in Mac file names
+                    case '<':
+                    case '>':
+                    case '?':
+                    case '\\':
+                    case '_': // legal in file names but used as escape character
+                    case '|':
+                        convertChar = true;
+                        break;
+                    default:
+                        // Escape any character outside the printable ASCII
+                        // range because not all systems and file systems
+                        // support Unicode. Also escape the first character
+                        // if it's a period because UNIX file systems do not
+                        // allow initial periods.
+                        convertChar = c < ' ' || c > '~' || (i == 0 && c == '.');
+                        break;
+                }
+            }
+            if (convertChar) {
+                sb.append(String.format(Locale.ROOT, "_%04x", (int) c));
+            } else {
+                sb.append(c);
+            }
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Converts every instance of _xxxx (where x is a hex digit) to the
+     * corresponding UTF-16 code unit.
+     * @param s 
+     * @return 
+     */
+    public static String convertEscapes(final String s) {
+        StringBuilder sb = new StringBuilder(s.length());
+        for (int i = 0; i < s.length(); i++) {
+            if (i < s.length() - 5 && s.charAt(i) == '_'
+                    && UCharacter.hasBinaryProperty(s.charAt(i + 1), UProperty.ASCII_HEX_DIGIT)
+                    && UCharacter.hasBinaryProperty(s.charAt(i + 2), UProperty.ASCII_HEX_DIGIT)
+                    && UCharacter.hasBinaryProperty(s.charAt(i + 3), UProperty.ASCII_HEX_DIGIT)
+                    && UCharacter.hasBinaryProperty(s.charAt(i + 4), UProperty.ASCII_HEX_DIGIT)) {
+                sb.append((char) Integer.parseInt(s.substring(i + 1, i + 5), 16));
+                i += 4;
+            } else {
+                sb.append(s.charAt(i));
+            }
+        }
+        return sb.toString();
+    }
+    
     private class LevelGroup {
 
         private final Map<Integer, LevelRecord> levelRecords;
@@ -237,3 +369,25 @@ public class Player {
         }
     }
 }
+    
+class PlayerFilter implements DirectoryStream.Filter<Path> {
+
+    private final String playerName;
+
+    PlayerFilter(String playerName) {
+        this.playerName = Normalizer2.getNFKCCasefoldInstance().normalize(playerName);
+    }
+
+    @Override
+    public boolean accept(Path entry) {
+        if (!Files.isRegularFile(entry)) {
+            return false;
+        }
+        String fileName = entry.getFileName().toString();
+        String convertedFileName = Player.convertEscapes(FilenameUtils.removeExtension(fileName))
+                + "." + FilenameUtils.getExtension(fileName);
+        String normalizedFileName = Normalizer2.getNFKCCasefoldInstance().normalize(convertedFileName);
+        return normalizedFileName.endsWith(".ini")
+                && FilenameUtils.removeExtension(normalizedFileName).equals(playerName);
+    }
+};

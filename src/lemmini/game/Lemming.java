@@ -1,5 +1,6 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
@@ -1564,7 +1565,7 @@ public class Lemming {
             return false;
         }
         int ym = y - hand;
-        if (ym >= GameController.getHeight() || ym <= GameController.getLevel().getTopBoundary() - 12) {
+        if (ym >= GameController.getHeight() || ym <= GameController.getLevel().getTopBoundary() - 10) {
             return true;
         } else if (ym < 0) {
             return false;
@@ -1618,12 +1619,12 @@ public class Lemming {
             boolean bidirectional = type.bidirectional;
             if (type.frames > 0) {
                 fn = Core.findResource(
-                        Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
+                        Paths.get("gfx/lemming", "lemm_" + UCharacter.toLowerCase(Locale.ROOT, type.name()) + ".png"),
                         Core.IMAGE_EXTENSIONS);
                 LemmImage sourceImg = Core.loadTranslucentImage(fn);
                 if (bidirectional) {
                     fn = Core.findResource(
-                            Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
+                            Paths.get("gfx/lemming", "lemm_" + UCharacter.toLowerCase(Locale.ROOT, type.name()) + "_left.png"),
                             Core.IMAGE_EXTENSIONS);
                     LemmImage sourceImgLeft = Core.loadTranslucentImage(fn);
                     lemmings[i] = new LemmingResource(sourceImg, sourceImgLeft, type.frames);
@@ -1638,14 +1639,14 @@ public class Lemming {
             if (type.maskFrames > 0) {
                 // mask_Y: frames, directions, step
                 fn = Core.findResource(
-                        Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
+                        Paths.get("gfx/lemming", "mask_" + UCharacter.toLowerCase(Locale.ROOT, type.name()) + ".png"),
                         Core.IMAGE_EXTENSIONS);
                 LemmImage sourceImg = Core.loadTranslucentImage(fn);
                 Mask mask = new Mask(sourceImg, type.maskFrames);
                 lemmings[i].setMask(Direction.RIGHT, mask);
                 if (bidirectional) {
                     fn = Core.findResource(
-                            Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
+                            Paths.get("gfx/lemming", "mask_" + UCharacter.toLowerCase(Locale.ROOT, type.name()) + "_left.png"),
                             Core.IMAGE_EXTENSIONS);
                     LemmImage sourceImgLeft = Core.loadTranslucentImage(fn);
                     Mask maskLeft = new Mask(sourceImgLeft, type.maskFrames);

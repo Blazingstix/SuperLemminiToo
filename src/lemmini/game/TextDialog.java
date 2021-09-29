@@ -123,11 +123,11 @@ public class TextDialog {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
-        String[] sa = LemmFont.split(s);
-        addImageGroup(group);
-        List<TextDialogImage> groupList = images.get(group);
         int width = LemmFont.getWidth();
         int height = LemmFont.getHeight();
+        String[] sa = LemmFont.split(s, 0);
+        addImageGroup(group);
+        List<TextDialogImage> groupList = images.get(group);
         int x = x0 * width;
         for (int i = 0; i < sa.length; i++) {
             if (LemmFont.getCharCount(sa[i]) > 0) {
@@ -160,11 +160,11 @@ public class TextDialog {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
-        String[] sa = LemmFont.split(s);
-        addImageGroup(group);
-        List<TextDialogImage> groupList = images.get(group);
         int width = LemmFont.getWidth();
         int height = LemmFont.getHeight();
+        String[] sa = LemmFont.split(s, Math.max(1, 800 / width));
+        addImageGroup(group);
+        List<TextDialogImage> groupList = images.get(group);
         for (int i = 0; i < sa.length; i++) {
             int charCount = LemmFont.getCharCount(sa[i]);
             if (charCount > 0) {

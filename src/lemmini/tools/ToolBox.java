@@ -1,6 +1,7 @@
 package lemmini.tools;
 
 
+import com.ibm.icu.text.Normalizer2;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -397,8 +398,16 @@ public class ToolBox {
         return (int) roundToInt(n * s);
     }
     
+    public static double scale(double n, double s) {
+        return n * s;
+    }
+    
     public static int unscale(int n, double s) {
         return (int) roundToInt(n / s);
+    }
+    
+    public static double unscale(double n, double s) {
+        return n / s;
     }
 
     /**
@@ -483,7 +492,19 @@ public class ToolBox {
      * @param c Character to check
      * @return True if c is an ASCII plus or minus sign, false otherwise
      */
-    private static boolean isSign(char c) {
+    public static boolean isSign(char c) {
         return c == '+' || c == '-';
+    }
+    
+    /**
+     * Checks whether two strings are equal after trimming and conversion to 
+     * NFKC_Casefold.
+     * @param s1 first string to check
+     * @param s2 second string to check
+     * @return True if s1 and s2 are equal after conversion, false otherwise
+     */
+    public static boolean looselyEquals(String s1, String s2) {
+        Normalizer2 normalizer = Normalizer2.getNFKCCasefoldInstance();
+        return normalizer.normalize(s1.trim()).equals(normalizer.normalize(s2.trim()));
     }
 }

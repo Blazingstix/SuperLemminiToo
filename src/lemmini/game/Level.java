@@ -2,6 +2,7 @@ package lemmini.game;
 
 import java.awt.Color;
 import java.awt.RenderingHints;
+import java.awt.Transparency;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -9,6 +10,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import lemmini.gameutil.Sprite;
+import lemmini.graphics.GraphicsBuffer;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
@@ -67,8 +69,17 @@ public class Level {
     private static final int DEFAULT_LEFT_BOUNDARY = 0;
     private static final int DEFAULT_RIGHT_BOUNDARY = -16;
     private static final int DEFAULT_ANIMATION_SPEED = 2;
+    private static final int BG_BUFFER_PADDING = 4;
+    private static final int BG_BUFFER_UNSCALED_INDEX = 0;
+    private static final int BG_BUFFER_SCALED_INDEX = 1;
 
     private final List<Props> levelProps;
+    /** the foreground stencil */
+    private Stencil stencil;
+    /** the foreground image */
+    private LemmImage fgImage;
+    /** the background images */
+    private LemmImage[] bgImages;
     /** array of normal sprite objects - no transparency, drawn behind foreground image */
     private SpriteObject[] sprObjBehind;
     /** array of special sprite objects - with transparency, drawn in front of foreground image */
@@ -78,34 +89,34 @@ public class Level {
     /** array of level entrances */
     private Entrance[] entrances;
     /** release rate: 0 is slowest, 99 is fastest */
-    private int releaseRate;
+    private final int releaseRate;
     /** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
-    private int numLemmings;
+    private final int numLemmings;
     /** number of Lemmings to rescue: should be less than or equal to number of Lemmings */
-    private int numToRescue;
+    private final int numToRescue;
     /** time limit in seconds */
-    private int timeLimitSeconds;
+    private final int timeLimitSeconds;
     /** number of climbers in this level */
-    private int numClimbers;
+    private final int numClimbers;
     /** number of floaters in this level */
-    private int numFloaters;
+    private final int numFloaters;
     /** number of bombers in this level */
-    private int numBombers;
+    private final int numBombers;
     /** number of blockers in this level */
-    private int numBlockers;
+    private final int numBlockers;
     /** number of builders in this level */
-    private int numBuilders;
+    private final int numBuilders;
     /** number of bashers in this level */
-    private int numBashers;
+    private final int numBashers;
     /** number of miners in this level */
-    private int numMiners;
+    private final int numMiners;
     /** number of diggers in this level */
-    private int numDiggers;
-    private int[] entranceOrder;
+    private final int numDiggers;
+    private final int[] entranceOrder;
     /** start screen x position */
-    private int xPosCenter;
+    private final int xPosCenter;
     /** start screen y position */
-    private int yPosCenter;
+    private final int yPosCenter;
     /** background color */
     private Color bgColor;
     /** color used for steps and debris */
@@ -114,53 +125,43 @@ public class Level {
     /** array of ARGB colors used for particle effects */
     private int[] particleCol;
     /** maximum safe fall distance */
-    private int maxFallDistance;
-    private boolean classicSteel;
-    private AutosteelMode autosteelMode;
+    private final int maxFallDistance;
+    private final boolean classicSteel;
+    private final AutosteelMode autosteelMode;
     /** this level is a SuperLemming level (runs faster) */
-    private boolean superlemming;
-    private boolean forceNormalTimerSpeed;
-    /** level is completely loaded */
-    private boolean ready = false;
+    private final boolean superlemming;
+    private final boolean forceNormalTimerSpeed;
     /** objects like doors - originally 32 objects where each consists of 8 bytes */
-    private final List<LvlObject> objects;
+    private final LvlObject[] objects;
     /** foreground tiles - every pixel in them is interpreted as brick in the stencil */
-    private LemmImage[] tiles;
-    private LemmImage[] tileMasks;
-    private LemmImage special;
-    private LemmImage specialMask;
-    private Path music;
+    private final LemmImage[] tiles;
+    private final LemmImage[] tileMasks;
+    private final LemmImage special;
+    private final LemmImage specialMask;
+    private final Path music;
     private final Set<Integer> steelTiles;
     /** sprite objects of all sprite objects available in this style */
-    private SpriteObject[] sprObjAvailable;
+    private final SpriteObject[] sprObjAvailable;
     /** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
-    private final List<Terrain> terrain;
+    private final Terrain[] terrain;
     /** steel areas which are indestructible - originally 32 objects, 4 bytes each */
-    private final List<Steel> steel;
-    private final List<Background> backgrounds;
+    private final Steel[] steel;
+    private final Background[] backgrounds;
+    private final GraphicsBuffer[][] bgBuffers;
     /** level name - originally 32 bytes ASCII filled with whitespace */
-    private String lvlName;
-    private String author;
-    private List<String> hints;
+    private final String lvlName;
+    private final String author;
+    private final List<String> hints;
     /** used to read in the configuration file */
-    private Props props;
-    private Props props2;
-    private int levelWidth;
-    private int levelHeight;
-    private int topBoundary;
-    private int bottomBoundary;
-    private int leftBoundary;
-    private int rightBoundary;
-
-    public Level() {
-        levelProps = new ArrayList<>(4);
-        objects = new ArrayList<>(64);
-        terrain = new ArrayList<>(512);
-        steel = new ArrayList<>(64);
-        backgrounds = new ArrayList<>(4);
-        steelTiles = new HashSet<>(16);
-        hints = new ArrayList<>(4);
-    }
+    private final Props props;
+    private final Props props2;
+    private final int levelWidth;
+    private final int levelHeight;
+    private final int topBoundary;
+    private final int bottomBoundary;
+    private final int leftBoundary;
+    private final int rightBoundary;
+    
 
     /**
      * Load a level and all level resources.
@@ -168,12 +169,11 @@ public class Level {
      * @throws ResourceException
      * @throws LemmException
      */
-    void loadLevel(final Path fname) throws ResourceException, LemmException {
-        ready = false;
-        special = null;
-        specialMask = null;
+    public Level(final Path fname) throws ResourceException, LemmException {
+        levelProps = new ArrayList<>(4);
+        steelTiles = new HashSet<>(16);
+        hints = new ArrayList<>(4);
         // read level properties from file
-        levelProps.clear();
         Props p = new Props();
         if (!p.load(fname)) {
             throw new ResourceException(fname.toString());
@@ -196,7 +196,6 @@ public class Level {
         //out(fname + " - " + lvlName);
         author = Props.get(levelProps, "author", StringUtils.EMPTY);
         // read hints
-        hints.clear();
         for (int i = 0; true; i++) {
             String hint = levelProps.get(0).get("hint_" + i, null);
             if (hint != null) {
@@ -230,16 +229,15 @@ public class Level {
         numLemmings = Props.getInt(levelProps, "numLemmings", 1);
         // sanity check: ensure that there are lemmings in the level to avoid division by 0
         if (numLemmings <= 0) {
-            numLemmings = 1;
             throw new LemmException("No lemmings in level.");
         }
         //out("numLemmings = " + numLemmings);
         numToRescue = Props.getInt(levelProps, "numToRescue", 0);
         //out("numToRescue = " + numToRescue);
-        timeLimitSeconds = Integer.MIN_VALUE;
+        int timeLimitSecondsTemp = Integer.MIN_VALUE;
         for (Props p2 : levelProps) {
-            timeLimitSeconds = p2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-            if (timeLimitSeconds != Integer.MIN_VALUE) {
+            timeLimitSecondsTemp = p2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+            if (timeLimitSecondsTemp != Integer.MIN_VALUE) {
                 break;
             }
             int timeLimit = p2.getInt("timeLimit", Integer.MIN_VALUE);
@@ -248,13 +246,14 @@ public class Level {
                 if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
                     timeLimit = 0;
                 }
-                timeLimitSeconds = timeLimit * 60;
+                timeLimitSecondsTemp = timeLimit * 60;
                 break;
             }
         }
-        if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
-            timeLimitSeconds = 0;
+        if (timeLimitSecondsTemp == Integer.MAX_VALUE || timeLimitSecondsTemp < 0) {
+            timeLimitSecondsTemp = 0;
         }
+        timeLimitSeconds = timeLimitSecondsTemp;
 
         //out("timeLimit = " + timeLimit);
         numClimbers = Props.getInt(levelProps, "numClimbers", 0);
@@ -273,25 +272,27 @@ public class Level {
         //out("numMiners = " + numMiners);
         numDiggers = Props.getInt(levelProps, "numDiggers", 0);
         //out("numDiggers = " + numDiggers);
-        entranceOrder = Props.getIntArray(levelProps, "entranceOrder", null);
-        if (ArrayUtils.isEmpty(entranceOrder)) {
-            entranceOrder = null;
+        int[] entranceOrderTemp = Props.getIntArray(levelProps, "entranceOrder", null);
+        if (ArrayUtils.isEmpty(entranceOrderTemp)) {
+            entranceOrderTemp = null;
         }
-        xPosCenter = Integer.MIN_VALUE;
+        entranceOrder = entranceOrderTemp;
+        int xPosCenterTemp = Integer.MIN_VALUE;
         for (Props p2 : levelProps) {
-            xPosCenter = p2.getInt("xPosCenter", Integer.MIN_VALUE);
-            if (xPosCenter != Integer.MIN_VALUE) {
+            xPosCenterTemp = p2.getInt("xPosCenter", Integer.MIN_VALUE);
+            if (xPosCenterTemp != Integer.MIN_VALUE) {
                 break;
             }
             int xPos = p2.getInt("xPos", Integer.MIN_VALUE);
             if (xPos != Integer.MIN_VALUE) {
-                xPosCenter = xPos + 400;
+                xPosCenterTemp = xPos + 400;
                 break;
             }
         }
-        if (xPosCenter == Integer.MIN_VALUE) {
-            xPosCenter = 0;
+        if (xPosCenterTemp == Integer.MIN_VALUE) {
+            xPosCenterTemp = 0;
         }
+        xPosCenter = xPosCenterTemp;
         yPosCenter = Props.getInt(levelProps, "yPosCenter", 0);
         //out("xPosCenter = " + xPosCenter);
         String strStyle = p.get("style", StringUtils.EMPTY);
@@ -322,7 +323,6 @@ public class Level {
         forceNormalTimerSpeed = Props.getBoolean(levelProps, "forceNormalTimerSpeed", false);
         
         // load objects
-        sprObjAvailable = null;
         // first load the data from object descriptor file xxx.ini
         props = new Props();
         try {
@@ -368,10 +368,12 @@ public class Level {
         if (!strSpecialStyle.isEmpty()) {
             special = loadSpecialSet(strSpecialStyle);
             specialMask = loadSpecialMaskSet(strSpecialStyle);
+        } else {
+            special = null;
+            specialMask = null;
         }
         tiles = loadTileSet(strStyle);
         tileMasks = loadTileMaskSet(strStyle);
-        steelTiles.clear();
         int[] steelTilesArray = props.getIntArray("steelTiles", null);
         if (steelTilesArray != null) {
             for (int steelTile : steelTilesArray) {
@@ -383,112 +385,124 @@ public class Level {
         
         // read objects
         //out("\n[Objects]");
-        objects.clear();
-        for (int i = 0; true; i++) {
+        List<LvlObject> objectList = new ArrayList<>(64);
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("object_" + i, null);
             if (val != null && val.length >= 5) {
                 LvlObject obj = new LvlObject(val);
-                objects.add(obj);
+                objectList.add(obj);
                 //out(obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
             } else {
                 break;
             }
         }
+        objects = objectList.toArray(new LvlObject[objectList.size()]);
         // read terrain
         //out("\n[Terrain]");
-        terrain.clear();
+        List<Terrain> terrainList = new ArrayList<>(512);
         if (!strSpecialStyle.isEmpty()) {
             int positionX;
             int positionY;
             positionX = p.getInt("specialStylePositionX", props2.getInt("positionX", 0));
             positionY = p.getInt("specialStylePositionY", props2.getInt("positionY", 0));
             Terrain ter = new Terrain(new int[]{0, positionX, positionY, 0}, true);
-            terrain.add(ter);
+            terrainList.add(ter);
         }
-        for (int i = 0; true; i++) {
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("terrain_" + i, null);
             if (val != null && val.length >= 4) {
                 Terrain ter = new Terrain(val, false);
-                terrain.add(ter);
+                terrainList.add(ter);
                 //out(ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
             } else {
                 break;
             }
         }
+        terrain = terrainList.toArray(new Terrain[terrainList.size()]);
         // read steel blocks
         //out("\n[Steel]");
-        steel.clear();
-        for (int i = 0; true; i++) {
+        ArrayList<Steel> steelList = new ArrayList<>(64);
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("steel_" + i, null);
             if (val != null && val.length >= 4) {
                 Steel stl = new Steel(val);
-                steel.add(stl);
+                steelList.add(stl);
                 //out(stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
             } else {
                 break;
             }
         }
+        steel = steelList.toArray(new Steel[steelList.size()]);
         // read background
-        backgrounds.clear();
-        int numBackgrounds = p.getInt("numBackgrounds", 0);
-        for (int i = 0; i < numBackgrounds; i++) {
-            List<LvlObject> bgObjects = new ArrayList<>(16);
-            List<Terrain> bgTerrain = new ArrayList<>(256);
-            boolean bgTiled = p.getBoolean("bg_" + i + "_tiled", false);
+        List<Background> backgroundList = new ArrayList<>(4);
+        List<GraphicsBuffer[]> bgBufferList = new ArrayList<>(4);
+        for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int bgWidth = p.getInt("bg_" + i + "_width", 0);
             int bgHeight = p.getInt("bg_" + i + "_height", 0);
+            if (bgWidth <= 0 || bgHeight <= 0) {
+                break;
+            }
+            boolean bgTiled = p.getBoolean("bg_" + i + "_tiled", false);
+            int bgTint = p.getInt("bg_" + i + "_tint", 0);
             int bgOffsetX = p.getInt("bg_" + i + "_offsetX", 0);
             int bgOffsetY = p.getInt("bg_" + i + "_offsetY", 0);
             double bgScrollSpeedX = p.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
             double bgScrollSpeedY = p.getDouble("bg_" + i + "_scrollSpeedY", 0.0);
-            for (int j = 0; true; j++) {
+            double bgScale = p.getDouble("bg_" + i + "_scale", 1.0);
+            List<LvlObject> bgObjectList = new ArrayList<>(16);
+            for (int j = 0; i < Integer.MAX_VALUE; j++) {
                 int[] val = p.getIntArray("bg_" + i + "_object_" + j, null);
                 if (val != null && val.length >= 5) {
                     LvlObject obj = new LvlObject(val);
-                    bgObjects.add(obj);
+                    bgObjectList.add(obj);
                 } else {
                     break;
                 }
             }
-            for (int j = 0; true; j++) {
+            LvlObject[] bgObjects = bgObjectList.toArray(new LvlObject[bgObjectList.size()]);
+            List<Terrain> bgTerrainList = new ArrayList<>(256);
+            for (int j = 0; i < Integer.MAX_VALUE; j++) {
                 int[] val = p.getIntArray("bg_" + i + "_terrain_" + j, null);
                 if (val != null && val.length >= 4) {
                     Terrain ter = new Terrain(val, false);
-                    bgTerrain.add(ter);
+                    bgTerrainList.add(ter);
                 } else {
                     break;
                 }
             }
-            backgrounds.add(new Background(bgObjects, bgTerrain, bgTiled, bgWidth, bgHeight, bgOffsetX, bgOffsetY, bgScrollSpeedX, bgScrollSpeedY));
+            Terrain[] bgTerrain = bgTerrainList.toArray(new Terrain[bgTerrainList.size()]);
+            backgroundList.add(new Background(bgWidth, bgHeight, bgObjects, bgTerrain, bgTiled, bgTint,
+                    bgOffsetX, bgOffsetY, bgScrollSpeedX, bgScrollSpeedY, bgScale));
+            GraphicsBuffer[] bgBufferListEntry = new GraphicsBuffer[2];
+            bgBufferListEntry[BG_BUFFER_UNSCALED_INDEX] = new GraphicsBuffer(
+                    bgWidth + BG_BUFFER_PADDING * 2, bgHeight + BG_BUFFER_PADDING * 2,
+                    Transparency.TRANSLUCENT, false);
+            bgBufferListEntry[BG_BUFFER_SCALED_INDEX] = new GraphicsBuffer(
+                    ToolBox.scale(bgWidth, bgScale), ToolBox.scale(bgHeight, bgScale),
+                    Transparency.TRANSLUCENT, false);
+            bgBufferList.add(bgBufferListEntry);
         }
-        ready = true;
+        backgrounds = backgroundList.toArray(new Background[backgroundList.size()]);
+        bgBuffers = bgBufferList.toArray(new GraphicsBuffer[bgBufferList.size()][]);
     }
 
     /**
      * Paint a level.
-     * @param fgImage foreground image to draw into
-     * @param s stencil to reuse
-     * @return stencil of this level
      */
-    Stencil paintLevel(final LemmImage fgImage, final List<LemmImage> bgImages, final Stencil s) {
+    void paintLevel() {
         // flush all resources
         sprObjFront = null;
         sprObjBehind = null;
         sprObjects = null;
-        entrances = null;
         System.gc();
-        // the screenBuffer should be big enough to hold the level
-        // returns stencil buffer;
-        int fgWidth = fgImage.getWidth();
-        int fgHeight = fgImage.getHeight();
-        // try to reuse old stencil
-        Stencil stencil;
-        if (s != null && s.getWidth() == fgWidth && s.getHeight() == fgHeight) {
-            s.clear();
-            stencil = s;
-        } else {
-            stencil = new Stencil(fgWidth, fgHeight);
+        // create images and stencil
+        fgImage = ToolBox.createTranslucentImage(levelWidth, levelHeight);
+        bgImages = new LemmImage[backgrounds.length];
+        for (int i = 0; i < backgrounds.length; i++) {
+            bgImages[i] = ToolBox.createTranslucentImage(
+                    backgrounds[i].width + BG_BUFFER_PADDING * 2, backgrounds[i].height + BG_BUFFER_PADDING * 2);
         }
+        stencil = new Stencil(levelWidth, levelHeight);
         // paint terrain
         for (Terrain t : terrain) {
             if (t.id < 0) {
@@ -537,7 +551,7 @@ public class Level {
             boolean remove = !noOverwrite && BooleanUtils.toBoolean(t.modifier & Terrain.MODE_REMOVE);
             boolean invisible = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_INVISIBLE);
             for (int y = 0; y < height; y++) {
-                if (y + ty < 0 || y + ty >= fgHeight) {
+                if (y + ty < 0 || y + ty >= levelHeight) {
                     continue;
                 }
                 int yLine;
@@ -547,7 +561,7 @@ public class Level {
                     yLine = y * width;
                 }
                 for (int x = 0; x < width; x++) {
-                    if (x + tx < 0 || x + tx >= fgWidth) {
+                    if (x + tx < 0 || x + tx >= levelWidth) {
                         continue;
                     }
                     int xSrc;
@@ -644,12 +658,12 @@ public class Level {
             int sx = stl.xPos;
             int sy = stl.yPos;
             for (int y = 0; y < stl.height; y++) {
-                if (y + sy < 0 || y + sy >= fgHeight) {
+                if (y + sy < 0 || y + sy >= levelHeight) {
                     continue;
                 }
                 for (int x = 0; x < stl.width; x++) {
                     if ((!classicSteel && !BooleanUtils.toBoolean(stencil.getMask(x + sx, y + sy) & Stencil.MSK_BRICK))
-                            || x + sx < 0 || x + sx >= fgWidth) {
+                            || x + sx < 0 || x + sx >= levelWidth) {
                         continue;
                     }
                     if (stl.negative) {
@@ -666,8 +680,8 @@ public class Level {
         List<SpriteObject> oBehind = new ArrayList<>(64);
         List<SpriteObject> oFront = new ArrayList<>(64);
         List<Entrance> entrance = new ArrayList<>(8);
-        for (int n = 0; n < objects.size() && n >= 0; n++) {
-            LvlObject o = objects.get(n);
+        for (int n = 0; n < objects.length && n >= 0; n++) {
+            LvlObject o = objects[n];
             if (o.id < 0) {
                 oCombined.add(null);
                 continue;
@@ -706,11 +720,11 @@ public class Level {
             oCombined.add(spr);
             
             for (int y = 0; y < spr.getHeight(); y++) {
-                if (y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                if (y + spr.getY() < 0 || y + spr.getY() >= levelHeight) {
                     continue;
                 }
                 for (int x = 0; x < spr.getWidth(); x++) {
-                    if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
+                    if (x + spr.getX() < 0 || x + spr.getX() >= levelWidth) {
                         continue;
                     }
                     stencil.addID(spr.getX() + x, spr.getY() + y, n);
@@ -720,7 +734,7 @@ public class Level {
             // draw stencil
             if (!fake) {
                 for (int y = spr.getMaskOffsetY(); y < spr.getMaskHeight() + spr.getMaskOffsetY(); y++) {
-                    if (y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                    if (y + spr.getY() < 0 || y + spr.getY() >= levelHeight) {
                         continue;
                     }
                     int yDest;
@@ -744,7 +758,7 @@ public class Level {
                                         && !spr.getType().isTriggeredByFoot()
                                         && !BooleanUtils.toBoolean(stencilMask & Stencil.MSK_BRICK))
                                 || (spr.getType().isSometimesIndestructible() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY))
-                                || xDest + spr.getX() < 0 || xDest + spr.getX() >= fgWidth) {
+                                || xDest + spr.getX() < 0 || xDest + spr.getX() >= levelWidth) {
                             continue;
                         }
                         // manage collision mask
@@ -763,8 +777,8 @@ public class Level {
                 for (int y = 0; y < spr.getHeight(); y++) {
                     for (int x = 0; x < spr.getWidth(); x++) {
                         boolean paint = true;
-                        if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth
-                                || y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
+                        if (x + spr.getX() < 0 || x + spr.getX() >= levelWidth
+                                || y + spr.getY() < 0 || y + spr.getY() >= levelHeight) {
                             paint = false;
                         } else if (inFront) {
                             // now read terrain image
@@ -782,14 +796,16 @@ public class Level {
         }
         
         // paint background
-        if (bgImages != null) {
-            int numBackgrounds = Math.min(backgrounds.size(), bgImages.size());
+        if (ArrayUtils.isNotEmpty(bgImages)) {
             List<SpriteObject> bgOCombined = new ArrayList<>(32);
             List<SpriteObject> bgOFront = new ArrayList<>(32);
             List<SpriteObject> bgOBehind = new ArrayList<>(32);
-            for (int m = 0; m < numBackgrounds; m++) {
-                Background bg = backgrounds.get(m);
-                LemmImage targetBg = bgImages.get(m);
+            for (int m = 0; m < backgrounds.length; m++) {
+                Background bg = backgrounds[m];
+                LemmImage targetBg = bgImages[m];
+                LemmImage unpaddedBg = ToolBox.createTranslucentImage(
+                        targetBg.getWidth() - BG_BUFFER_PADDING * 2,
+                        targetBg.getHeight() - BG_BUFFER_PADDING * 2);
                 bgOCombined.clear();
                 bgOBehind.clear();
                 bgOFront.clear();
@@ -820,7 +836,7 @@ public class Level {
                     boolean overwrite = !BooleanUtils.toBoolean(t.modifier & Terrain.MODE_NO_OVERWRITE);
                     boolean remove = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_REMOVE);
                     for (int y = 0; y < height; y++) {
-                        if (y + ty < 0 || y + ty >= targetBg.getHeight()) {
+                        if (y + ty < 0 || y + ty >= unpaddedBg.getHeight()) {
                             continue;
                         }
                         int yLine;
@@ -830,7 +846,7 @@ public class Level {
                             yLine = y * width;
                         }
                         for (int x = 0; x < width; x++) {
-                            if (x + tx < 0 || x + tx >= targetBg.getWidth()) {
+                            if (x + tx < 0 || x + tx >= unpaddedBg.getWidth()) {
                                 continue;
                             }
                             int xSrc;
@@ -843,14 +859,29 @@ public class Level {
                             // ignore transparent pixels
                             if ((col & 0xff000000) != 0) {
                                 if (!overwrite) {
-                                    targetBg.addRGBBehind(x + tx, y + ty, col);
+                                    unpaddedBg.addRGBBehind(x + tx, y + ty, col);
                                 } else if (remove) {
-                                    targetBg.removeAlpha(x + tx, y + ty, (col >>> 24) & 0xff);
+                                    unpaddedBg.removeAlpha(x + tx, y + ty, (col >>> 24) & 0xff);
                                 } else {
-                                    targetBg.addRGB(x + tx, y + ty, col);
+                                    unpaddedBg.addRGB(x + tx, y + ty, col);
                                 }
                             }
                         }
+                    }
+                }
+                unpaddedBg.applyTint(bg.tint);
+                
+                GraphicsContext targetBgGfx = null;
+                try {
+                    targetBgGfx = targetBg.createGraphicsContext();
+                    for (int y = BG_BUFFER_PADDING - (bg.tiled ? unpaddedBg.getHeight() : 0), j = 0; j < (bg.tiled ? 3 : 1); y += unpaddedBg.getHeight(), j++) {
+                        for (int x = BG_BUFFER_PADDING - (bg.tiled ? unpaddedBg.getWidth() : 0), k = 0; k < (bg.tiled ? 3 : 1);  x += unpaddedBg.getWidth(), k++) {
+                            targetBgGfx.drawImage(unpaddedBg, x, y);
+                        }
+                    }
+                } finally {
+                    if (targetBgGfx != null) {
+                        targetBgGfx.dispose();
                     }
                 }
                 
@@ -886,12 +917,12 @@ public class Level {
                         for (int y = 0; y < spr.getHeight(); y++) {
                             for (int x = 0; x < spr.getWidth(); x++) {
                                 boolean paint = true;
-                                if (x + spr.getX() < 0 || x + spr.getX() >= targetBg.getWidth()
-                                        || y + spr.getY() < 0 || y + spr.getY() >= targetBg.getHeight()) {
+                                if (x + spr.getX() < 0 || x + spr.getX() >= unpaddedBg.getWidth()
+                                        || y + spr.getY() < 0 || y + spr.getY() >= unpaddedBg.getHeight()) {
                                     paint = false;
                                 } else if (inFront) {
                                     // now read terrain image
-                                    boolean opaque = targetBg.isPixelOpaque(x + spr.getX(), y + spr.getY());
+                                    boolean opaque = unpaddedBg.isPixelOpaque(x + spr.getX(), y + spr.getY());
                                     paint = drawFull || (opaque && drawOnVis);
                                 }
                                 if (!paint) {
@@ -900,6 +931,8 @@ public class Level {
                             }
                         }
                     }
+                    
+                    spr.applyTint(bg.tint);
                 }
                 
                 bg.sprObjects = bgOCombined.toArray(new SpriteObject[bgOCombined.size()]);
@@ -914,7 +947,13 @@ public class Level {
         sprObjFront = oFront.toArray(new SpriteObject[oFront.size()]);
         sprObjBehind = oBehind.toArray(new SpriteObject[oBehind.size()]);
         System.gc();
-        
+    }
+    
+    public LemmImage getFgImage() {
+        return fgImage;
+    }
+    
+    public Stencil getStencil() {
         return stencil;
     }
     
@@ -973,55 +1012,83 @@ public class Level {
      */
     public void drawBackground(final GraphicsContext g, final int width, final int height,
             final int xOfs, final int yOfs) {
-        List<LemmImage> bgImages = GameController.getBgImages();
-        if (bgImages == null) {
+        if (ArrayUtils.isEmpty(bgImages)) {
             return;
         }
         
-        int numBackgrounds = Math.min(bgImages.size(), backgrounds.size());
-        
-        for (int i = numBackgrounds - 1; i >= 0; i--) {
-            LemmImage bgImage = bgImages.get(i);
-            Background bg = backgrounds.get(i);
+        for (int i = backgrounds.length - 1; i >= 0; i--) {
+            LemmImage bgImage = bgImages[i];
+            Background bg = backgrounds[i];
+            GraphicsBuffer[] buffers = bgBuffers[i];
             
-            int bgImageWidth = bgImage.getWidth();
-            int bgImageHeight = bgImage.getHeight();
+            int bgImageWidth = bgImage.getWidth() - BG_BUFFER_PADDING * 2;
+            int bgImageWidthScaled = ToolBox.scale(bgImageWidth, bg.scale);
+            int bgImageHeight = bgImage.getHeight() - BG_BUFFER_PADDING * 2;
+            int bgImageHeightScaled = ToolBox.scale(bgImageHeight, bg.scale);
+            int bgBufferPaddingScaled = ToolBox.scale(BG_BUFFER_PADDING, bg.scale);
             
-            int xOfsNew = (int) (-xOfs * bg.scrollSpeedX) + bg.offsetX;
-            int yOfsNew = (int) (-yOfs * bg.scrollSpeedY) + bg.offsetY;
-            if (bg.tiled) {
-                xOfsNew %= bgImageWidth;
-                xOfsNew -= (xOfsNew > 0) ? bgImageWidth : 0;
-                yOfsNew %= bgImageHeight;
-                yOfsNew -= (yOfsNew > 0) ? bgImageHeight : 0;
+            if (bgImageWidthScaled <= 0 || bgImageHeightScaled <= 0) {
+                continue;
             }
             
-            for (int y = yOfsNew; y < height; y += bgImageHeight) {
-                for (int x = xOfsNew; x < width; x += bgImageWidth) {
+            LemmImage unscaledBufferImg = buffers[BG_BUFFER_UNSCALED_INDEX].getImage();
+            GraphicsContext unscaledBufferGfx = buffers[BG_BUFFER_UNSCALED_INDEX].getGraphicsContext();
+            unscaledBufferGfx.clearRect(0, 0, unscaledBufferImg.getWidth(), unscaledBufferImg.getHeight());
+            
+            for (int y = BG_BUFFER_PADDING - (bg.tiled ? bgImageHeight : 0), j = 0; j < (bg.tiled ? 3 : 1); y += bgImageHeight, j++) {
+                for (int x = BG_BUFFER_PADDING - (bg.tiled ? bgImageWidth : 0), k = 0; k < (bg.tiled ? 3 : 1);  x += bgImageWidth, k++) {
                     // draw "behind" objects
                     if (bg.sprObjBehind != null) {
                         for (int n = bg.sprObjBehind.length - 1; n >= 0; n--) {
                             SpriteObject spr = bg.sprObjBehind[n];
                             LemmImage img = spr.getImage();
-                            g.drawImage(img, x + spr.getX(), y + spr.getY());
+                            unscaledBufferGfx.drawImage(img, x + spr.getX(), y + spr.getY());
                         }
                     }
-                    
-                    g.drawImage(bgImage, x, y);
-                    
+                }
+            }
+
+            unscaledBufferGfx.drawImage(bgImage, 0, 0);
+
+            for (int y = BG_BUFFER_PADDING - (bg.tiled ? bgImageHeight : 0), j = 0; j < (bg.tiled ? 3 : 1); y += bgImageHeight, j++) {
+                for (int x = BG_BUFFER_PADDING - (bg.tiled ? bgImageWidth : 0), k = 0; k < (bg.tiled ? 3 : 1);  x += bgImageWidth, k++) {
                     // draw "in front" objects
                     if (bg.sprObjFront != null) {
                         for (SpriteObject spr : bg.sprObjFront) {
                             LemmImage img = spr.getImage();
-                            g.drawImage(img, x + spr.getX(), y + spr.getY());
+                            unscaledBufferGfx.drawImage(img, x + spr.getX(), y + spr.getY());
                         }
                     }
-                    
+                }
+            }
+            
+            LemmImage scaledBufferImg = buffers[BG_BUFFER_SCALED_INDEX].getImage();
+            GraphicsContext scaledBufferGfx = buffers[BG_BUFFER_SCALED_INDEX].getGraphicsContext();
+            scaledBufferGfx.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
+                    Core.isBilinear()
+                            ? RenderingHints.VALUE_INTERPOLATION_BILINEAR
+                            : RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            scaledBufferGfx.clearRect(0, 0, scaledBufferImg.getWidth(), scaledBufferImg.getHeight());
+            scaledBufferGfx.drawImage(unscaledBufferImg,
+                    -bgBufferPaddingScaled, -bgBufferPaddingScaled,
+                    bgImageWidthScaled + bgBufferPaddingScaled * 2, bgImageHeightScaled + bgBufferPaddingScaled * 2);
+            
+            int xOfsNew = (int) (-xOfs * bg.scrollSpeedX) + bg.offsetX;
+            int yOfsNew = (int) (-yOfs * bg.scrollSpeedY) + bg.offsetY;
+            if (bg.tiled) {
+                xOfsNew %= bgImageWidthScaled;
+                xOfsNew -= (xOfsNew > 0) ? bgImageWidthScaled : 0;
+                yOfsNew %= bgImageHeightScaled;
+                yOfsNew -= (yOfsNew > 0) ? bgImageHeightScaled : 0;
+            }
+            
+            for (int y = yOfsNew; y < height; y += bgImageHeightScaled) {
+                for (int x = xOfsNew; x < width; x += bgImageWidthScaled) {
+                    g.drawImage(scaledBufferImg, x, y);
                     if (!bg.tiled) {
                         break;
                     }
                 }
-                
                 if (!bg.tiled) {
                     break;
                 }
@@ -1372,14 +1439,6 @@ public class Level {
     }
 
     /**
-     * Get ready state of level.
-     * @return true if level is completely loaded.
-     */
-    public boolean isReady() {
-        return ready;
-    }
-
-    /**
      * Get maximum safe fall distance.
      * @return maximum safe fall distance
      */
@@ -1546,24 +1605,6 @@ public class Level {
     
     public int getRightBoundary() {
         return rightBoundary;
-    }
-    
-    public int[] getBgWidths() {
-        int[] ret = new int[backgrounds.size()];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = backgrounds.get(i).width;
-        }
-        
-        return ret;
-    }
-    
-    public int[] getBgHeights() {
-        int[] ret = new int[backgrounds.size()];
-        for (int i = 0; i < ret.length; i++) {
-            ret[i] = backgrounds.get(i).height;
-        }
-        
-        return ret;
     }
     
     public Path getMusic() {
@@ -1761,29 +1802,34 @@ class Entrance {
 
 class Background {
     
-    List<LvlObject> objects;
-    List<Terrain> terrain;
+    int width;
+    int height;
+    LvlObject[] objects;
+    Terrain[] terrain;
     SpriteObject[] sprObjects;
     SpriteObject[] sprObjFront;
     SpriteObject[] sprObjBehind;
     boolean tiled;
-    int width;
-    int height;
+    int tint;
     int offsetX;
     int offsetY;
     double scrollSpeedX;
     double scrollSpeedY;
+    double scale;
     
-    Background(final List<LvlObject> o, final List<Terrain> t, final boolean ti,
-            final int w, final int h, final int ofsX, final int ofsY, final double ssx, final double ssy) {
-        objects = o;
-        terrain = t;
-        tiled = ti;
-        width = w;
-        height = h;
-        offsetX = ofsX;
-        offsetY = ofsY;
-        scrollSpeedX = ssx;
-        scrollSpeedY = ssy;
+    Background(int width, int height, LvlObject[] objects, Terrain[] terrain,
+            boolean tiled, int tint, int offsetX, int offsetY,
+            double scrollSpeedX, double scrollSpeedY, double scale) {
+        this.width = width;
+        this.height = height;
+        this.objects = objects;
+        this.terrain = terrain;
+        this.tiled = tiled;
+        this.tint = tint;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.scrollSpeedX = scrollSpeedX;
+        this.scrollSpeedY = scrollSpeedY;
+        this.scale = scale;
     }
 }

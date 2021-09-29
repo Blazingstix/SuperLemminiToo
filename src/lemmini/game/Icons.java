@@ -1,9 +1,11 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
@@ -136,7 +138,7 @@ public class Icons {
         icons = new Sprite[iconTypes.length];
         for (int i = 0; i <= LAST_DRAWN; i++) {
             Path fn = Core.findResource(Paths.get(
-                    "gfx", "icons", "icon_" + iconTypes[i].name().toLowerCase() + ".png"), Core.IMAGE_EXTENSIONS);
+                    "gfx", "icons", "icon_" + UCharacter.toLowerCase(Locale.ROOT, iconTypes[i].name()) + ".png"), Core.IMAGE_EXTENSIONS);
             LemmImage sourceImg = Core.loadTranslucentImage(fn);
             icons[i] = new Sprite(sourceImg, 2, 1);
             iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);

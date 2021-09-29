@@ -69,7 +69,7 @@ public class Core {
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.98a";
+    private static final String REVISION = "0.100";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
     
@@ -482,11 +482,20 @@ public class Core {
      * Get number of players.
      * @return number of player.
      */
-    public static int getPlayerNum() {
+    public static int getPlayerCount() {
         if (players == null) {
             return 0;
         }
         return players.size();
+    }
+    
+    /**
+     * Delete a player.
+     * @param idx index of player to delete
+     */
+    public static void deletePlayer(final int idx) {
+        Player.deletePlayerINIFile(players.get(idx));
+        players.remove(idx);
     }
 
     /**

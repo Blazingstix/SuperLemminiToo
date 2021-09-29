@@ -170,7 +170,7 @@ public class TextScreen {
     static void initIntro() {
         textDialog.clear();
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN), true);
-        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 1/2015", null, 4, RED);
+        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 4/2015", null, 4, RED);
         textDialog.addTextButton("Play Level", "Play Level", null, -5, -2, Button.PLAY_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Load Replay", "Load Replay", null, -14, 0, Button.LOAD_REPLAY, BLUE, BROWN);
         textDialog.addTextButton("Enter Code", "Enter Code", null, 3, 0, Button.ENTER_CODE, BLUE, BROWN);
@@ -308,7 +308,7 @@ public class TextScreen {
             if (StringUtils.isNotEmpty(author)) {
                 textDialog.addString(String.format("Author    %s", author), "info", -9, 3, RED);
             }
-            if (GameController.getTimesFailed() >= FAILURE_THRESHOLD_FOR_HINTS && level.getNumHints() > 0) {
+            if (level.getNumHints() > 0 && (Core.player.isCheat() || GameController.getTimesFailed() >= FAILURE_THRESHOLD_FOR_HINTS)) {
                 textDialog.addTextButton("Show Hint", "Show Hint", "info", -4, 5, Button.SHOW_HINT, BLUE, BROWN);
             }
         }
@@ -324,7 +324,8 @@ public class TextScreen {
             if (hintIndex > 0) {
                 textDialog.addTextButton("Previous Hint", "Previous Hint", "info", -19, 5, Button.PREVIOUS_HINT, BLUE, BROWN);
             }
-            if (hintIndex < Math.min(level.getNumHints() - 1, GameController.getTimesFailed() - FAILURE_THRESHOLD_FOR_HINTS)) {
+            if ((Core.player.isCheat() && hintIndex < level.getNumHints() - 1)
+                     || (hintIndex < Math.min(level.getNumHints() - 1, GameController.getTimesFailed() - FAILURE_THRESHOLD_FOR_HINTS))) {
                 textDialog.addTextButton("Next Hint", "Next Hint", "info", 8, 5, Button.NEXT_HINT, BLUE, BROWN);
             }
         }

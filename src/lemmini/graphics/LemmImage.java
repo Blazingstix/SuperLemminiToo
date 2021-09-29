@@ -1,10 +1,8 @@
 package lemmini.graphics;
 
 import java.awt.Graphics2D;
-import java.awt.Point;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
 import java.util.Hashtable;
 import lemmini.tools.ToolBox;
 
@@ -234,33 +232,50 @@ public class LemmImage {
     }
     
     public void applyTint(int tint) {
-        final double alphaB = intToDouble((tint >>> 24) & 0xff);
-        final double redB = intToDouble((tint >>> 16) & 0xff);
-        final double greenB = intToDouble((tint >>> 8) & 0xff);
-        final double blueB = intToDouble(tint & 0xff);
-        if (alphaB <= 0.0) {
+        final double alphaTint = intToDouble((tint >>> 24) & 0xff);
+        final double redTint = intToDouble((tint >>> 16) & 0xff);
+        final double greenTint = intToDouble((tint >>> 8) & 0xff);
+        final double blueTint = intToDouble(tint & 0xff);
+        if (alphaTint <= 0.0) {
             return;
         }
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                int alphaA = (image.getRGB(x, y) >>> 24) & 0xff;
-                if (alphaA <= 0) {
-                    continue;
-                }
-                double redA = intToDouble((image.getRGB(x, y) >>> 16) & 0xff);
-                double greenA = intToDouble((image.getRGB(x, y) >>> 8) & 0xff);
-                double blueA = intToDouble(image.getRGB(x, y) & 0xff);
-                
-                double redNew = redB * alphaB + redA * (1.0 - alphaB);
-                double greenNew = greenB * alphaB + greenA * (1.0 - alphaB);
-                double blueNew = blueB * alphaB + blueA * (1.0 - alphaB);
-                
-                int rgbNew = (alphaA << 24) | (doubleToInt(redNew) << 16)
-                        | (doubleToInt(greenNew) << 8) | doubleToInt(blueNew);
-                
-                image.setRGB(x, y, rgbNew);
+                image.setRGB(x, y, applyTint(image.getRGB(x, y), alphaTint, redTint, greenTint, blueTint));
             }
         }
+    }
+    
+    public static int applyTint(int original, int tint) {
+        final double alphaTint = intToDouble((tint >>> 24) & 0xff);
+        final double redTint = intToDouble((tint >>> 16) & 0xff);
+        final double greenTint = intToDouble((tint >>> 8) & 0xff);
+        final double blueTint = intToDouble(tint & 0xff);
+
+        return applyTint(original, alphaTint, redTint, greenTint, blueTint);
+    }
+    
+    private static int applyTint(int original, double alphaTint, double redTint, double greenTint, double blueTint) {
+        if (alphaTint <= 0.0) {
+            return original;
+        }
+        
+        int alphaOrig = (original >>> 24) & 0xff;
+        if (alphaOrig <= 0) {
+            return original;
+        }
+        double redOrig = intToDouble((original >>> 16) & 0xff);
+        double greenOrig = intToDouble((original >>> 8) & 0xff);
+        double blueOrig = intToDouble(original & 0xff);
+
+        double redNew = redTint * alphaTint + redOrig * (1.0 - alphaTint);
+        double greenNew = greenTint * alphaTint + greenOrig * (1.0 - alphaTint);
+        double blueNew = blueTint * alphaTint + blueOrig * (1.0 - alphaTint);
+
+        int rgbNew = (alphaOrig << 24) | (doubleToInt(redNew) << 16)
+                | (doubleToInt(greenNew) << 8) | doubleToInt(blueNew);
+
+        return rgbNew;
     }
     
     private static double intToDouble(int i) {

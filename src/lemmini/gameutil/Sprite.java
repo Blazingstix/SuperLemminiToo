@@ -254,6 +254,21 @@ public class Sprite {
             }
         }
     }
+    
+    public void applyTint(int tint) {
+        if ((tint & 0xff000000) == 0) {
+            return;
+        }
+        
+        for (int frame = 0; frame < frames.length; frame++) {
+            frames[frame].applyTint(tint);
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    origColors[frame][y * width + x] = LemmImage.applyTint(origColors[frame][y * width + x], tint);
+                }
+            }
+        }
+    }
 
     /**
      * Get animation mode.

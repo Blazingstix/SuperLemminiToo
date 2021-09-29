@@ -1,5 +1,6 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
 import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -124,8 +125,6 @@ public class GameController {
     private static Stencil stencil;
     /** the foreground image */
     private static LemmImage fgImage;
-    /** the background images */
-    private static List<LemmImage> bgImages;
     /** flag: play music */
     private static boolean musicOn;
     /** flag: play sounds */
@@ -137,8 +136,6 @@ public class GameController {
     private static boolean swapButtons;
     private static boolean fasterFastForward;
     private static boolean noPercentages;
-    /** graphics object for the foreground image */
-    private static GraphicsContext fgGfx;
     /** flag: fast forward mode is active */
     private static boolean fastForward;
     private static boolean verticalLock;
@@ -271,8 +268,6 @@ public class GameController {
     private static double musicGain = 1.0;
     private static int width = Level.DEFAULT_WIDTH;
     private static int height = Level.DEFAULT_HEIGHT;
-    private static int[] bgWidths;
-    private static int[] bgHeights;
     private static int timesFailed;
 
     /**
@@ -284,11 +279,6 @@ public class GameController {
         height = Level.DEFAULT_HEIGHT;
         
         fgImage = ToolBox.createTranslucentImage(width, height);
-        fgGfx = fgImage.createGraphicsContext();
-        bgImages = new ArrayList<>(4);
-        
-        bgWidths = ArrayUtils.EMPTY_INT_ARRAY;
-        bgHeights = ArrayUtils.EMPTY_INT_ARRAY;
 
         gameState = State.INIT;
 
@@ -296,7 +286,6 @@ public class GameController {
         minus = new KeyRepeat(NANOSEC_KEYREPEAT_START, NANOSEC_KEYREPEAT_REPEAT, NANOSEC_RELEASE_DOUBLE_CLICK);
         timerNuke = new NanosecondTimer();
         
-        level = new Level();
         // read level packs
 
         Path dir = Core.resourcePath.resolve("levels");
@@ -553,8 +542,6 @@ public class GameController {
         yPosCenter = level.getYPosCenter();
         width = level.getWidth();
         height = level.getHeight();
-        bgWidths = level.getBgWidths();
-        bgHeights = level.getBgHeights();
         if (time <= 0) {
             timed = false;
             time = 0;
@@ -564,33 +551,13 @@ public class GameController {
         timeLimit = time;
         timeElapsedTillLastExited = 0;
         
+        level.paintLevel();
+        stencil = level.getStencil();
+        fgImage = level.getFgImage();
+        
         if (width != oldWidth || height != oldHeight) {
-            fgGfx.dispose();
-            fgImage = ToolBox.createTranslucentImage(width, height);
-            fgGfx = fgImage.createGraphicsContext();
             MiscGfx.setMinimapWidth(ToolBox.scale(width, 1.0 / 16.0));
         }
-        fgGfx.setBackground(BLANK_COLOR);
-        fgGfx.clearRect(0, 0, fgImage.getWidth(), fgImage.getHeight());
-        
-        bgImages.clear();
-        int numBackgrounds = Math.min(bgWidths.length, bgHeights.length);
-        for (int i = 0; i < numBackgrounds; i++) {
-            LemmImage bgImage = ToolBox.createTranslucentImage(bgWidths[i], bgHeights[i]);
-            GraphicsContext bgGfx = null;
-            try {
-                bgGfx = bgImage.createGraphicsContext();
-                bgGfx.setBackground(BLANK_COLOR);
-                bgGfx.clearRect(0, 0, bgImage.getWidth(), bgImage.getHeight());
-            } finally {
-                if (bgGfx != null) {
-                    bgGfx.dispose();
-                }
-            }
-            bgImages.add(bgImage);
-        }
-        
-        stencil = level.paintLevel(fgImage, bgImages, stencil);
         
         TrapDoor.reset(level.getNumEntrances(), level.getEntranceOrder());
         startSoundPlayed = false;
@@ -707,6 +674,7 @@ public class GameController {
         modPaths = levelPacks[curLevelPack].getModPaths();
         if (!Arrays.equals(modPaths, oldMods)) {
             sound.load();
+            MiscGfx.init(ToolBox.scale(width, 1.0 / 16.0));
             Icons.init();
             Explosion.init();
             LemmFont.init();
@@ -718,7 +686,7 @@ public class GameController {
         
         Path lvlPath = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
         // loading the level will patch appropriate lemmings pixels to the correct colors
-        level.loadLevel(lvlPath);
+        level = new Level(lvlPath);
         
         initLevel();
         
@@ -1882,14 +1850,14 @@ public class GameController {
                 String fNameStr = name.getFileName().toString();
                 String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
                 try {
-                    LevelFormat format = LevelFormat.valueOf(FilenameUtils.getExtension(fNameStr).toUpperCase(Locale.ROOT));
+                    LevelFormat format = LevelFormat.valueOf(UCharacter.toUpperCase(Locale.ROOT, FilenameUtils.getExtension(fNameStr)));
                     ExternalLevelEntry entry = new ExternalLevelEntry(format, name);
                     if (externalLevelList.contains(entry)) {
                         switch (format) {
                             case DAT:
                                 String[] ratings = lp.getRatings();
                                 for (int i = 1; i < ratings.length; i++) {
-                                    if (ratings[i].toLowerCase(Locale.ROOT).equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
+                                    if (UCharacter.toLowerCase(Locale.ROOT, ratings[i]).equals(UCharacter.toLowerCase(Locale.ROOT, fNameStrNoExt))) {
                                         return new int[]{0, i, 0};
                                     }
                                 }
@@ -1898,8 +1866,8 @@ public class GameController {
                             case INI:
                                 int numLevels = lp.getLevelCount(0);
                                 for (int i = 0; i < numLevels; i++) {
-                                    if (FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString()).toLowerCase(Locale.ROOT)
-                                            .equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
+                                    if (UCharacter.toLowerCase(Locale.ROOT, FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString()))
+                                            .equals(UCharacter.toLowerCase(Locale.ROOT, fNameStrNoExt))) {
                                         return new int[]{0, 0, i};
                                     }
                                 }
@@ -2421,14 +2389,6 @@ public class GameController {
     public static LemmImage getFgImage() {
         return fgImage;
     }
-    
-    /**
-     * Get background image of level.
-     * @return foreground image of level
-     */
-    public static List<LemmImage> getBgImages() {
-        return bgImages;
-    }
 
     /**
      * Get foreground stencil of level.
@@ -2554,7 +2514,7 @@ class ExternalLevelEntry {
     
     @Override
     public String toString() {
-        return String.format(Locale.ROOT, "%s, %s", format.name().toLowerCase(Locale.ROOT), lvlPath);
+        return String.format(Locale.ROOT, "%s, %s", UCharacter.toLowerCase(Locale.ROOT, format.name()), lvlPath);
     }
     
     @Override

@@ -1,8 +1,9 @@
 package lemmini.game;
 
+import com.ibm.icu.lang.UCharacter;
+import com.ibm.icu.text.Normalizer2;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -130,7 +131,7 @@ public class LevelPack {
             }
         }
         // read code seed
-        codeSeed = props.get("codeSeed", StringUtils.EMPTY).trim().toUpperCase(Locale.ROOT);
+        codeSeed = UCharacter.toUpperCase(Locale.ROOT, props.get("codeSeed", StringUtils.EMPTY).trim());
         // read code level offset
         codeOffset = props.getInt("codeOffset", 0);
         // read max falling distance
@@ -174,9 +175,9 @@ public class LevelPack {
         for (int r = 0; r < ratingList.size(); r++) {
             idx = 0;
             levels.clear();
-            rating = Normalizer.normalize(ratingList.get(r).trim(), Normalizer.Form.NFKC);
+            rating = Normalizer2.getNFKCCasefoldInstance().normalize(ratingList.get(r).trim());
             do {
-                levelStr = props.getArray(rating.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT) + "_" + idx, null);
+                levelStr = props.getArray(rating + "_" + idx, null);
                 // filename, music number
                 if (levelStr != null && levelStr.length >= 2) {
                     LevelInfo info = new LevelInfo(path.resolve(levelStr[0]),
@@ -196,8 +197,9 @@ public class LevelPack {
      * @return String formed from level pack and rating
      */
     public static String getID(String pack, String rating) {
-        pack = Normalizer.normalize(pack.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
-        rating = Normalizer.normalize(rating.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
+        Normalizer2 normalizer = Normalizer2.getNFKCCasefoldInstance();
+        pack = normalizer.normalize(pack);
+        rating = normalizer.normalize(rating);
         
         return pack + "-" + rating;
     }

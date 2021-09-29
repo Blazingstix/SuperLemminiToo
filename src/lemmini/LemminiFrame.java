@@ -18,6 +18,7 @@
  */
 package lemmini;
 
+import com.ibm.icu.text.Normalizer2;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
+import keyrepeatfix.RepeatingReleasedEventsFixer;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
@@ -47,7 +49,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.99";
+    public static final String REVISION = "0.100";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -78,6 +80,7 @@ public class LemminiFrame extends javax.swing.JFrame {
         
         initComponents();
         setMinimumSize(getSize());
+        RepeatingReleasedEventsFixer.install();
     }
     
     void init() {
@@ -571,7 +574,7 @@ public class LemminiFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItemPlayLevelActionPerformed
 
     private void jMenuItemRestartLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRestartLevelActionPerformed
-        if (!GameController.getLevel().isReady()) {
+        if (GameController.getLevel() == null) {
             GameController.requestChangeLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber(), false);
         } else {
             GameController.requestRestartLevel(false);
@@ -597,7 +600,7 @@ public class LemminiFrame extends javax.swing.JFrame {
     public static void main(String[] args) {
         Path level = null;
         for (int i = 0; i < args.length; i++) {
-            switch (args[i].toLowerCase()) {
+            switch (Normalizer2.getNFKCCasefoldInstance().normalize(args[i])) {
                 case "-l":
                     i++;
                     if (i < args.length) {
@@ -683,6 +686,7 @@ public class LemminiFrame extends javax.swing.JFrame {
         Core.programProps.setBoolean("maximizedHoriz", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_HORIZ));
         Core.programProps.setBoolean("maximizedVert", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_VERT));
         Core.saveProgramProps();
+        RepeatingReleasedEventsFixer.remove();
         System.exit(0);
     }
     

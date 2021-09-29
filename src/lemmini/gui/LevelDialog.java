@@ -16,6 +16,7 @@
 
 package lemmini.gui;
 
+import com.ibm.icu.lang.UCharacter;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -70,12 +71,6 @@ public class LevelDialog extends javax.swing.JDialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        jScrollPaneLevels = new javax.swing.JScrollPane();
-        topNode = new DefaultMutableTreeNode("Levels");
-        levelModel = new DefaultTreeModel(topNode);
-        refreshLevels();
-        jTreeLevels = new javax.swing.JTree();
-        jTreeLevels.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
         jLabelAuthor = new javax.swing.JLabel();
         jTextFieldAuthor = new javax.swing.JTextField();
         jSeparator1 = new javax.swing.JSeparator();
@@ -122,31 +117,16 @@ public class LevelDialog extends javax.swing.JDialog {
         jButtonClearExternalLevels = new javax.swing.JButton();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
+        jScrollPaneLevels = new javax.swing.JScrollPane();
+        topNode = new DefaultMutableTreeNode("Levels");
+        levelModel = new DefaultTreeModel(topNode);
+        refreshLevels();
+        jTreeLevels = new javax.swing.JTree();
+        jTreeLevels.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Select Level");
         setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
-
-        jTreeLevels.setModel(levelModel);
-        jTreeLevels.setRootVisible(false);
-        jTreeLevels.setShowsRootHandles(true);
-        selectCurrentLevel();
-        jTreeLevels.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mousePressed(java.awt.event.MouseEvent evt) {
-                jTreeLevelsMousePressed(evt);
-            }
-        });
-        jTreeLevels.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
-            public void valueChanged(javax.swing.event.TreeSelectionEvent evt) {
-                jTreeLevelsValueChanged(evt);
-            }
-        });
-        jTreeLevels.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                jTreeLevelsKeyPressed(evt);
-            }
-        });
-        jScrollPaneLevels.setViewportView(jTreeLevels);
 
         jLabelAuthor.setText("Author:");
 
@@ -288,6 +268,27 @@ public class LevelDialog extends javax.swing.JDialog {
                 jButtonCancelActionPerformed(evt);
             }
         });
+
+        jTreeLevels.setModel(levelModel);
+        jTreeLevels.setRootVisible(false);
+        jTreeLevels.setShowsRootHandles(true);
+        selectCurrentLevel();
+        jTreeLevels.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mousePressed(java.awt.event.MouseEvent evt) {
+                jTreeLevelsMousePressed(evt);
+            }
+        });
+        jTreeLevels.addTreeSelectionListener(new javax.swing.event.TreeSelectionListener() {
+            public void valueChanged(javax.swing.event.TreeSelectionEvent evt) {
+                jTreeLevelsValueChanged(evt);
+            }
+        });
+        jTreeLevels.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyPressed(java.awt.event.KeyEvent evt) {
+                jTreeLevelsKeyPressed(evt);
+            }
+        });
+        jScrollPaneLevels.setViewportView(jTreeLevels);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -594,7 +595,7 @@ public class LevelDialog extends javax.swing.JDialog {
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, new DirectoryStream.Filter<Path>() {
                         @Override
                         public boolean accept(Path entry) throws IOException {
-                            String extension = FilenameUtils.getExtension(entry.toString()).toLowerCase(Locale.ROOT);
+                            String extension = UCharacter.toLowerCase(Locale.ROOT, FilenameUtils.getExtension(entry.toString()));
                             return extension.equals("ini") || extension.equals("lvl") || extension.equals("dat");
                         }
                     })) {
@@ -727,6 +728,7 @@ public class LevelDialog extends javax.swing.JDialog {
         if (state == GameController.State.BRIEFING || state == GameController.State.LEVEL
                 || state == GameController.State.LEVEL_END || state == GameController.State.DEBRIEFING) {
             selectLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber());
+            jButtonOK.setEnabled(true);
         }
     }
     

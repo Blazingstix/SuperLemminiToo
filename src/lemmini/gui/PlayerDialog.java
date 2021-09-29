@@ -57,7 +57,7 @@ public class PlayerDialog extends javax.swing.JDialog {
 
         jScrollPanePlayers = new javax.swing.JScrollPane();
         players = new Vector<>();
-        for (int i = 0; i < Core.getPlayerNum(); i++) {
+        for (int i = 0; i < Core.getPlayerCount(); i++) {
             players.add(Core.getPlayer(i));
         }
         jListPlayers = new javax.swing.JList(players);
@@ -176,6 +176,7 @@ public class PlayerDialog extends javax.swing.JDialog {
         int[] indices = jListPlayers.getSelectedIndices();
         for (int i = indices.length - 1; i >= 0; i--) {
             int idx = indices[i];
+            Core.deletePlayer(idx);
             players.remove(idx);
         }
         jListPlayers.setListData(players);

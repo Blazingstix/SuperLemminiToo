@@ -4,7 +4,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -45,7 +44,7 @@ public class ReplayStream {
     static final int END = 5;
     
     static final int CURRENT_FORMAT = 1;
-    static final String CURRENT_REVISION = "0.98";
+    static final String CURRENT_REVISION = "0.100";
 
     private List<ReplayEvent> events;
     private int replayIndex;
@@ -162,7 +161,6 @@ public class ReplayStream {
             if (e.length < 3 || e[0].charAt(0) != '#') {
                 throw new LemmException("Replay file does not specify a level.");
             }
-            e[0] = Normalizer.normalize(e[0], Normalizer.Form.NFKC);
             ReplayLevelInfo rli = new ReplayLevelInfo();
             rli.setLevelPack(e[0].substring(1));
             rli.setRatingNumber(Integer.parseInt(e[1]));
@@ -260,11 +258,9 @@ public class ReplayStream {
             w.write("#Players 1");
             w.newLine();
             LevelPack lp = GameController.getCurLevelPack();
-            String packName = Normalizer.normalize(lp.getName(), Normalizer.Form.NFKC);
-            String ratingName = Normalizer.normalize(lp.getRatings()[GameController.getCurRating()], Normalizer.Form.NFKC);
-            String levelName = Normalizer.normalize(GameController.getLevel().getLevelName().trim(), Normalizer.Form.NFKC);
-            w.write(String.format("#%s, %d, %d, %s, %s", packName, GameController.getCurRating(), GameController.getCurLevelNumber(),
-                    ratingName, levelName));
+            w.write(String.format("#%s, %d, %d, %s, %s",
+                    lp.getName().trim(), GameController.getCurRating(), GameController.getCurLevelNumber(),
+                    lp.getRatings()[GameController.getCurRating()].trim(), GameController.getLevel().getLevelName().trim()));
             w.newLine();
             for (ReplayEvent r : events) {
                 w.write(r.toString()); // will use toString of the correct child object

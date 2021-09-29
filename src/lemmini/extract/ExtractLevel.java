@@ -1,5 +1,6 @@
 package lemmini.extract;
 
+import com.ibm.icu.lang.UCharacter;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -423,13 +424,13 @@ public class ExtractLevel {
                     if (format >= 3) {
                         bString = new byte[16];
                         b.get(bString);
-                        String strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                        String strTemp = UCharacter.toLowerCase(Locale.ROOT, new String(bString, StandardCharsets.US_ASCII).trim());
                         if (!strTemp.isEmpty()) {
                             styleStr = strTemp;
                         }
                         bString = new byte[16];
                         b.get(bString);
-                        strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                        strTemp = UCharacter.toLowerCase(Locale.ROOT, new String(bString, StandardCharsets.US_ASCII).trim());
                         if (strTemp.equals("none")) {
                             specialStyle = -1;
                             specialStyleStr = null;
@@ -439,13 +440,13 @@ public class ExtractLevel {
                     } else {
                         b.position(b.position() + 32);
                     }
-                    if (styleStr == null) {
+                    if (styleStr == null && style != 255) {
                         styleStr = STYLES.get(style);
                         if (styleStr == null) {
                             throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
                         }
                     }
-                    if (specialStyleStr == null && specialStyle > -1) {
+                    if (specialStyleStr == null && specialStyle != 255 && specialStyle > -1) {
                         specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                         if (specialStyleStr == null) {
                             throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
@@ -759,7 +760,7 @@ public class ExtractLevel {
                         w.write("superlemming = true\r\n");
                     }
                     if (toBoolean(gimmickFlags & GIMMICK_FLAG_CHEAPO_FALL_DISTANCE)) {
-                        w.write("maxFallDistance = 158\r\n");
+                        w.write("maxFallDistance = 160\r\n");
                     }
                 } else {
                     switch (extra1) {
@@ -1182,8 +1183,9 @@ class Steel {
                 width *= scale;
                 height = (b[5] & 0xff) + 1;
                 height *= scale;
-                negative = toBoolean(b[6] & 0x01);
-                exists = toBoolean(b[6] & 0x80);
+                int steelType = b[6] & 0x7f;
+                negative = steelType == 1;
+                exists = toBoolean(b[6] & 0x80) && (steelType == 0 || steelType == 1);
                 break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
