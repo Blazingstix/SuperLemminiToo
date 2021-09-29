@@ -378,7 +378,7 @@ public class Core {
                             .filter(entry -> {
                                 String name = entry.getName();
                                 for (String ext : extensions) {
-                                    if (name.startsWith("mods/" + mod + "/" + folder) && name.endsWith("." + ext)) {
+                                    if (FilenameUtils.getPath(name).equals("mods/" + mod + "/" + folder) && name.endsWith("." + ext)) {
                                         return true;
                                     }
                                 }
@@ -399,7 +399,7 @@ public class Core {
                     .filter(entry -> {
                         String name = entry.getName();
                         for (String ext : extensions) {
-                            if (name.startsWith(folder) && name.endsWith("." + ext)) {
+                            if (FilenameUtils.getPath(name).equals(folder) && name.endsWith("." + ext)) {
                                 return true;
                             }
                         }
