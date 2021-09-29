@@ -45,7 +45,7 @@ import lemmini.tools.ToolBox;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.96a";
+    public static final String REVISION = "0.96b";
     
     private static final long serialVersionUID = 0x01L;
     

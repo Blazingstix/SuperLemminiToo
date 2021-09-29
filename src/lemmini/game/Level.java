@@ -374,8 +374,8 @@ public class Level {
         if (!strSpecialStyle.isEmpty()) {
             int positionX;
             int positionY;
-            positionX = props2.getInt("positionX", 0);
-            positionY = props2.getInt("positionY", 0);
+            positionX = p.getInt("specialStylePositionX", props2.getInt("positionX", 0));
+            positionY = p.getInt("specialStylePositionY", props2.getInt("positionY", 0));
             Terrain ter = new Terrain(new int[]{0, positionX, positionY, 0}, true);
             terrain.add(ter);
         }

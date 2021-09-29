@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lemmini.tools.ToolBox;
 
@@ -116,6 +117,7 @@ public class ExtractLevel {
     /**
      * Convert one binary LVL file into text file
      * @param in Byte array of binary LVL file
+     * @param fName File name
      * @param fnOut Name of target text file
      * @param multi Whether this is a multiplayer level
      * @param classic Whether to convert in classic mode
@@ -167,6 +169,8 @@ public class ExtractLevel {
         /* special style */
         Integer specialStyle = -1;
         String specialStyleStr = null;
+        int specialStylePositionX = 0;
+        int specialStylePositionY = 0;
         int extra1 = 0;
         int extra2 = 0;
         /* objects like doors - 32 objects each consists of 8 bytes */
@@ -231,14 +235,14 @@ public class ExtractLevel {
                 style = b.getShort() & 0xffff;
                 styleStr = STYLES.get(style);
                 if (styleStr == null) {
-                    throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
+                    throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
                 }
                 w.write("style = " + styleStr + "\r\n");
                 specialStyle = (b.getShort() & 0xffff) - 1;
                 if (specialStyle > -1) {
                     specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                     if (specialStyleStr == null) {
-                        throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
+                        throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
                     }
                     w.write("specialStyle = " + specialStyleStr + "\r\n");
                 }
@@ -302,14 +306,14 @@ public class ExtractLevel {
                         style = b.get() & 0xff;
                         styleStr = STYLES.get(style);
                         if (styleStr == null) {
-                            throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
+                            throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
                         }
                         optionFlags = b.get();
                         specialStyle = (b.get() & 0xff) - 1;
                         if (specialStyle > -1) {
                             specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                             if (specialStyleStr == null) {
-                                throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
+                                throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
                             }
                         }
                         extra1 = b.get();
@@ -317,8 +321,9 @@ public class ExtractLevel {
                         break;
                     case 1:
                     case 2:
+                    case 3:
                         if (in.length != 10240L) {
-                            throw new Exception("Format 1 and 2 level files must be 10,240 bytes in size!");
+                            throw new Exception("Format 1, 2, and 3 level files must be 10,240 bytes in size!");
                         }
                         b.order(ByteOrder.LITTLE_ENDIAN);
                         b.get();
@@ -334,18 +339,8 @@ public class ExtractLevel {
                         }
                         optionFlags = b.get();
                         style = b.get() & 0xff;
-                        styleStr = STYLES.get(style);
-                        if (styleStr == null) {
-                            throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
-                        }
                         specialStyle = (b.get() & 0xff) - 1;
-                        if (specialStyle > -1) {
-                            specialStyleStr = SPECIAL_STYLES.get(specialStyle);
-                            if (specialStyleStr == null) {
-                                throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
-                            }
-                        }
-                        if (format > 1) {
+                        if (format >= 2) {
                             xPos = b.getShort() & 0xffff;
                             xPos += multi ? 72 : 160;
                             xPos *= SCALE;
@@ -386,16 +381,49 @@ public class ExtractLevel {
                         b.get();
                         width = StrictMath.max(DEFAULT_WIDTH + b.getShort(), MINIMUM_WIDTH) * SCALE;
                         height = StrictMath.max(DEFAULT_HEIGHT + b.getShort(), MINIMUM_HEIGHT) * SCALE;
-                        b.position(b.position() + 20);
-                        byte[] bName = new byte[32];
-                        b.get(bName);
-                        lvlName = new String(bName, StandardCharsets.US_ASCII);
-                        b.position(b.position() + 96);
+                        specialStylePositionX = b.getShort() * SCALE;
+                        specialStylePositionY = b.getShort() * SCALE;
+                        b.position(b.position() + 16);
+                        byte[] bString = new byte[32];
+                        b.get(bString);
+                        lvlName = new String(bString, StandardCharsets.US_ASCII);
+                        if (format >= 3) {
+                            bString = new byte[16];
+                            b.get(bString);
+                            String strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                            if (!strTemp.isEmpty()) {
+                                styleStr = strTemp;
+                            }
+                            bString = new byte[16];
+                            b.get(bString);
+                            strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                            if (strTemp.equals("none")) {
+                                specialStyle = -1;
+                                specialStyleStr = null;
+                            } else if (!strTemp.isEmpty()) {
+                                specialStyleStr = strTemp;
+                            }
+                        } else {
+                            b.position(b.position() + 32);
+                        }
+                        if (styleStr == null) {
+                            styleStr = STYLES.get(style);
+                            if (styleStr == null) {
+                                throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
+                            }
+                        }
+                        if (specialStyleStr == null && specialStyle > -1) {
+                            specialStyleStr = SPECIAL_STYLES.get(specialStyle);
+                            if (specialStyleStr == null) {
+                                throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
+                            }
+                        }
+                        b.position(b.position() + 64);
                         break;            
                     default:
                         throw new Exception(String.format("Unsupported level format: %d", format));
                 }
-                if (format > 0 || (optionFlags & OPTION_FLAG_CUSTOM_SKILL_SET) != 0) {
+                if (format >= 1 || (optionFlags & OPTION_FLAG_CUSTOM_SKILL_SET) != 0) {
                     int skillIndex = 15;
                     int numSkills = 0;
                     int skillCountIndex;
@@ -405,6 +433,8 @@ public class ExtractLevel {
                                 skillCountIndex = numSkills;
                                 break;
                             case 1:
+                            case 2:
+                            case 3:
                                 skillCountIndex = skillCounts.length - 1 - skillIndex;
                                 break;
                             default:
@@ -507,8 +537,12 @@ public class ExtractLevel {
                 w.write("xPosCenter = " + xPos + "\r\n");
                 w.write("yPosCenter = " + yPos + "\r\n");
                 w.write("style = " + styleStr + "\r\n");
-                if (specialStyle > -1) {
+                if (specialStyleStr != null) {
                     w.write("specialStyle = " + specialStyleStr + "\r\n");
+                    if (format >= 3) {
+                        w.write("specialStylePositionX = " + specialStylePositionX + "\r\n");
+                        w.write("specialStylePositionY = " + specialStylePositionY + "\r\n");
+                    }
                 }
                 if ((optionFlags & OPTION_FLAG_AUTOSTEEL) != 0) {
                     if ((optionFlags & OPTION_FLAG_SIMPLE_AUTOSTEEL) != 0) {
@@ -517,7 +551,7 @@ public class ExtractLevel {
                         w.write("autosteelMode = 2\r\n");
                     }
                 }
-                if (format > 0 || (optionFlags & OPTION_FLAG_CUSTOM_GIMMICKS) != 0) {
+                if (format >= 1 || (optionFlags & OPTION_FLAG_CUSTOM_GIMMICKS) != 0) {
                     if ((gimmickFlags & GIMMICK_FLAG_SUPERLEMMING) != 0) {
                         w.write("superlemming = true\r\n");
                     }
@@ -556,6 +590,9 @@ public class ExtractLevel {
                     break;
                 case 1:
                 case 2:
+                    bytes = new byte[64][16];
+                    break;
+                case 3:
                     bytes = new byte[128][8];
                     break;
                 default:
@@ -626,6 +663,7 @@ public class ExtractLevel {
                     break;
                 case 1:
                 case 2:
+                case 3:
                     bytes = new byte[1000][8];
                     break;
                 default:
@@ -681,6 +719,7 @@ public class ExtractLevel {
                     break;
                 case 1:
                 case 2:
+                case 3:
                     bytes = new byte[128][8];
                     break;
                 default:
@@ -832,6 +871,7 @@ class LvlObject {
                 break;
             case 1:
             case 2:
+            case 3:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);
@@ -923,6 +963,7 @@ class Terrain {
                 break;
             case 1:
             case 2:
+            case 3:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);
@@ -1008,6 +1049,7 @@ class Steel {
                 break;
             case 1:
             case 2:
+            case 3:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);
