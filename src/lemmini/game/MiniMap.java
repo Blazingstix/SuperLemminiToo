@@ -156,7 +156,7 @@ public class Minimap {
      */
     public static int move(final int x, final int y) {
         int scaledDrawWidth = ToolBox.scale(Core.getDrawWidth(), scaleX);
-        int cappedX = (int) ToolBox.cap(scaledDrawWidth / 2.0, x, visibleWidth - scaledDrawWidth / 2.0);
+        int cappedX = (int) ToolBox.cap(scaledDrawWidth / 2.0, x, Math.max(visibleWidth, scaledDrawWidth) - scaledDrawWidth / 2.0);
         return ToolBox.unscale(cappedX - scaledDrawWidth / 2 + xPos, scaleX);
     }
     
