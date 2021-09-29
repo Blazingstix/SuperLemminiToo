@@ -52,7 +52,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.103a";
+    public static final String REVISION = "0.103b";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -755,7 +755,7 @@ public class LemminiFrame extends JFrame {
         /*
          * Apple menu bar for MacOS
          */
-        System.setProperty("com.apple.macos.useScreenMenuBar", "true");
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
         
         /*
          * Check JVM version

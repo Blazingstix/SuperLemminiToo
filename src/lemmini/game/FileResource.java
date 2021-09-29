@@ -44,19 +44,14 @@ public class FileResource implements Resource {
     }
     
     public FileResource(String origPath, CaseInsensitiveFileTree tree) {
-        this(origPath, origPath, tree, tree.getPath(origPath));
+        this(origPath, origPath, tree);
     }
     
     public FileResource(String origPath, String realPath, CaseInsensitiveFileTree tree) {
-        this(origPath, realPath, tree, tree.getPath(realPath));
-    }
-    
-    private FileResource(String origPath, String realPath,
-            CaseInsensitiveFileTree tree, Path file) {
         this.origPath = origPath;
         this.realPath = realPath;
         this.tree = tree;
-        this.file = file;
+        this.file = tree.getPath(realPath);
     }
     
     @Override
@@ -78,8 +73,7 @@ public class FileResource implements Resource {
     public FileResource getSibling(String sibling) {
         String newOrigPath = ToolBox.getParent(origPath) + sibling;
         String newRealPath = ToolBox.getParent(realPath) + sibling;
-        Path newFile = tree.getPath(sibling);
-        return new FileResource(newOrigPath, newRealPath, tree, newFile);
+        return new FileResource(newOrigPath, newRealPath, tree);
     }
 
     @Override
