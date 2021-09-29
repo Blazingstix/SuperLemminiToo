@@ -30,7 +30,7 @@ public class OutputFrame extends JFrame {
     
     /** Extraction canceled? */
     private boolean cancel = false;
-
+    
     /**
      * Creates new form OutputFrame
      */
@@ -38,7 +38,7 @@ public class OutputFrame extends JFrame {
         initComponents();
         setMinimumSize(getSize());
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -116,13 +116,13 @@ public class OutputFrame extends JFrame {
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         synchronized (this) {
             notifyAll();
         }
     }//GEN-LAST:event_formWindowClosed
-
+    
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         cancel = true;
     }//GEN-LAST:event_formWindowClosing
@@ -131,12 +131,12 @@ public class OutputFrame extends JFrame {
         cancel = false;
         dispose();
     }//GEN-LAST:event_jButtonOKActionPerformed
-
+    
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         cancel = true;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
-
+    
     /**
      * Print text to output console.
      * @param txt text to print
@@ -145,7 +145,7 @@ public class OutputFrame extends JFrame {
         jTextAreaOutput.insert(txt, jTextAreaOutput.getDocument().getLength());
         jTextAreaOutput.setCaretPosition(jTextAreaOutput.getDocument().getLength());
     }
-
+    
     /**
      * Return cancel state of extraction process.
      * @return true if extraction was canceled, else false

@@ -28,7 +28,7 @@ public class LevelRecord {
     private final int skillsUsed;
     private final int timeElapsed;
     private final int score;
-
+    
     public LevelRecord(boolean completed, int lemmingsSaved, int skillsUsed, int timeElapsed, int score) {
         this.completed = completed;
         this.lemmingsSaved = lemmingsSaved;

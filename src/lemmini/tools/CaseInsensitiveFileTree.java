@@ -26,9 +26,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -66,13 +64,13 @@ public class CaseInsensitiveFileTree {
                 addPath(dir);
                 return FileVisitResult.CONTINUE;
             }
-
+            
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                 addPath(file);
                 return FileVisitResult.CONTINUE;
             }
-
+            
             @Override
             public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
                 // skip files that can't be read due to an AccessDeniedException
@@ -91,13 +89,6 @@ public class CaseInsensitiveFileTree {
         };
         
         if (Files.exists(root)) {
-            /*try (Stream<Path> fileStream = Files.walk(root, maxDepth)) {
-                fileStream.forEach(path -> {
-                    String relativePathStr = pathToString(root.relativize(path));
-                    List<Path> pathVariants = filesTemp.computeIfAbsent(relativePathStr,  s -> new ArrayList<>(1));
-                    pathVariants.add(path);
-                });
-            }*/
             Files.walkFileTree(root, Collections.emptySet(), maxDepth, visitor);
         }
         files.putAll(filesTemp);
@@ -159,7 +150,7 @@ public class CaseInsensitiveFileTree {
         return files.entrySet().stream()
                 .filter(entry -> p.matcher(entry.getKey()).matches())
                 .map(Map.Entry::getValue)
-                .collect(() -> new ArrayList<Path>(512), List::addAll, List::addAll);
+                .collect(() -> new ArrayList<>(512), List::addAll, List::addAll);
     }
     
     public boolean exists(String fileName) {
@@ -197,7 +188,10 @@ public class CaseInsensitiveFileTree {
                     pathVariants.add(path);
                     return out;
                 } catch (Exception ex) {
-                    IOUtils.closeQuietly(out);
+                    try {
+                        out.close();
+                    } catch (IOException ex2) {
+                    }
                     throw ex;
                 }
             }
@@ -239,7 +233,10 @@ public class CaseInsensitiveFileTree {
                     pathVariants.add(path);
                     return w;
                 } catch (Exception ex) {
-                    IOUtils.closeQuietly(w);
+                    try {
+                        w.close();
+                    } catch (IOException ex2) {
+                    }
                     throw ex;
                 }
             }
@@ -385,7 +382,7 @@ public class CaseInsensitiveFileTree {
     }
     
     private static class FileNameComparator implements Comparator<String> {
-
+        
         @Override
         public int compare(String o1, String o2) {
             if ((o1.isEmpty() && !o2.isEmpty()) 
@@ -404,13 +401,13 @@ public class CaseInsensitiveFileTree {
                 char c1 = o1.charAt(i);
                 char c2 = o2.charAt(i);
                 if (c1 == '/' && c2 != '/') {
-                    if (o2.indexOf('/', i) >= 0) {
+                    if (o2.indexOf('/', i) != StringUtils.INDEX_NOT_FOUND) {
                         return -1;
                     } else {
                         return 1;
                     }
                 } else if (c1 != '/' && c2 == '/') {
-                    if (o1.indexOf('/', i) >= 0) {
+                    if (o1.indexOf('/', i) != StringUtils.INDEX_NOT_FOUND) {
                         return 1;
                     } else {
                         return -1;
@@ -418,9 +415,9 @@ public class CaseInsensitiveFileTree {
                 } else if (c1 != c2) {
                     int slashPos1 = o1.indexOf('/', i);
                     int slashPos2 = o2.indexOf('/', i);
-                    if (slashPos1 < 0 && slashPos2 >= 0) {
+                    if (slashPos1 == StringUtils.INDEX_NOT_FOUND && slashPos2 != StringUtils.INDEX_NOT_FOUND) {
                         return -1;
-                    } else if (slashPos1 >= 0 && slashPos2 < 0) {
+                    } else if (slashPos1 != StringUtils.INDEX_NOT_FOUND && slashPos2 == StringUtils.INDEX_NOT_FOUND) {
                         return 1;
                     } else {
                         return c1 - c2;

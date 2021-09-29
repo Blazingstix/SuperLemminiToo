@@ -9,7 +9,6 @@ import java.util.*;
 import java.util.zip.Adler32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import javax.swing.JOptionPane;
 import lemmini.game.Core;
 import lemmini.tools.CaseInsensitiveFileTree;
 import lemmini.tools.Props;
@@ -82,24 +81,6 @@ public class Extract implements Runnable {
     private static Thread thisThread;
     /** reference to class loader */
     private static ClassLoader loader;
-    
-    /**
-     * Display an exception message box.
-     * @param ex Exception
-     */
-    private static void showException(final Throwable ex) {
-        String m = "<html>" + ex.getClass().getName() + "<p>";
-        if (ex.getMessage() != null) {
-            m += ex.getMessage() + "<p>";
-        }
-        StackTraceElement[] ste = ex.getStackTrace();
-        for (StackTraceElement ste1 : ste) {
-            m += ste1.toString() + "<p>";
-        }
-        m += "</html>";
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(null, m, "Error", JOptionPane.ERROR_MESSAGE);
-    }
     
     /* (non-Javadoc)
      * @see java.lang.Runnable#run()
@@ -483,8 +464,8 @@ public class Extract implements Runnable {
         } catch (ExtractException ex) {
             threadException = ex;
             out(ex.getMessage());
-        } catch (Exception ex) {
-            showException(ex);
+        } catch (Throwable ex) {
+            ToolBox.showException(ex);
             System.exit(1);
         } finally {
             if (tempFolder != null) {

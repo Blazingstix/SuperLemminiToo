@@ -36,7 +36,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author Volker Oth
  */
 public class TextScreen {
-
+    
     /** Mode (type of screen to present) */
     public static enum Mode {
         /** initial state */
@@ -86,7 +86,7 @@ public class TextScreen {
         NEXT_RATING,
         NONE;
     }
-
+    
     /** synchronization monitor */
     private static final Object monitor = new Object();
     /** y position of scroll text - pixels relative to center */
@@ -104,7 +104,7 @@ public class TextScreen {
     /** scroll text */
     private static final String SCROLL_TEXT =
         "SuperLemmini - a game engine for Lemmings(tm) in Java. "
-        + "Coded by Ryan Sakowski 2013-2017. "
+        + "Coded by Ryan Sakowski 2013-2016. "
         + "Original Lemmini by Volker Oth 2005-2017. "
         + "Original website: www.lemmini.de. "
         + "Thanks to Martin Cameron for his IBXM library, "
@@ -112,7 +112,7 @@ public class TextScreen {
         + "the guys of DMA Design for writing the original Lemmings, "
         + "ccexplore and the other nice folks at the Lemmings Forum for discussion and advice, "
         + "and Oracle for maintaining Java and providing the community with a free development environment.";
-
+    
     /** TextDialog used as base component */
     private static TextDialog textDialog;
     /** frames for rotation animation */
@@ -126,7 +126,7 @@ public class TextScreen {
     /** screen type to display */
     private static Mode mode;
     private static int hintIndex;
-
+    
     /**
      * Set mode.
      * @param m mode.
@@ -158,7 +158,7 @@ public class TextScreen {
     static void initIntro() {
         textDialog.clear();
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN), true);
-        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 9/2017", null, 4, RED);
+        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 1/2020", null, 4, RED);
         textDialog.addTextButton("Play Level", "Play Level", null, -5, -2, Button.PLAY_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Load Replay", "Load Replay", null, -14, 0, Button.LOAD_REPLAY, BLUE, BROWN);
         textDialog.addTextButton("Enter Code", "Enter Code", null, 3, 0, Button.ENTER_CODE, BLUE, BROWN);
@@ -166,7 +166,7 @@ public class TextScreen {
         textDialog.addTextButton("Options", "Options", null, 4, 1, Button.OPTIONS, BLUE, BROWN);
         textDialog.addTextButton("Exit", "Exit", null, -2, 2, Button.EXIT, BLUE, BROWN);
     }
-
+    
     /**
      * Initialize the briefing screen.
      */
@@ -181,7 +181,7 @@ public class TextScreen {
         textDialog.addTextButton("Start Level", "Start Level", null, -12, 6, Button.START_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Menu", "Menu", null, 4, 6, Button.MENU, BLUE, BROWN);
     }
-
+    
     /**
      * Initialize the debriefing screen.
      */
@@ -329,7 +329,7 @@ public class TextScreen {
         hintIndex--;
         showHint();
     }
-
+    
     /**
      * Get text dialog.
      * @return text dialog.
@@ -339,7 +339,7 @@ public class TextScreen {
             return textDialog;
         }
     }
-
+    
     /**
      * Initialize text screen.
      */
@@ -354,8 +354,7 @@ public class TextScreen {
                                     * (((ROT_ANIM_LENGTH - 1.0) - (i * 2.0)) / (ROT_ANIM_LENGTH - 1.0))), 1),
                             RenderingHints.VALUE_INTERPOLATION_BILINEAR, false);
                 } else {
-                    rotImg[i] = new LemmImage(rotImg[ROT_ANIM_LENGTH - 1 - i]);
-                    rotImg[i].flip(false, true);
+                    rotImg[i] = rotImg[ROT_ANIM_LENGTH - 1 - i].transform(false, false, true);
                 }
             }
             rotCtr = 0;
@@ -385,11 +384,11 @@ public class TextScreen {
                     scrollerGfx.dispose();
                 }
             }
-
+            
             textDialog = new TextDialog();
         }
     }
-
+    
     /**
      * Update the text screen (for animations)
      */
@@ -410,7 +409,7 @@ public class TextScreen {
             }
         }
     }
-
+    
     /**
      * Update the into screen.
      */
@@ -437,25 +436,25 @@ public class TextScreen {
         // manage scroller
         LemmImage subimage = scrollerImg.getSubimage(scrollPixCtr, 0, SCROLL_WIDTH, scrollerImg.getHeight());
         textDialog.addImage(subimage, "introAnimation", SCROLL_Y);
-
+        
         scrollPixCtr += SCROLL_STEP;
         if (scrollPixCtr >= scrollerImg.getWidth() - SCROLL_WIDTH) {
             scrollPixCtr = 0;
         }
     }
-
+    
     /**
      * Update the briefing screen.
      */
     private static void update_briefing() {
     }
-
+    
     /**
      * Update the debriefing screen.
      */
     private static void update_debriefing() {
     }
-
+    
     /**
      * Draw the text screen to the given graphics object.
      * @param g graphics object to draw the text screen to

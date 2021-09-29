@@ -495,7 +495,7 @@ public class LevelDialog extends JDialog {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void jTreeLevelsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTreeLevelsKeyPressed
         if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
             TreePath selPath = jTreeLevels.getSelectionPath();
@@ -512,7 +512,7 @@ public class LevelDialog extends JDialog {
             }
         }
     }//GEN-LAST:event_jTreeLevelsKeyPressed
-
+    
     private void jTreeLevelsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeLevelsMousePressed
         if (evt.getClickCount() == 2) {
             TreePath selPath = jTreeLevels.getPathForLocation(evt.getX(), evt.getY());
@@ -525,11 +525,11 @@ public class LevelDialog extends JDialog {
             }
         }
     }//GEN-LAST:event_jTreeLevelsMousePressed
-
+    
     private void jTreeLevelsValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreeLevelsValueChanged
         fillInInfo();
     }//GEN-LAST:event_jTreeLevelsValueChanged
-
+    
     private void jButtonAddExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalLevelsActionPerformed
         List<Path> externLvls = ToolBox.getFileNames(this, lvlPath, true, true, Core.LEVEL_EXTENSIONS);
         if (externLvls != null) {
@@ -567,13 +567,13 @@ public class LevelDialog extends JDialog {
             }
         }
     }//GEN-LAST:event_jButtonAddExternalLevelsActionPerformed
-
+    
     private void jButtonClearExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonClearExternalLevelsActionPerformed
         GameController.clearExternalLevelList();
         refreshLevels();
         levelModel.reload();
     }//GEN-LAST:event_jButtonClearExternalLevelsActionPerformed
-
+    
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
         TreePath selPath = jTreeLevels.getSelectionPath();
         Object[] selPathArray = selPath.getPath();
@@ -582,7 +582,7 @@ public class LevelDialog extends JDialog {
         }
         dispose();
     }//GEN-LAST:event_jButtonOKActionPerformed
-
+    
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
@@ -668,6 +668,12 @@ public class LevelDialog extends JDialog {
     }
     
     private void selectLevel(int lp, int rating, int level) {
+        if (lp < 0 || lp >= levelPackPositionLookup.length
+                || rating < 0 || rating >= ratingPositionLookup[lp].length
+                || level < 0 || level >= levelPositionLookup[lp][rating].length) {
+            return;
+        }
+        
         int newLp = levelPackPositionLookup[lp];
         int newRating = ratingPositionLookup[lp][rating];
         int newLevel = levelPositionLookup[lp][rating][level];

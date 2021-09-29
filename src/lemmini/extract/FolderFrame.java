@@ -36,21 +36,21 @@ import org.apache.commons.lang3.StringUtils;
 public class FolderFrame extends JFrame {
     
     private static final long serialVersionUID = 0x01L;
-
+    
     /** destination (Lemmini resource) path for extraction */
     private String destination;
     /** source (WINLEMM) path for extraction */
     private String source;
     /** flag that tells whether to extract or not */
     private boolean doExtract = false;
-
+    
     /**
      * Creates new form FolderFrame
      */
     public FolderFrame() {
         initComponents();
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -183,7 +183,7 @@ public class FolderFrame extends JFrame {
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         source = jTextFieldSrc.getText();
         destination = jTextFieldDest.getText();
@@ -195,7 +195,7 @@ public class FolderFrame extends JFrame {
     private void jTextFieldSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSrcActionPerformed
         source = jTextFieldSrc.getText();
     }//GEN-LAST:event_jTextFieldSrcActionPerformed
-
+    
     private void jButtonSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSrcActionPerformed
         JFileChooser jf = new JFileChooser(source);
         jf.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -205,11 +205,11 @@ public class FolderFrame extends JFrame {
             jTextFieldSrc.setText(source);
         }
     }//GEN-LAST:event_jButtonSrcActionPerformed
-
+    
     private void jTextFieldDestActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldDestActionPerformed
         destination = jTextFieldDest.getText();
     }//GEN-LAST:event_jTextFieldDestActionPerformed
-
+    
     private void jButtonDestActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDestActionPerformed
         JFileChooser jf = new JFileChooser(destination);
         jf.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -219,7 +219,7 @@ public class FolderFrame extends JFrame {
             jTextFieldDest.setText(destination);
         }
     }//GEN-LAST:event_jButtonDestActionPerformed
-
+    
     private void jButtonExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExtractActionPerformed
         source = jTextFieldSrc.getText();
         destination = jTextFieldDest.getText();
@@ -237,12 +237,12 @@ public class FolderFrame extends JFrame {
             JOptionPane.showMessageDialog(this, String.format("Windows Lemmings path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButtonExtractActionPerformed
-
+    
     private void jButtonQuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonQuitActionPerformed
         doExtract = false;
         dispose();
     }//GEN-LAST:event_jButtonQuitActionPerformed
-
+    
     /**
      * Set parameters for text edit boxes.
      * @param srcPath source (WINLEMM) path for extraction
@@ -254,7 +254,7 @@ public class FolderFrame extends JFrame {
         destination = destPath.toString();
         jTextFieldDest.setText(destination);
     }
-
+    
     /**
      * Get destination (Lemmini resource) path for extraction.
      * @return destination (Lemmini resource) path for extraction
@@ -266,7 +266,7 @@ public class FolderFrame extends JFrame {
             return Paths.get(StringUtils.EMPTY);
         }
     }
-
+    
     /**
      * Get source (WINLEMM) path for extraction.
      * @return source (WINLEMM) path for extraction
@@ -278,7 +278,7 @@ public class FolderFrame extends JFrame {
             return Paths.get(StringUtils.EMPTY);
         }
     }
-
+    
     /**
      * Get extraction selection status.
      * @return true if extraction was chosen, false otherwise

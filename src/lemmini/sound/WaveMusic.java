@@ -41,7 +41,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private boolean playIntro;
     private AudioFormat format;
     private Thread waveThread;
-
+    
     @Override
     public void load(final Resource res, final boolean loop) throws ResourceException, LemmException {
         if (waveThread != null) {
@@ -106,7 +106,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
                     false);
         }
     }
-
+    
     @Override
     public void run() {
         try {
@@ -169,18 +169,18 @@ public class WaveMusic implements Runnable, MusicPlayer {
             close();
         }
     }
-
+    
     @Override
     public synchronized void stop() {
         play = false;
     }
-
+    
     @Override
     public synchronized void play() {
         play = true;
         notifyAll();
     }
-
+    
     @Override
     public void close() {
         if (waveThread == null) {
@@ -209,7 +209,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
         } catch (IOException ex) {
         }
     }
-
+    
     @Override
     public void setGain(double gain) {
         if (gain > 2.0) {

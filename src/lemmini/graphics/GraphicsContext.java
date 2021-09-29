@@ -26,7 +26,7 @@ import java.awt.image.WritableRaster;
  */
 
 public class GraphicsContext {
-
+    
     private final Graphics2D graphics;
     
     public GraphicsContext(Graphics2D graphics) {
@@ -40,31 +40,31 @@ public class GraphicsContext {
     public void clearRect(int x, int y, int width, int height) {
         graphics.clearRect(x, y, width, height);
     }
-
+    
     public void drawRect(int x, int y, int width, int height) {
         graphics.drawRect(x, y, width, height);
     }
-
+    
     public void fillRect(int x, int y, int width, int height) {
         graphics.fillRect(x, y, width, height);
     }
-
+    
     public void setBackground(Color bgColor) {
         graphics.setBackground(bgColor);
     }
-
+    
     public void setColor(Color color) {
         graphics.setColor(color);
     }
-
+    
     public void drawImage(LemmImage image, int x, int y) {
         graphics.drawImage(image.getImage(), x, y, null);
     }
-
+    
     public void drawImage(LemmImage image, int x, int y, int width, int height) {
         graphics.drawImage(image.getImage(), x, y, width, height, null);
     }
-
+    
     public void drawImage(LemmImage image, int dx1, int dy1, int dx2, int dy2, int sx1, int sy1, int sx2, int sy2) {
         graphics.drawImage(image.getImage(), dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
     }
@@ -72,7 +72,7 @@ public class GraphicsContext {
     public void setRenderingHint(RenderingHints.Key hintKey, Object hintValue) {
         graphics.setRenderingHint(hintKey, hintValue);
     }
-
+    
     public void grabPixels(LemmImage image, int x, int y, int w, int h, int[] pix, int off, int scanSize) {
         PixelGrabber pixelgrabber = new PixelGrabber(image.getImage(), x, y, w, h, pix, off, scanSize);
         try {
@@ -80,12 +80,12 @@ public class GraphicsContext {
         } catch (InterruptedException ex) {
         }
     }
-
+    
     public void copy(LemmImage source, LemmImage target) {
         WritableRaster rImgSpr = target.getImage().getRaster();
         rImgSpr.setRect(source.getImage().getRaster()); // just copy
     }
-
+    
     public void dispose() {
         graphics.dispose();
     }

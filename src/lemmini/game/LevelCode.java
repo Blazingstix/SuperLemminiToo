@@ -34,7 +34,7 @@ public class LevelCode {
     //  3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0| 3  2  1  0
     // -----------|-----------|-----------|-----------|-----------|-----------|-----------
     // L0 %0 F0 U0|U1 L1  0 %1|U2 L2 %2 F1|U4 U3 %3 L3|%4 U5 L4 F2|U6 %5 F3 L5|L7 L6  0 %6
-
+    
     /* level: L */
     private static final int[] LMASK   = {1, 2, 4,  8, 16, 32, 192};
     private static final int[] LSHIFTL = {3, 1, 0,  0,  0,  0,   0};
@@ -59,8 +59,8 @@ public class LevelCode {
     
     private static final int FIRST_LETTER = 0x41;
     private static final int LAST_LETTER = 0x5A;
-
-
+    
+    
     /**
      * Create a level code from the given parameters
      * @param seed The seed string used as base for the level code
@@ -87,11 +87,11 @@ public class LevelCode {
         byte[] bi;
         bi = seed.getBytes(StandardCharsets.US_ASCII);
         byte[] bo = new byte[bi.length];
-
+        
         // add offset and wrap around
         int level = lvl + offset;
         level %= (MAX_LVL_NUM + 1);
-
+        
         // create first 7 bytes
         int sum = 0;
         for (int i = 0; i < 7; i++) {
@@ -122,7 +122,7 @@ public class LevelCode {
         }
         return new String(bo, StandardCharsets.US_ASCII);
     }
-
+    
     /**
      * Extract the level info from the level code and seed
      * @param seed The seed string used as base for the level code
@@ -136,7 +136,7 @@ public class LevelCode {
         bs = seed.getBytes(StandardCharsets.US_ASCII);
         bi = code.getBytes(StandardCharsets.US_ASCII);
         byte[] bo = new byte[bi.length];
-
+        
         if (seed.length() != 10 || code.length() != 10) {
             return null;
         }
@@ -197,7 +197,7 @@ public class LevelCode {
         while (level < 0) {
             level += MAX_LVL_NUM;
         }
-
+        
         int[] ret = {level, percent, failed, unknown};
         return ret;
     }

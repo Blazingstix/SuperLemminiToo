@@ -33,7 +33,7 @@ import org.apache.commons.io.FilenameUtils;
  * @author Volker Oth
  */
 public class Player {
-
+    
     /** property class to store player settings persistently */
     private Props props;
     /** used to store level progress */
@@ -42,7 +42,7 @@ public class Player {
     private boolean cheat;
     /** player's name */
     private String name;
-
+    
     /**
      * Constructor.
      * @param n player's name
@@ -58,7 +58,7 @@ public class Player {
         } catch (IOException ex) {
         }
         Path iniFilePath = getPlayerINIFilePath(name);
-
+        
         if (props.load(iniFilePath)) { // might exist or not - if not, it's created
             // file exists, now extract entries
             for (int idx = 0; true; idx++) {
@@ -69,7 +69,7 @@ public class Player {
                     break;
                 }
                 
-                BigInteger unlockedLevels = new BigInteger(s[1]);
+                BigInteger unlockedLevels = ToolBox.parseBigInteger(s[1]);
                 Map<Integer, LevelRecord> levelRecords = new LinkedHashMap<>();
                 for (int j = 0; j < unlockedLevels.bitLength(); j++) {
                     if (j == 0 || unlockedLevels.testBit(j)) {
@@ -88,18 +88,18 @@ public class Player {
                 lvlGroups.put(s[0], new LevelGroup(levelRecords));
             }
         }
-
+        
         // cheat mode
         cheat = false;
     }
-
+    
     /**
      * Enable cheat mode for this player.
      */
     public void enableCheatMode() {
         cheat = true;
     }
-
+    
     /**
      * Store player's progress.
      */
@@ -125,7 +125,7 @@ public class Player {
         }
         props.save(getPlayerINIFilePath(name));
     }
-
+    
     /**
      * Allow a level to be played.
      * @param pack level pack
@@ -147,7 +147,7 @@ public class Player {
             lg.levelRecords.put(num, LevelRecord.BLANK_LEVEL_RECORD);
         }
     }
-
+    
     /**
      * Check if player is allowed to play a level.
      * @param pack level pack
@@ -201,7 +201,7 @@ public class Player {
             return lg.levelRecords.get(num);
         }
     }
-
+    
     /**
      * Get player's name.
      * @return player's name
@@ -209,7 +209,7 @@ public class Player {
     public String getName() {
         return name;
     }
-
+    
     /**
      * Get cheat state.
      * @return true if cheat is enabled
@@ -385,7 +385,7 @@ public class Player {
     }
     
     private class LevelGroup {
-
+        
         private final Map<Integer, LevelRecord> levelRecords;
         
         private LevelGroup(Map<Integer, LevelRecord> levelRecords) {

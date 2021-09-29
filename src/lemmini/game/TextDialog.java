@@ -38,7 +38,7 @@ public class TextDialog {
     
     private LemmImage backgroundImage;
     private boolean tileBackground;
-
+    
     /**
      * Create dialog text screen.
      */
@@ -46,7 +46,7 @@ public class TextDialog {
         buttons = new LinkedHashMap<>();
         images = new LinkedHashMap<>();
     }
-
+    
     /**
      * Clear the text screen.
      */
@@ -106,7 +106,7 @@ public class TextDialog {
             });
         }
     }
-
+    
     /**
      * Set Image as background.
      * @param image Image to use as background
@@ -117,7 +117,7 @@ public class TextDialog {
         backgroundImage = image;
         tileBackground = true;
     }
-
+    
     /**
      * Draw string.
      * @param s String
@@ -148,7 +148,7 @@ public class TextDialog {
             }
         }
     }
-
+    
     /**
      * Draw string.
      * @param s String
@@ -159,7 +159,7 @@ public class TextDialog {
     public void addString(final String s, final String group, final int x, final int y) {
         addString(s, group, x, y, LemmFont.Color.GREEN);
     }
-
+    
     /**
      * Draw string horizontally centered.
      * @param s String
@@ -193,7 +193,7 @@ public class TextDialog {
             }
         }
     }
-
+    
     /**
      * Draw string horizontally centered.
      * @param s String
@@ -203,7 +203,7 @@ public class TextDialog {
     public void addStringCentered(final String s, final String group, final int y) {
         addStringCentered(s, group, y, LemmFont.Color.GREEN);
     }
-
+    
     /**
      * Add an image.
      * @param img Image
@@ -217,7 +217,7 @@ public class TextDialog {
             images.get(group).add(new TextDialogImage(img, x, y));
         }
     }
-
+    
     /**
      * Add a horizontally centered image.
      * @param img Image
@@ -231,7 +231,7 @@ public class TextDialog {
             images.get(group).add(new TextDialogImage(img, x, y));
         }
     }
-
+    
     /**
      * Add Button.
      * @param img Button image
@@ -251,7 +251,7 @@ public class TextDialog {
             buttons.get(group).add(b);
         }
     }
-
+    
     /**
      * Add text button.
      * @param type Button type
@@ -276,7 +276,7 @@ public class TextDialog {
             buttons.get(group).add(b);
         }
     }
-
+    
     /**
      * React on left click.
      * @param x X position in pixels relative to center
@@ -295,7 +295,7 @@ public class TextDialog {
         }
         return TextScreen.Button.NONE;
     }
-
+    
     /**
      * React on mouse hover.
      * @param x X position relative to center
@@ -358,7 +358,7 @@ class Button {
     protected LemmImage image;
     /** selected button image */
     protected LemmImage imgSelected;
-
+    
     /**
      * Constructor
      * @param xi x position in pixels
@@ -375,7 +375,7 @@ class Button {
         image = null;
         imgSelected = null;
     }
-
+    
     /**
      * Set normal button image.
      * @param img image
@@ -389,7 +389,7 @@ class Button {
             width = image.getWidth();
         }
     }
-
+    
     /**
      * Set selected button image.
      * @param img image
@@ -403,7 +403,7 @@ class Button {
             width = imgSelected.getWidth();
         }
     }
-
+    
     /**
      * Return current button image (normal or selected, depending on state).
      * @return current button image
@@ -415,7 +415,7 @@ class Button {
             return image;
         }
     }
-
+    
     /**
      * Draw the button.
      * @param g graphics object to draw on
@@ -428,7 +428,7 @@ class Button {
             g.drawImage(getImage(), cx + x, cy + y);
         }
     }
-
+    
     /**
      * Check if a (mouse) position is inside this button.
      * @param xi
@@ -454,7 +454,7 @@ class TextButton extends Button {
     TextButton(final int xi, final int yi, final TextScreen.Button typei) {
         super(xi, yi, typei);
     }
-
+    
     /**
      * Set text which is used as button.
      * @param s String which contains the button text
@@ -472,7 +472,7 @@ class TextButton extends Button {
             width = image.getWidth();
         }
     }
-
+    
     /**
      * Set text for selected button.
      * @param s String which contains the selected button text
@@ -512,7 +512,7 @@ class TextDialogImage {
         y = yi;
         image = LemmFont.strImage(text, col);
     }
-
+    
     /**
      * Draw the image.
      * @param g graphics object to draw on

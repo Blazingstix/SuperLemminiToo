@@ -29,7 +29,7 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class Minimap {
-
+    
     /** color of Lemmings in minimap */
     private static final Color LEMM_COLOR = Color.RED;
     /** color of screen frame in minimap */
@@ -37,7 +37,7 @@ public class Minimap {
     private static final int LEMM_DOT_SCALE = 2;
     private static final int MAX_VISIBLE_WIDTH = 200;
     private static final int MAX_VISIBLE_HEIGHT = 40;
-
+    
     /** image used for minimap */
     private static LemmImage img;
     /** X scale */
@@ -50,7 +50,7 @@ public class Minimap {
     private static int visibleHeight;
     private static int xPos;
     private static boolean tinted;
-
+    
     /**
      * init
      * @param sx X Scale
@@ -74,7 +74,7 @@ public class Minimap {
             xPos = ToolBox.cap(0, xPosTemp, img.getWidth() - visibleWidth);
         }
     }
-
+    
     /**
      * Draw minimap.
      * @param g Graphics object to draw on
@@ -84,7 +84,7 @@ public class Minimap {
     public static void draw(final GraphicsContext g, final int x, final int y) {
         g.drawImage(img, x - xPos, y - ToolBox.scale(GameController.getYPos(), scaleY));
     }
-
+    
     /**
      * Draw Lemming in minimap.
      * @param g Graphics object to draw on
@@ -119,7 +119,7 @@ public class Minimap {
             g.drawRect(x + scaledXPos - xPos, y, wWidth - 1, visibleHeight - 1);
         }
     }
-
+    
     /**
      * Return current image.
      * @return current image.
@@ -147,7 +147,7 @@ public class Minimap {
     public static double getScaleY() {
         return scaleY;
     }
-
+    
     /**
      * Move screen frame via minimap.
      * @param x cursor x position relative to minimap in original gfx.
@@ -179,9 +179,6 @@ public class Minimap {
     }
     
     public static int tintColor(int color) {
-        //if ((color & 0xff000000) == 0) {
-        //    return 0;
-        //}
         int alpha = (color & 0xff000000) >>> 24;
         int sum = 0;
         for (int i = 0; i < 3; i++) {

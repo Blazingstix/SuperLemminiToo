@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Ryan.
+ * Copyright 2015 Ryan Sakowski.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,12 +58,12 @@ public class FileResource implements Resource {
     public boolean exists() {
         return Files.isRegularFile(file);
     }
-
+    
     @Override
     public String getFileName() {
         return file.getFileName().toString();
     }
-
+    
     @Override
     public String getOriginalPath() {
         return origPath;
@@ -75,17 +75,17 @@ public class FileResource implements Resource {
         String newRealPath = ToolBox.getParent(realPath) + sibling;
         return new FileResource(newOrigPath, newRealPath, tree);
     }
-
+    
     @Override
     public InputStream getInputStream() throws IOException {
         return Files.newInputStream(file);
     }
-
+    
     @Override
     public BufferedReader getBufferedReader() throws IOException {
         return ToolBox.getBufferedReader(file);
     }
-
+    
     @Override
     public byte[] readAllBytes() throws IOException {
         return Files.readAllBytes(file);
@@ -104,7 +104,7 @@ public class FileResource implements Resource {
         
         return file.equals(res2.file);
     }
-
+    
     @Override
     public int hashCode() {
         int hash = 5;

@@ -53,7 +53,7 @@ public class Stencil {
     public static final int MSK_ONE_WAY_RIGHT = 1 << 11;
     /** no bashing - either left or right */
     public static final int MSK_ONE_WAY = MSK_ONE_WAY_LEFT | MSK_ONE_WAY_RIGHT;
-
+    
     /** a trap that triggers the drowning animation - i.e. water */
     public static final int MSK_TRAP_LIQUID = 1 << 12;
     /** a trap that removes the Lemming */
@@ -64,15 +64,15 @@ public class Stencil {
     public static final int MSK_TRAP = MSK_TRAP_LIQUID | MSK_TRAP_REMOVE | MSK_TRAP_FIRE;
     /** the level exit */
     public static final int MSK_EXIT = 1 << 15;
-
+    
     /** array which represents the stencil buffer */
     private final StencilPixel[] stencil;
     /** width of stencil (=width of level) */
     private final int width;
     /** height of stencil (=height of level) */
     private final int height;
-
-
+    
+    
     /**
      * Constructor.
      * @param w width in pixels
@@ -86,7 +86,7 @@ public class Stencil {
             stencil[i] = new StencilPixel();
         }
     }
-
+    
     /**
      * Clear stencil (fill with MSK_EMPTY).
      */
@@ -111,7 +111,7 @@ public class Stencil {
         int pos = x + y * width;
         stencil[pos].setMask(val);
     }
-
+    
     /**
      * Set given value at given position.
      * @param pos position (x+y*width)
@@ -189,7 +189,7 @@ public class Stencil {
         int pos = x + y * width;
         stencil[pos].setMaskObjectID(id);
     }
-
+    
     /**
      * Sets the mask object ID of this stencil pixel.
      * @param pos position (x+y*width)
@@ -215,7 +215,7 @@ public class Stencil {
         int pos = x + y * width;
         return stencil[pos].getMask();
     }
-
+    
     /**
      * Get stencil value at given position.
      * @param pos position (x+y*width)
@@ -241,7 +241,7 @@ public class Stencil {
         int pos = x + y * width;
         stencil[pos].addObjectID(id);
     }
-
+    
     /**
      * Adds an object ID to the stencil.
      * @param pos position (x+y*width)
@@ -267,7 +267,7 @@ public class Stencil {
         int pos = x + y * width;
         return stencil[pos].getObjectIDs();
     }
-
+    
     /**
      * Gets all object IDs from the stencil.
      * @param pos position (x+y*width)
@@ -293,14 +293,14 @@ public class Stencil {
         int x = pos % width;
         return getMaskObjectID(x, y);
     }
-
+    
     /** Get width of stencil.
      * @return width of stencil
      */
     public int getWidth() {
         return width;
     }
-
+    
     /**
      * Get height of stencil.
      * @return height of stencil

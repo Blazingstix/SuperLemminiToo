@@ -34,7 +34,7 @@ public class LevelCodeDialog extends JDialog {
     private String[] levelPacks;
     private int levelPackIndex;
     private String code;
-
+    
     /**
      * Creates new form LevelCodeDialog
      * @param parent
@@ -45,7 +45,7 @@ public class LevelCodeDialog extends JDialog {
         initComponents();
         setLocationRelativeTo(parent);
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -151,30 +151,30 @@ public class LevelCodeDialog extends JDialog {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         code = null;
         levelPackIndex = -1;
     }//GEN-LAST:event_formWindowClosing
-
+    
     private void jTextFieldCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldCodeActionPerformed
         code = jTextFieldCode.getText();
         levelPackIndex = jComboBoxLvlPack.getSelectedIndex() + 1;
         dispose();
     }//GEN-LAST:event_jTextFieldCodeActionPerformed
-
+    
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
         code = jTextFieldCode.getText();
         levelPackIndex = jComboBoxLvlPack.getSelectedIndex() + 1;
         dispose();
     }//GEN-LAST:event_jButtonOKActionPerformed
-
+    
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         code = null;
         levelPackIndex = -1;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
-
+    
     /**
      * Get entered level code.
      * @return entered level code.
@@ -182,7 +182,7 @@ public class LevelCodeDialog extends JDialog {
     public String getCode() {
         return code;
     }
-
+    
     /**
      * Get selected level pack.
      * @return selected level pack

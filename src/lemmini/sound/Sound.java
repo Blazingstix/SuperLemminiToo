@@ -67,8 +67,8 @@ public class Sound {
     }
     
     public enum PitchedEffect {
-        RELEASE_RATE (Effect.CHANGE_RR, 2.0, -50.0, 48.0, 100),
-        SKILL (Effect.SELECT_SKILL, 2.0, -4.0, 12.0, 20);
+        RELEASE_RATE (Effect.CHANGE_RR, 2.0, -100.0, 96.0, 206),
+        SKILL (Effect.SELECT_SKILL, 2.0, -4.0, 12.0, 13);
         
         private final Effect effect;
         private final double base;
@@ -112,13 +112,13 @@ public class Sound {
         LINEAR,
         CUBIC;
     }
-
+    
     /** maximum number of sounds played in parallel */
     private static final int MAX_SIMUL_SOUNDS = 7;
     private static final String SOUND_INI_STR = "sound/sound.ini";
     
     private static int lineCounter = 0;
-
+    
     private boolean loaded = false;
     private final Map<Effect, Integer> effects = new EnumMap<>(Effect.class);
     private final List<LineHandler> lineHandlers = new ArrayList<>(MAX_SIMUL_SOUNDS);
@@ -147,7 +147,7 @@ public class Sound {
     private final float sampleRate;
     private final int bufferSize;
     private final Quality resamplingQuality;
-
+    
     /**
      * Constructor.
      * @throws ResourceException
@@ -173,7 +173,6 @@ public class Sound {
         sampleNames = new ArrayList<>(64);
         
         format = new AudioFormat(sampleRate, 16, 2, true, false);
-        //info = new DataLine.Info(Clip.class, format);
         info = new DataLine.Info(SourceDataLine.class, format, bufferSize);
         
         PitchedEffect[] peValues = PitchedEffect.values();
@@ -187,7 +186,7 @@ public class Sound {
         pitchedSampleID = new int[peValues.length];
         
         load();
-
+        
         // get all available mixers
         Mixer.Info[] mixInfo = AudioSystem.getMixerInfo();
         mixers = new ArrayList<>(16);
@@ -252,7 +251,7 @@ public class Sound {
                 resources = Arrays.copyOf(resources, sampleNum);
                 soundBuffers = Arrays.copyOf(soundBuffers, sampleNum);
             }
-
+            
             for (int i = 0; i < peValues.length; i++) {
                 int sampleID = effects.get(peValues[i].getEffect());
                 if (sampleID != pitchedSampleID[i]) {
@@ -310,7 +309,7 @@ public class Sound {
         } catch (UnsupportedAudioFileException | IOException ex) {
             throw new ResourceException(res);
         }
-
+        
         if (reloadPitched) {
             for (int i = 0; i < peValues.length; i++) {
                 if (pitchedSampleID[i] >= 0) {
@@ -326,7 +325,7 @@ public class Sound {
         
         loaded = true;
     }
-
+    
     /**
      * Get an array of available mixer names.
      * @return array of available mixer names
@@ -337,7 +336,7 @@ public class Sound {
         }
         return mixers.stream().map(mixer -> mixer.getMixerInfo().getName()).toArray(String[]::new);
     }
-
+    
     /**
      * Set mixer to be used for sound output.
      * @param idx index of mixer
@@ -373,7 +372,7 @@ public class Sound {
     public synchronized int getMixerIdx() {
         return mixerIdx;
     }
-
+    
     /**
      * Return a data line to play a sample.
      * @param info line info with requirements
@@ -387,7 +386,7 @@ public class Sound {
             return null;
         }
     }
-
+    
     /**
      * Play a given sound.
      * @param idx index of the sound to be played
@@ -410,7 +409,7 @@ public class Sound {
             lh.play(soundBuffers[idx], pan);
         }
     }
-
+    
     /**
      * Play a given sound.
      * @param idx index of the sound to be played
@@ -418,7 +417,7 @@ public class Sound {
     public void play(final int idx) {
         play(idx, 0.0);
     }
-
+    
     /**
      * Play a given sound.
      * @param e
@@ -435,7 +434,7 @@ public class Sound {
     public void play(final Effect e) {
         play(effects.get(e), 0.0);
     }
-
+    
     /**
      * Play a pitched sample.
      * @param pe
@@ -458,7 +457,7 @@ public class Sound {
             lh.play(pitchBuffers[pe.ordinal()][pitch], 0.0);
         }
     }
-
+    
     /**
      * Convert sound to the specified sample rate.
      * @param buffer byte array containing source sample
@@ -604,7 +603,7 @@ public class Sound {
         int[] oldSamples = new int[numChannels];
         int[] newSamples = new int[newNumChannels];
         Arrays.fill(newSamples, origin);
-
+        
         for (int i = 0; i < numFrames; i++) {
             for (int j = 0; j < numChannels; j++) {
                 oldSamples[j] = 0;
@@ -614,7 +613,7 @@ public class Sound {
                             & (signBit ? ~0 : 0xFF))
                             << (8 * (bigEndian ? (bytesPerSample - 1 - k) : k));
                 }
-
+                
                 if (!signed) {
                     oldSamples[j] += -1 << (sampleSize - 1);
                 }
@@ -624,7 +623,7 @@ public class Sound {
                     oldSamples[j] -= -1 << (sampleSize - 1);
                 }
             }
-
+            
             if (numChannels == 1 && newNumChannels >= 2) {
                 newSamples[0] = oldSamples[0];
                 newSamples[1] = oldSamples[0];
@@ -634,7 +633,7 @@ public class Sound {
             } else {
                 System.arraycopy(oldSamples, 0, newSamples, 0, minChannels);
             }
-
+            
             for (int j = 0; j < newNumChannels; j++) {
                 for (int k = 0; k < newBytesPerSample; k++) {
                     newBuffer[i * newFrameSize + j * newBytesPerSample + k] =
@@ -645,7 +644,7 @@ public class Sound {
         
         return newBuffer;
     }
-
+    
     /**
      * Create a pitched version of a sample.
      * @param pe
@@ -664,7 +663,7 @@ public class Sound {
             newBuffers[i] = resample(oldBuffer, af, newSpeed, quality);
         }
     }
-
+    
     /**
      * Set gain of a line.
      * @param line line
@@ -687,7 +686,7 @@ public class Sound {
             }
         }
     }
-
+    
     /**
      * Get gain.
      * @return gain (1.0 == 100%)
@@ -695,7 +694,7 @@ public class Sound {
     public double getGain() {
         return gain;
     }
-
+    
     /**
      * Set gain.
      * @param gn gain (1.0 == 100%)
@@ -740,7 +739,7 @@ public class Sound {
             
             lineThread = new Thread(null, this, "LineHandler-" + lineCounter++);
         }
-
+        
         @Override
         public void run() {
             try {

@@ -37,7 +37,6 @@ import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
 import lemmini.sound.Music;
 import lemmini.tools.ToolBox;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
@@ -52,7 +51,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.103b";
+    public static final String REVISION = "0.104";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -60,10 +59,10 @@ public class LemminiFrame extends JFrame {
     private int unmaximizedPosY;
     
     private static boolean createPatches = false;
-
+    
     /** self reference */
     static LemminiFrame thisFrame;
-
+    
     /**
      * Creates new form LemminiFrame
      */
@@ -76,7 +75,7 @@ public class LemminiFrame extends JFrame {
         } catch (LemmException ex) {
             JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ToolBox.showException(ex);
             System.exit(1);
         }
@@ -124,12 +123,12 @@ public class LemminiFrame extends JFrame {
             setVisible(true);
         } catch (ResourceException ex) {
             Core.resourceError(ex.getMessage());
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ToolBox.showException(ex);
             System.exit(1);
         }
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -287,11 +286,11 @@ public class LemminiFrame extends JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
         storeUnmaximizedPos();
     }//GEN-LAST:event_formComponentMoved
-
+    
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         int code = evt.getKeyCode();
         switch (GameController.getGameState()) {
@@ -595,7 +594,7 @@ public class LemminiFrame extends JFrame {
                 break;
         }
     }//GEN-LAST:event_formKeyPressed
-
+    
     private void formKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyReleased
         int code = evt.getKeyCode();
         if (GameController.getGameState() == GameController.State.LEVEL) {
@@ -671,35 +670,35 @@ public class LemminiFrame extends JFrame {
             }
         }
     }//GEN-LAST:event_formKeyReleased
-
+    
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         exit();
     }//GEN-LAST:event_formWindowClosed
-
+    
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         exit();
     }//GEN-LAST:event_formWindowClosing
-
+    
     private void formWindowGainedFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowGainedFocus
         lemminiPanelMain.focusGained();
     }//GEN-LAST:event_formWindowGainedFocus
-
+    
     private void formWindowLostFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowLostFocus
         lemminiPanelMain.focusLost();
     }//GEN-LAST:event_formWindowLostFocus
-
+    
     private void jMenuItemExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemExitActionPerformed
         exit();
     }//GEN-LAST:event_jMenuItemExitActionPerformed
-
+    
     private void jMenuItemManagePlayersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemManagePlayersActionPerformed
         lemminiPanelMain.handlePlayers();
     }//GEN-LAST:event_jMenuItemManagePlayersActionPerformed
-
+    
     private void jMenuItemPlayLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPlayLevelActionPerformed
         lemminiPanelMain.handlePlayLevel();
     }//GEN-LAST:event_jMenuItemPlayLevelActionPerformed
-
+    
     private void jMenuItemRestartLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRestartLevelActionPerformed
         if (GameController.getLevel() == null) {
             GameController.requestChangeLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber(), false);
@@ -707,15 +706,15 @@ public class LemminiFrame extends JFrame {
             GameController.requestRestartLevel(false, true);
         }
     }//GEN-LAST:event_jMenuItemRestartLevelActionPerformed
-
+    
     private void jMenuItemLoadReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemLoadReplayActionPerformed
         lemminiPanelMain.handleLoadReplay();
     }//GEN-LAST:event_jMenuItemLoadReplayActionPerformed
-
+    
     private void jMenuItemEnterLevelCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEnterLevelCodeActionPerformed
         lemminiPanelMain.handleEnterCode();
     }//GEN-LAST:event_jMenuItemEnterLevelCodeActionPerformed
-
+    
     private void jMenuItemOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemOptionsActionPerformed
         lemminiPanelMain.handleOptions();
     }//GEN-LAST:event_jMenuItemOptionsActionPerformed
@@ -817,7 +816,12 @@ public class LemminiFrame extends JFrame {
         Core.programProps.setBoolean("maximizedVert", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_VERT));
         Core.saveProgramProps();
         // close the zip files
-        Core.zipFiles.stream().forEach(IOUtils::closeQuietly);
+        Core.zipFiles.stream().forEach(zipFile -> {
+            try {
+                zipFile.close();
+            } catch (IOException ex) {
+            }
+        });
         RepeatingReleasedEventsFixer.remove();
         System.exit(0);
     }

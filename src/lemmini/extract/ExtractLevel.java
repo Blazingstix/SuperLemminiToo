@@ -8,8 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import lemmini.tools.ToolBox;
-import static org.apache.commons.lang3.BooleanUtils.toBoolean;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import static org.apache.commons.lang3.BooleanUtils.toBoolean;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -41,27 +42,40 @@ public class ExtractLevel {
     private static final int DEFAULT_HEIGHT = 160;
     private static final int MINIMUM_WIDTH = 320;
     private static final int MINIMUM_HEIGHT = 160;
-    static final int FAKE_OBJECT_CUTOFF = 16;
+    private static final int FAKE_OBJECT_CUTOFF = 16;
     private static final int MAX_ENTRANCES = 4;
     private static final int MAX_ENTRANCES_MULTI = 2;
     private static final int MAX_GREEN_FLAGS = 1;
     
     /** names for default styles */
-    private static final Map<Integer, String> STYLES = new HashMap<>();
+    private static final Map<Integer, String> STYLES = new HashMap<>(32);
     /** names for default special styles */
-    private static final Map<Integer, String> SPECIAL_STYLES = new HashMap<>();
-    private static final Map<Integer, String> MUSIC = new HashMap<>();
+    private static final Map<Integer, String> SPECIAL_STYLES = new HashMap<>(16);
+    private static final Map<String, Set<Integer>> OBJECTS_TO_ALIGN = new HashMap<>(32);
+    private static final Map<Integer, String> MUSIC_INDEX = new HashMap<>(64);
+    private static final Map<String, String> MUSIC_STRING = new HashMap<>(64);
+    
+    private static void addStyle(int styleIndex, String styleName, Integer... styleObjectsToAlign) {
+        STYLES.put(styleIndex, styleName);
+        OBJECTS_TO_ALIGN.put(styleName, new HashSet<>(Arrays.asList(styleObjectsToAlign)));
+    }
+    
     static {
-        STYLES.put(0, "dirt");
-        STYLES.put(1, "fire");
-        STYLES.put(2, "marble");
-        STYLES.put(3, "pillar");
-        STYLES.put(4, "crystal");
-        STYLES.put(5, "brick");
-        STYLES.put(6, "rock");
-        STYLES.put(7, "snow");
-        STYLES.put(8, "bubble");
-        STYLES.put(9, "xmas");
+        addStyle(0, "dirt", 0, 3, 4, 5, 6, 7, 8, 10);
+        addStyle(1, "fire", 0, 3, 4, 5, 6, 7, 8, 10);
+        addStyle(2, "marble", 0, 3, 4, 5, 6, 8, 9);
+        addStyle(3, "pillar", 0, 3, 4, 5, 6, 8, 9, 10, 15, 16, 17);
+        addStyle(4, "crystal", 0, 4, 5, 6, 7, 8, 9, 10);
+        addStyle(5, "brick", 0, 3, 4, 5, 6, 7, 9);
+        addStyle(6, "rock", 0, 3, 4, 5, 6, 7, 8, 9, 10);
+        addStyle(7, "snow", 0, 3, 4, 5, 6, 8, 9);
+        addStyle(8, "bubble", 0, 3, 4, 5, 6, 8, 9, 10);
+        addStyle(9, "xmas", 0, 3, 10, 11, 12);
+        //addStyle(20, "dirt_md", 0, 3, 4, 5, 6, 7, 8, 10);
+        //addStyle(21, "fire_md", 0, 3, 4, 5, 6, 7, 8, 10);
+        //addStyle(22, "marble_md", 0, 3, 4, 5, 6, 8, 9);
+        //addStyle(23, "pillar_md", 0, 3, 4, 5, 6, 8, 9, 10, 15, 16, 17);
+        //addStyle(24, "crystal_md", 0, 4, 5, 6, 7, 8, 9, 10);
         
         SPECIAL_STYLES.put(0, "awesome");
         SPECIAL_STYLES.put(1, "menace");
@@ -69,32 +83,69 @@ public class ExtractLevel {
         SPECIAL_STYLES.put(3, "beasti");
         SPECIAL_STYLES.put(4, "covox");
         SPECIAL_STYLES.put(5, "prima");
+        SPECIAL_STYLES.put(10, "awesome_md");
+        SPECIAL_STYLES.put(11, "menace_md");
+        SPECIAL_STYLES.put(12, "beasti_md");
+        SPECIAL_STYLES.put(13, "beastii_md");
+        SPECIAL_STYLES.put(14, "hebereke");
         SPECIAL_STYLES.put(15, "apple");
         SPECIAL_STYLES.put(101, "apple");
         
-        MUSIC.put(1, "cancan.mod");
-        MUSIC.put(2, "lemming1.mod");
-        MUSIC.put(3, "tim2.mod");
-        MUSIC.put(4, "lemming2.mod");
-        MUSIC.put(5, "tim8.mod");
-        MUSIC.put(6, "tim3.mod");
-        MUSIC.put(7, "tim5.mod");
-        MUSIC.put(8, "doggie.mod");
-        MUSIC.put(9, "tim6.mod");
-        MUSIC.put(10, "lemming3.mod");
-        MUSIC.put(11, "tim7.mod");
-        MUSIC.put(12, "tim9.mod");
-        MUSIC.put(13, "tim1.mod");
-        MUSIC.put(14, "tim10.mod");
-        MUSIC.put(15, "tim4.mod");
-        MUSIC.put(16, "tenlemms.mod");
-        MUSIC.put(17, "mountain.mod");
-        MUSIC.put(18, "tune1.mod");
-        MUSIC.put(19, "tune2.mod");
-        MUSIC.put(20, "tune3.mod");
-        MUSIC.put(21, "tune4.mod");
-        MUSIC.put(22, "tune5.mod");
-        MUSIC.put(23, "tune6.mod");
+        MUSIC_INDEX.put(1, "cancan.mod");
+        MUSIC_INDEX.put(2, "lemming1.mod");
+        MUSIC_INDEX.put(3, "tim2.mod");
+        MUSIC_INDEX.put(4, "lemming2.mod");
+        MUSIC_INDEX.put(5, "tim8.mod");
+        MUSIC_INDEX.put(6, "tim3.mod");
+        MUSIC_INDEX.put(7, "tim5.mod");
+        MUSIC_INDEX.put(8, "doggie.mod");
+        MUSIC_INDEX.put(9, "tim6.mod");
+        MUSIC_INDEX.put(10, "lemming3.mod");
+        MUSIC_INDEX.put(11, "tim7.mod");
+        MUSIC_INDEX.put(12, "tim9.mod");
+        MUSIC_INDEX.put(13, "tim1.mod");
+        MUSIC_INDEX.put(14, "tim10.mod");
+        MUSIC_INDEX.put(15, "tim4.mod");
+        MUSIC_INDEX.put(16, "tenlemms.mod");
+        MUSIC_INDEX.put(17, "mountain.mod");
+        MUSIC_INDEX.put(18, "tune1.mod");
+        MUSIC_INDEX.put(19, "tune2.mod");
+        MUSIC_INDEX.put(20, "tune3.mod");
+        MUSIC_INDEX.put(21, "tune4.mod");
+        MUSIC_INDEX.put(22, "tune5.mod");
+        MUSIC_INDEX.put(23, "tune6.mod");
+        
+        MUSIC_STRING.put("awesome", "special/awesome.mod");
+        MUSIC_STRING.put("beasti", "special/beasti.mod");
+        MUSIC_STRING.put("beastii", "special/beastii.mod");
+        MUSIC_STRING.put("menace", "special/menace.mod");
+        MUSIC_STRING.put("ohno_01", "tune1.mod");
+        MUSIC_STRING.put("ohno_02", "tune2.mod");
+        MUSIC_STRING.put("ohno_03", "tune3.mod");
+        MUSIC_STRING.put("ohno_04", "tune4.mod");
+        MUSIC_STRING.put("ohno_05", "tune5.mod");
+        MUSIC_STRING.put("ohno_06", "tune6.mod");
+        MUSIC_STRING.put("orig_01", "cancan.mod");
+        MUSIC_STRING.put("orig_02", "lemming1.mod");
+        MUSIC_STRING.put("orig_03", "tim2.mod");
+        MUSIC_STRING.put("orig_04", "lemming2.mod");
+        MUSIC_STRING.put("orig_05", "tim8.mod");
+        MUSIC_STRING.put("orig_06", "tim3.mod");
+        MUSIC_STRING.put("orig_07", "tim5.mod");
+        MUSIC_STRING.put("orig_08", "doggie.mod");
+        MUSIC_STRING.put("orig_09", "tim6.mod");
+        MUSIC_STRING.put("orig_10", "lemming3.mod");
+        MUSIC_STRING.put("orig_11", "tim7.mod");
+        MUSIC_STRING.put("orig_12", "tim9.mod");
+        MUSIC_STRING.put("orig_13", "tim1.mod");
+        MUSIC_STRING.put("orig_14", "tim10.mod");
+        MUSIC_STRING.put("orig_15", "tim4.mod");
+        MUSIC_STRING.put("orig_16", "tenlemms.mod");
+        MUSIC_STRING.put("orig_17", "mountain.mod");
+        MUSIC_STRING.put("sunsoftspecial", "special/hebereke.ogg");
+        MUSIC_STRING.put("xmas_01", "xmas/jb.mod");
+        MUSIC_STRING.put("xmas_02", "xmas/kw.mod");
+        MUSIC_STRING.put("xmas_03", "xmas/rudi.mod");
     }
     
     private static final int GIMMICK_FLAG_SUPERLEMMING = 1;
@@ -116,6 +167,7 @@ public class ExtractLevel {
     private static final int OPTION_FLAG_CUSTOM_GIMMICKS = 1 << 5;
     private static final int OPTION_FLAG_CUSTOM_SKILL_SET = 1 << 6;
     private static final int OPTION_FLAG_INVERT_ONE_WAY = 1 << 7;
+    private static final int OPTION_FLAG_LOCK_RELEASE_RATE = 1 << 8;
     
     /**
      * Convert one binary LVL file into text file
@@ -141,7 +193,7 @@ public class ExtractLevel {
         }
         convertLevel(b, fnIn.getFileName().toString().toLowerCase(Locale.ROOT), out, multi, classic);
     }
-
+    
     /**
      * Convert one binary LVL file into text file
      * @param in Byte array of binary LVL file
@@ -193,6 +245,7 @@ public class ExtractLevel {
          */
         int style;
         String styleStr = null;
+        String[] styleList = ArrayUtils.EMPTY_STRING_ARRAY;
         /* special style */
         int specialStyle = -1;
         String specialStyleStr = null;
@@ -220,7 +273,6 @@ public class ExtractLevel {
         int activeEntranceCount = 0;
         int greenFlagCount = 0;
         
-        // read file into buffer
         if (in.length < 177) {
             throw new Exception("Lemmings level files must be at least 177 bytes in size!");
         }
@@ -253,13 +305,13 @@ public class ExtractLevel {
             style = Short.toUnsignedInt(b.getShort());
             styleStr = STYLES.get(style);
             if (styleStr == null) {
-                throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
+                throw new Exception(String.format("%s uses an unsupported style: %d", fName, style));
             }
             specialStyle = Short.toUnsignedInt(b.getShort()) - 1;
             if (specialStyle > -1) {
                 specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                 if (specialStyleStr == null) {
-                    throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
+                    throw new Exception(String.format("%s uses an unsupported special style: %d", fName, specialStyle));
                 }
             }
             extra1 = b.get();
@@ -281,10 +333,6 @@ public class ExtractLevel {
                     numToRescue = Short.toUnsignedInt(b.getShort());
                     timeLimitSeconds = Byte.toUnsignedInt(b.get());
                     timeLimit = Byte.toUnsignedInt(b.get());
-                    if (timeLimit * 60 + timeLimitSeconds >= 6000) {
-                        timeLimitSeconds = 0;
-                        timeLimit = 0;
-                    }
                     skillCounts = new int[8];
                     gimmickFlags = Byte.toUnsignedInt(b.get()) << 24;
                     skillCounts[0] = Byte.toUnsignedInt(b.get());
@@ -313,22 +361,22 @@ public class ExtractLevel {
                     yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
                     music = Byte.toUnsignedInt(b.get());
                     if (music > 0 && music < 253) {
-                        musicStr = MUSIC.get(music);
+                        musicStr = MUSIC_INDEX.get(music);
                         if (musicStr == null) {
-                            throw new Exception(String.format("%s uses an invalid music index: %d", fName, music));
+                            throw new Exception(String.format("%s uses an unsupported music index: %d", fName, music));
                         }
                     }
                     style = Byte.toUnsignedInt(b.get());
                     styleStr = STYLES.get(style);
                     if (styleStr == null) {
-                        throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
+                        throw new Exception(String.format("%s uses an unsupported style: %d", fName, style));
                     }
                     optionFlags = b.get();
                     specialStyle = Byte.toUnsignedInt(b.get()) - 1;
                     if (specialStyle > -1) {
                         specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                         if (specialStyleStr == null) {
-                            throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
+                            throw new Exception(String.format("%s uses an unsupported special style: %d", fName, specialStyle));
                         }
                     }
                     extra1 = b.get();
@@ -350,9 +398,6 @@ public class ExtractLevel {
                     numLemmings = Short.toUnsignedInt(b.getShort());
                     numToRescue = Short.toUnsignedInt(b.getShort());
                     timeLimitSeconds = Short.toUnsignedInt(b.getShort());
-                    if (timeLimitSeconds >= 6000) {
-                        timeLimitSeconds = 0;
-                    }
                     releaseRate = b.get();
                     if (releaseRate >= 100) {
                         releaseRate -= 256;
@@ -387,29 +432,14 @@ public class ExtractLevel {
                         yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
                     }
                     if (music > 0 && music < 253) {
-                        musicStr = MUSIC.get(music);
+                        musicStr = MUSIC_INDEX.get(music);
                         if (musicStr == null) {
-                            throw new Exception(String.format("%s uses an invalid music index: %d", fName, music));
+                            throw new Exception(String.format("%s uses an unsupported music index: %d", fName, music));
                         }
                     }
                     skillCounts = new int[16];
-                    skillCounts[0] = Byte.toUnsignedInt(b.get());
-                    skillCounts[1] = Byte.toUnsignedInt(b.get());
-                    skillCounts[2] = Byte.toUnsignedInt(b.get());
-                    skillCounts[3] = Byte.toUnsignedInt(b.get());
-                    skillCounts[4] = Byte.toUnsignedInt(b.get());
-                    skillCounts[5] = Byte.toUnsignedInt(b.get());
-                    skillCounts[6] = Byte.toUnsignedInt(b.get());
-                    skillCounts[7] = Byte.toUnsignedInt(b.get());
-                    skillCounts[8] = Byte.toUnsignedInt(b.get());
-                    skillCounts[9] = Byte.toUnsignedInt(b.get());
-                    skillCounts[10] = Byte.toUnsignedInt(b.get());
-                    skillCounts[11] = Byte.toUnsignedInt(b.get());
-                    skillCounts[12] = Byte.toUnsignedInt(b.get());
-                    skillCounts[13] = Byte.toUnsignedInt(b.get());
-                    skillCounts[14] = Byte.toUnsignedInt(b.get());
-                    skillCounts[15] = Byte.toUnsignedInt(b.get());
                     for (int i = 0; i < skillCounts.length; i++) {
+                        skillCounts[i] = Byte.toUnsignedInt(b.get());
                         if (skillCounts[i] >= 100) {
                             skillCounts[i] = Integer.MAX_VALUE;
                         }
@@ -423,7 +453,9 @@ public class ExtractLevel {
                         height = Math.round(Integer.toUnsignedLong(b.getInt()) * scale);
                         specialStylePositionX = Math.round(b.getInt() * scale);
                         specialStylePositionY = Math.round(b.getInt() * scale);
-                        b.position(b.position() + 8);
+                        b.getInt();
+                        optionFlags |= Byte.toUnsignedInt(b.get()) << 8;
+                        b.position(b.position() + 3);
                     } else {
                         width = Math.round(Math.max(DEFAULT_WIDTH + b.getShort(), MINIMUM_WIDTH) * scale);
                         height = Math.round(Math.max(DEFAULT_HEIGHT + b.getShort(), MINIMUM_HEIGHT) * scale);
@@ -444,7 +476,6 @@ public class ExtractLevel {
                         if (!strTemp.isEmpty()) {
                             styleStr = strTemp;
                         }
-                        bString = new byte[16];
                         b.get(bString);
                         strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
                         if (strTemp.equals("none")) {
@@ -459,13 +490,13 @@ public class ExtractLevel {
                     if (styleStr == null && style != 255) {
                         styleStr = STYLES.get(style);
                         if (styleStr == null) {
-                            throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
+                            throw new Exception(String.format("%s uses an unsupported style: %d", fName, style));
                         }
                     }
                     if (specialStyleStr == null && specialStyle != 254 && specialStyle > -1) {
                         specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                         if (specialStyleStr == null) {
-                            throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
+                            throw new Exception(String.format("%s uses an unsupported special style: %d", fName, specialStyle));
                         }
                     }
                     if (format == 3) {
@@ -614,6 +645,42 @@ public class ExtractLevel {
                             entranceOrder.add(entranceIndex);
                         }
                         break;
+                    case 5:
+                        // read subheader
+                        xPos = Integer.toUnsignedLong(b.getInt());
+                        xPos += multi ? 72L : 160L;
+                        xPos = Math.round(xPos * scale);
+                        yPos = Integer.toUnsignedLong(b.getInt()) + 80L;
+                        yPos = Math.round(yPos * scale);
+                        b.getInt();
+                        b.getInt();
+                        byte[] bString = new byte[16];
+                        b.get(bString);
+                        String strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                        switch(strTemp) {
+                            case StringUtils.EMPTY:
+                            case "*":
+                            case "frenzy":
+                            case "gimmick":
+                                musicStr = null;
+                                break;
+                            default:
+                                musicStr = MUSIC_STRING.getOrDefault(strTemp, strTemp);
+                                break;
+                        }
+                        break;
+                    case 6:
+                        // style list
+                        int listSize = Short.toUnsignedInt(b.getShort());
+                        if (listSize > styleList.length) {
+                            Arrays.copyOf(styleList, listSize);
+                        }
+                        for (int i = 0; i < listSize; i++) {
+                            bString = new byte[16];
+                            b.get(bString);
+                            styleList[i] = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
+                        }
+                        break;
                 }
             } while (!exitLoop);
         } else {
@@ -691,22 +758,20 @@ public class ExtractLevel {
                 }
             }
         }
-        for (ListIterator<Steel> it = steel.listIterator(); it.hasNext(); ) {
-            int i = it.nextIndex();
-            Steel stl = it.next();
-            if (format == 0 && toBoolean(optionFlags & OPTION_FLAG_NEGATIVE_STEEL) && i >= 16) {
-                stl.negative = true;
+        if (format == 0 && toBoolean(optionFlags & OPTION_FLAG_NEGATIVE_STEEL) && steel.size() > 16) {
+            for (ListIterator<Steel> it = steel.listIterator(16); it.hasNext(); ) {
+                it.next().negative = true;
             }
         }
         // remap the entrance order
         entranceOrder.stream()
                 .filter(entranceIndex -> (entranceLookup[entranceIndex] >= 0))
-                .forEach(entranceIndex -> remappedEntranceOrder.add(entranceLookup[entranceIndex]));
+                .forEachOrdered(entranceIndex -> remappedEntranceOrder.add(entranceLookup[entranceIndex]));
         // read name
         if (format == 0) {
             byte[] bName = new byte[32];
             b.get(bName);
-            lvlName = new String(bName, StandardCharsets.US_ASCII);
+            lvlName = new String(bName, classic ? StandardCharsets.ISO_8859_1 : StandardCharsets.US_ASCII);
         }
         lvlName = ToolBox.addBackslashes(lvlName, false);
         if (classic && lvlName.indexOf('`') != StringUtils.INDEX_NOT_FOUND) {
@@ -720,6 +785,9 @@ public class ExtractLevel {
         out.write("# LVL extracted by SuperLemmini # " + fName + "\r\n");
         // write configuration
         out.write("releaseRate = " + releaseRate + "\r\n");
+        if (toBoolean(optionFlags & OPTION_FLAG_LOCK_RELEASE_RATE)) {
+            out.write("lockReleaseRate = true\r\n");
+        }
         out.write("numLemmings = " + numLemmings + "\r\n");
         out.write("numToRescue = " + numToRescue + "\r\n");
         if (classic) {
@@ -821,9 +889,13 @@ public class ExtractLevel {
         }
         // write objects
         out.write("\r\n# Objects\r\n");
-        out.write("# ID, X position, Y position, paint mode, flags, object-specific modifier (optional)\r\n");
-        out.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
-        out.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask, 8 = horizontally flipped (combining allowed)\r\n");
+        out.write("# ID, X position, Y position, paint mode, flags,\r\n");
+        out.write("#         object-specific modifier (optional),\r\n");
+        out.write("#         style (optional, requires object-specific modifier)\r\n");
+        out.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite,\r\n");
+        out.write("#              8 = visible only on terrain (only one value possible)\r\n");
+        out.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask,\r\n");
+        out.write("#        8 = flip horizontally, 16 = rotate (combining allowed)\r\n");
         int maxObjectID = -1;
         for (ListIterator<LvlObject> it = objects.listIterator(objects.size()); it.hasPrevious(); ) {
             int i = it.previousIndex();
@@ -836,17 +908,32 @@ public class ExtractLevel {
         for (ListIterator<LvlObject> it = objects.listIterator(); it.nextIndex() <= maxObjectID && it.hasNext(); ) {
             int i = it.nextIndex();
             LvlObject obj = it.next();
+            long newXPos;
+            long newYPos;
+            if (classic && OBJECTS_TO_ALIGN.getOrDefault(styleStr, Collections.emptySet()).contains(obj.id)) {
+                newXPos = obj.xPos - obj.xPos % StrictMath.round(4 * scale);
+                newYPos = obj.yPos - obj.yPos % StrictMath.round(4 * scale);
+            } else {
+                newXPos = obj.xPos;
+                newYPos = obj.yPos;
+            }
             if (obj.exists) {
-                out.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + obj.flags);
+                out.write("object_" + i + " = " + obj.id + ", " + newXPos + ", " + newYPos + ", " + obj.paintMode + ", " + obj.flags);
                 if (!classic) {
                     if (obj.id == LvlObject.ENTRANCE_ID && obj.leftFacing) {
                         out.write(", 1");
                     } else {
                         out.write(", 0");
                     }
+                    if (obj.styleIndex >= 0 && obj.styleIndex < styleList.length) {
+                        out.write(", " + styleList[obj.styleIndex]);
+                    }
                 }
                 out.write("\r\n");
                 if (classic) {
+                    if (newXPos != obj.xPos || newYPos != obj.yPos) {
+                        out.write("#object_" + i + "_origPosition = " + obj.xPos + ", " + obj.yPos + "\r\n");
+                    }
                     if (toBoolean(obj.byte4Value & 0x80)) {
                         out.write("#object_" + i + "_byte4Value = " + obj.byte4Value + "\r\n");
                     }
@@ -863,9 +950,10 @@ public class ExtractLevel {
         }
         // write terrain
         out.write("\r\n# Terrain\r\n");
-        out.write("# ID, X position, Y position, modifier\r\n");
+        out.write("# ID, X position, Y position, modifier, style (optional)\r\n");
         out.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite,\r\n");
-        out.write("#           16 = fake, 32 = horizontally flipped, 64 = no one-way arrows (combining allowed)\r\n");
+        out.write("#           16 = fake, 32 = flip horizontally, 64 = no one-way arrows,\r\n");
+        out.write("#           128 = rotate (combining allowed)\r\n");
         int maxTerrainID = -1;
         for (ListIterator<Terrain> it = terrain.listIterator(terrain.size()); it.hasPrevious(); ) {
             int i = it.previousIndex();
@@ -896,7 +984,11 @@ public class ExtractLevel {
             }
             Terrain ter = it.next();
             if (ter.exists) {
-                out.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier + "\r\n");
+                out.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
+                if (ter.styleIndex >= 0 && ter.styleIndex < styleList.length) {
+                    out.write(", " + styleList[ter.styleIndex]);
+                }
+                out.write("\r\n");
                 if (classic && toBoolean(ter.byte3Value & 0x40)) {
                     out.write("#terrain_" + i + "_byte3Value = " + ter.byte3Value + "\r\n");
                 }
@@ -963,11 +1055,12 @@ class LvlObject {
     static final int FLAG_UPSIDE_DOWN = 1;
     static final int FLAG_FAKE = 2;
     static final int FLAG_UPSIDE_DOWN_MASK = 4;
-    static final int FLAG_HORIZONTALLY_FLIPPED = 8;
+    static final int FLAG_FLIP_HORIZONTALLY = 8;
+    static final int FLAG_ROTATE = 16;
     
     static final int ENTRANCE_ID = 1;
     static final int GREEN_FLAG_ID = 2;
-
+    
     /** x position in pixels */
     long xPos;
     /** y position in pixels */
@@ -978,11 +1071,12 @@ class LvlObject {
     int paintMode;
     int flags;
     boolean leftFacing;
+    int styleIndex;
     boolean exists;
     byte byte4Value;
     byte byte6Value;
     byte byte7Value;
-
+    
     /**
      * Constructor.
      * @param b buffer
@@ -990,11 +1084,9 @@ class LvlObject {
      * @param scale Scale
      */
     LvlObject(final byte[] b, final double scale, final boolean classic, final int format) throws Exception {
-        byte4Value = 0;
-        byte6Value = 0;
-        byte7Value = 0;
         switch (format) {
             case 0:
+                styleIndex = 0;
                 byte4Value = b[4];
                 byte6Value = b[6];
                 byte7Value = b[7];
@@ -1029,7 +1121,7 @@ class LvlObject {
                 if (toBoolean(b[6] & 0x40)) {
                     paintMode |= MODE_VIS_ON_TERRAIN;
                 }
-                if (toBoolean(b[6] & 0x10)) {
+                if (toBoolean(b[7] & 0x80) && (b[7] & 0x0f) == 0x0f) {
                     flags |= FLAG_UPSIDE_DOWN;
                     if (!classic) {
                         flags |= FLAG_UPSIDE_DOWN_MASK;
@@ -1042,6 +1134,7 @@ class LvlObject {
             case 1:
             case 2:
             case 3:
+                styleIndex = 0;
                 byte4Value = 0;
                 byte6Value = 0;
                 byte7Value = 0;
@@ -1070,7 +1163,7 @@ class LvlObject {
                     paintMode |= MODE_INVISIBLE;
                 }
                 if (toBoolean(b[7] & 0x40)) {
-                    flags |= FLAG_HORIZONTALLY_FLIPPED;
+                    flags |= FLAG_FLIP_HORIZONTALLY;
                 }
                 exists = toBoolean(b[7] & 0x80);
                 break;
@@ -1109,9 +1202,13 @@ class LvlObject {
                     paintMode |= MODE_INVISIBLE;
                 }
                 if (toBoolean(b[12] & 0x40)) {
-                    flags |= FLAG_HORIZONTALLY_FLIPPED;
+                    flags |= FLAG_FLIP_HORIZONTALLY;
                 }
                 exists = toBoolean(b[12] & 0x80);
+                if (toBoolean(b[13] & 0x01)) {
+                    flags |= FLAG_ROTATE;
+                }
+                styleIndex = Byte.toUnsignedInt(b[14]);
                 break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
@@ -1147,12 +1244,13 @@ class LvlObject {
  */
 class Terrain {
     
+    static final int FLAG_ROTATE = 128;
     static final int FLAG_NO_ONE_WAY = 64;
-    static final int FLAG_HORIZONTALLY_FLIPPED = 32;
+    static final int FLAG_FLIP_HORIZONTALLY = 32;
     static final int FLAG_NO_OVERWRITE = 8;
     static final int FLAG_UPSIDE_DOWN = 4;
     static final int FLAG_ERASE = 2;
-
+    
     /** identifier */
     int id;
     /** x position in pixels */
@@ -1161,9 +1259,10 @@ class Terrain {
     long yPos;
     /** modifier - must be one of the above MODEs */
     int modifier;
+    int styleIndex;
     boolean exists;
     byte byte3Value;
-
+    
     /**
      * Constructor.
      * @param b buffer
@@ -1172,6 +1271,7 @@ class Terrain {
     Terrain(final byte[] b, final double scale, final boolean classic, final int format) throws Exception {
         switch (format) {
             case 0:
+                styleIndex = 0;
                 byte3Value = b[3];
                 int mask = 0xff;
                 for (byte b1 : b) {
@@ -1205,6 +1305,7 @@ class Terrain {
             case 1:
             case 2:
             case 3:
+                styleIndex = 0;
                 byte3Value = 0;
                 xPos = Byte.toUnsignedLong(b[0]) | (b[1] << 8L);
                 xPos = Math.round(xPos * scale);
@@ -1222,7 +1323,7 @@ class Terrain {
                     modifier |= FLAG_UPSIDE_DOWN;
                 }
                 if (toBoolean(b[5] & 0x08)) {
-                    modifier |= FLAG_HORIZONTALLY_FLIPPED;
+                    modifier |= FLAG_FLIP_HORIZONTALLY;
                 }
                 if (toBoolean(b[5] & 0x10)) {
                     modifier |= FLAG_NO_ONE_WAY;
@@ -1253,12 +1354,16 @@ class Terrain {
                     modifier |= FLAG_UPSIDE_DOWN;
                 }
                 if (toBoolean(b[10] & 0x08)) {
-                    modifier |= FLAG_HORIZONTALLY_FLIPPED;
+                    modifier |= FLAG_FLIP_HORIZONTALLY;
                 }
                 if (toBoolean(b[10] & 0x10)) {
                     modifier |= FLAG_NO_ONE_WAY;
                 }
+                if (toBoolean(b[10] & 0x20)) {
+                    modifier |= FLAG_ROTATE;
+                }
                 exists = toBoolean(b[10] & 0x80);
+                styleIndex = Byte.toUnsignedInt(b[12]);
                 break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
@@ -1294,7 +1399,7 @@ class Terrain {
  * @author Volker Oth
  */
 class Steel {
-
+    
     /** x position in pixels */
     long xPos;
     /** y position in pixels */
@@ -1306,7 +1411,7 @@ class Steel {
     boolean negative;
     boolean exists;
     byte byte3Value;
-
+    
     /**
      * Constructor.
      * @param b buffer

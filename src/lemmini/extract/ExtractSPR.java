@@ -38,7 +38,7 @@ import org.apache.commons.lang3.BooleanUtils;
 public class ExtractSPR {
     /** palette index of transparent color */
     private static final int TRANSPARENT_INDEX = 0;
-
+    
     /** list of PNG images to store to disk */
     private List<PNGImage> images;
     /** color palette */
@@ -46,7 +46,7 @@ public class ExtractSPR {
     /** buffer used to compress the palette (remove double entries) to work around issues on MacOS */
     private int[] lookupBuffer;
     private int paletteSize;
-
+    
     /**
      * Load palette.
      * @param fname Name of palette file
@@ -55,7 +55,7 @@ public class ExtractSPR {
      */
     Palette loadPalette(final Path fname) throws ExtractException {
         ByteBuffer buffer;
-
+        
         // read file into buffer
         //int paletteSize;
         try {
@@ -73,20 +73,20 @@ public class ExtractSPR {
         }
         
         buffer.order(ByteOrder.LITTLE_ENDIAN);
-
+        
         paletteSize = Short.toUnsignedInt(buffer.getShort()); // number of palette entries
-
+        
         byte[] r = new byte[paletteSize];
         byte[] g = new byte[paletteSize];
         byte[] b = new byte[paletteSize];
-
+        
         for (int idx = 0; idx < paletteSize; idx++) {
             r[idx] = buffer.get();
             g[idx] = buffer.get();
             b[idx] = buffer.get();
             buffer.get();
         }
-
+        
         // search for double entries, create
         // new palette without double entries
         // and lookup table to fix the pixel values
@@ -94,12 +94,12 @@ public class ExtractSPR {
         byte[] compressedG = new byte[paletteSize];
         byte[] compressedB = new byte[paletteSize];
         lookupBuffer = new int[paletteSize];
-
+        
         Arrays.fill(lookupBuffer, -1); // mark all entries invalid
         Arrays.fill(compressedR, (byte) 0);
         Arrays.fill(compressedG, (byte) 0);
         Arrays.fill(compressedB, (byte) 0);
-
+        
         int compressedIndex = 0;
         for (int i = 0; i < paletteSize; i++) {
             if (lookupBuffer[i] == -1) {             // if -1, this value is not a duplicate of a lower index
@@ -120,18 +120,18 @@ public class ExtractSPR {
                 lookupBuffer[i] = compressedIndex++;
             }
         }
-
+        
         if (paletteSize != compressedIndex) {
             r = compressedR;
             g = compressedG;
             b = compressedB;
         }
-
+        
         palette = new Palette(r, g, b);
         palette.size = compressedIndex;
         return palette;
     }
-
+    
     /**
      * Load SPR file. Load palette first!
      * @param fname Name of SPR file
@@ -140,11 +140,11 @@ public class ExtractSPR {
      */
     List<PNGImage> loadSPR(final Path fname) throws ExtractException {
         ByteBuffer buffer;
-
+        
         if (palette == null) {
             throw new ExtractException("Load palette first!");
         }
-
+        
         // read file into buffer
         try {
             if (!Files.isRegularFile(fname)) {
@@ -163,11 +163,11 @@ public class ExtractSPR {
         int frames = Short.toUnsignedInt(buffer.getShort());
         int ofs = Short.toUnsignedInt(buffer.getShort());
         buffer.position(ofs);
-
+        
         images = new ArrayList<>(frames);
         byte b;
         int lineOfs;
-
+        
         for (int frame = 0; frame < frames; frame++) {
             // get header info
             int xOfs = Short.toUnsignedInt(buffer.getShort());   // x offset of data in output image
@@ -176,17 +176,17 @@ public class ExtractSPR {
             int lines = Short.toUnsignedInt(buffer.getShort());  // number of data lines
             int width = Short.toUnsignedInt(buffer.getShort());  // width of output image
             int height = Short.toUnsignedInt(buffer.getShort()); // height of output image
-
+            
             byte[] pixels = new byte[width * height];
-
+            
             for (int i = 0; i < pixels.length; i++) {
                 pixels[i] = TRANSPARENT_INDEX;
             }
-
+            
             int y = yOfs * width;
-
+            
             int pxOffset = 0; // additional offset for lines broken in several packets
-
+            
             for (int line = 0; line < lines; ) {
                 // read line
                 b = buffer.get(); // start character including length (>= 0x80) or line offset (<0x80)
@@ -234,7 +234,7 @@ public class ExtractSPR {
             // convert byte array into BufferedImage
             images.add(new PNGImage(width, height, pixels, palette));
         }
-
+        
         return images;
     }
     
@@ -249,7 +249,7 @@ public class ExtractSPR {
         palette = new Palette(tempRed, tempGreen, tempBlue);
         images.stream().forEach(PNGImage::createMask);
     }
-
+    
     /**
      * Save all images of currently loaded SPR file
      * @param fname Filename of PNG files to export. "_N.png" will be appended with N being the image number.
@@ -279,7 +279,7 @@ public class ExtractSPR {
         PNGImage firstImage = images.get(startIdx);
         int width = firstImage.getWidth();
         int height = firstImage.getHeight();
-
+        
         byte[] pixels = new byte[width * frames * height];
         int n = 0;
         for (ListIterator<PNGImage> lit = images.listIterator(startIdx); lit.hasNext() && n < frames; n++) {
@@ -330,8 +330,8 @@ public class ExtractSPR {
             throw new ExtractException(String.format("I/O error while writing file %s.", fname));
         }
     }
-
-
+    
+    
     /**
      * Storage class for palettes.
      * @author Volker Oth
@@ -344,7 +344,7 @@ public class ExtractSPR {
         /** byte array of blue components */
         private final byte[] blue;
         private int size;
-
+        
         /**
          * Create palette from array of color components
          * @param r byte array of red components
@@ -357,7 +357,7 @@ public class ExtractSPR {
             blue = b;
             size = r.length;
         }
-
+        
         /**
          * Get blue components.
          * @return byte array of blue components
@@ -365,7 +365,7 @@ public class ExtractSPR {
         public byte[] getBlue() {
             return blue;
         }
-
+        
         /**
          * Get green components.
          * @return byte array of green components
@@ -373,7 +373,7 @@ public class ExtractSPR {
         public byte[] getGreen() {
             return green;
         }
-
+        
         /**
          * Get red components.
          * @return byte array of red components
@@ -382,7 +382,7 @@ public class ExtractSPR {
             return red;
         }
     }
-
+    
     /**
      * Stores PNG Image in RAM.
      */
@@ -395,7 +395,7 @@ public class ExtractSPR {
         private byte[] pixels;
         /** color palette */
         private Palette palette;
-
+        
         /**
          * Constructor.
          * @param w width in pixels.
@@ -409,7 +409,7 @@ public class ExtractSPR {
             pixels = buf;
             palette = p;
         }
-
+        
         /**
          * Get pixel data.
          * @return pixel data as array of bytes
@@ -417,7 +417,7 @@ public class ExtractSPR {
         public byte[] getPixels() {
             return pixels;
         }
-
+        
         /**
          * Get width in pixels.
          * @return width in pixels
@@ -425,7 +425,7 @@ public class ExtractSPR {
         public int getWidth() {
             return width;
         }
-
+        
         /**
          * Get height in pixels.
          * @return height in pixels
@@ -433,7 +433,7 @@ public class ExtractSPR {
         public int getHeight() {
             return height;
         }
-
+        
         /**
          * Get color palette.
          * @return color palette

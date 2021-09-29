@@ -44,23 +44,23 @@ public class Diff {
     private static final byte REPLACE = 2;
     /** substitute n bytes with m bytes */
     private static final byte SUBSTITUTE = 3;
-
+    
     /** print info to System.out */
     private static final boolean VERBATIM = false;
-
+    
     /** magic number for header ID */
     private static final int HEADER_ID = 0xdeadbeef;
     /** magic number for data ID */
     private static final int DATA_ID = 0xfade0ff;
-
+    
     /** re-synchronization length */
     private static int resyncLength = 4;
     /** re-synchronization window length */
     private static int windowLength = 512;
-
+    
     /** target CRC */
     public  static int targetCRC = 0;
-
+    
     /**
      * Set diff parameters
      * @param winLen Length of windows to search for re-synchronization
@@ -70,7 +70,7 @@ public class Diff {
         resyncLength = resyncLen;
         windowLength = winLen;
     }
-
+    
     /**
      * Create diff buffer from the differences between source and target buffer
      * @param bsrc source buffer (the file to be patched)
@@ -81,7 +81,7 @@ public class Diff {
         ByteArrayOutputStream patch = new ByteArrayOutputStream(16 * 1024);
         ByteBuffer src = ByteBuffer.wrap(bsrc).order(ByteOrder.LITTLE_ENDIAN);
         ByteBuffer trg = ByteBuffer.wrap(btrg).order(ByteOrder.LITTLE_ENDIAN);
-
+        
         // compare crcs
         Adler32 crcSrc = new Adler32();
         crcSrc.update(src.array());
@@ -91,7 +91,7 @@ public class Diff {
         if (crcTrg.getValue() == crcSrc.getValue()) {
             return null;
         }
-
+        
         // write header
         writeInt(patch, HEADER_ID);
         // write lengths to patch list
@@ -101,7 +101,7 @@ public class Diff {
         writeInt(patch, (int) crcSrc.getValue());
         writeInt(patch, (int) crcTrg.getValue());
         writeInt(patch, DATA_ID);
-
+        
         // examine source buffer
         int ofs = 0;
         while (src.position() < src.capacity()) {
@@ -125,7 +125,7 @@ public class Diff {
             int len, leni, lend, lenr;
             int[] lens;
             int state = -1;
-
+            
             leni = checkInsert(src, trg);
             lend = checkDelete(src, trg);
             lenr = checkReplace(src, trg);
@@ -155,7 +155,7 @@ public class Diff {
             } else if (len == lens[1]) {
                 state = SUBSTITUTE;
             }
-
+            
             switch (state) {
                 case INSERT:
                     // insert
@@ -198,13 +198,13 @@ public class Diff {
                     break;
             }
         }
-
+        
         // if the files end identically, the offset needs to be written
         if (ofs != 0) {
             out(String.format("Offset: %d", ofs));
             writeLen(patch, ofs);
         }
-
+        
         // check for stuff to insert in target
         if (trg.position() < trg.capacity()) {
             patch.write(INSERT);
@@ -215,16 +215,16 @@ public class Diff {
             trg.get(lenBuf);
             patch.write(lenBuf, 0, lenBuf.length);
         }
-
+        
         out(String.format("Patch length: %d", patch.size()));
-
+        
         if (patch.size() == 0) {
             return null;
         }
-
+        
         return patch.toByteArray();
     }
-
+    
     /**
      * Create a target buffer from a source buffer and a buffer of differences
      * @param bsrc source buffer
@@ -256,9 +256,9 @@ public class Diff {
         if (patch.getInt() != Diff.DATA_ID) {
             throw new DiffException("No data ID found in patch header.");
         }
-
+        
         ByteBuffer trg = ByteBuffer.allocate(lenTrg).order(ByteOrder.LITTLE_ENDIAN);
-
+        
         // step through patch buffer
         try {
             while (patch.position() < patch.capacity()) {
@@ -306,22 +306,22 @@ public class Diff {
         } catch (ArrayIndexOutOfBoundsException ex) {
             throw new DiffException("Array index exceeds bounds. Patch file corrupt...");
         }
-
+        
         // check length
         if (trg.position() != lenTrg) {
             throw new DiffException("Size of target differs from that in patch header.");
         }
-
+        
         // compare crc
         crc.reset();
         crc.update(trg.array());
         if (crcTrg != (int) crc.getValue()) {
             throw new DiffException("CRC of target differs from that in patch.");
         }
-
+        
         return trg.array();
     }
-
+    
     /**
      * Lengths/Offsets are stored as 7-bit values. The 8th bit is used as marker if the number
      * is continued in the next byte.
@@ -347,7 +347,7 @@ public class Diff {
         } while (true);
         return val;
     }
-
+    
     /**
      * Store length/offset information in 7-bit encoding. A set 8th bit means: continued in next byte
      * So 127 is stored as 0x7f, but 128 is stored as 0x80 0x01 (where 0x80 means 0, highest bit is marker)
@@ -362,7 +362,7 @@ public class Diff {
         }
         l.write(val);
     }
-
+    
     /**
      * Check for "insert" difference
      * @param src source buffer
@@ -395,7 +395,7 @@ public class Diff {
         }
         return Integer.MAX_VALUE;
     }
-
+    
     /**
      * Check for "delete" difference
      * @param src source buffer
@@ -428,7 +428,7 @@ public class Diff {
         }
         return Integer.MAX_VALUE;
     }
-
+    
     /**
      * Check for "replace" difference
      * @param src source buffer
@@ -461,14 +461,13 @@ public class Diff {
         }
         return Integer.MAX_VALUE;
     }
-
+    
     /**
      * Check for "substitute" difference
      * @param src source buffer
      * @param trg target buffer
      * @return integer array: [0]: number of bytes to delete in source, [1]: number of bytes to insert in target
      * @throws ArrayIndexOutOfBoundsException
-
      */
     private static int[] checkSubstitute(final ByteBuffer src, final ByteBuffer trg) throws ArrayIndexOutOfBoundsException {
         byte[] bs = src.array();
@@ -482,9 +481,9 @@ public class Diff {
         if (it + len + resyncLength >= bt.length) {
             len = bt.length - it - resyncLength;
         }
-
+        
         List<int[]> solutions = new ArrayList<>();
-
+        
         for (int ws = 1; ws < len; ws++) {
             for (int wt = 1; wt < len; wt++) {
                 int r;
@@ -501,7 +500,7 @@ public class Diff {
                 }
             }
         }
-
+        
         if (solutions.isEmpty()) {
             // nothing found
             int[] retVal = new int[2];
@@ -509,7 +508,7 @@ public class Diff {
             retVal[1] = Integer.MAX_VALUE;
             return retVal;
         }
-
+        
         // search best solution
         int sMinIdx = 0;
         for (int i = 1; i < solutions.size(); i++) {
@@ -521,7 +520,7 @@ public class Diff {
         }
         return solutions.get(sMinIdx);
     }
-
+    
     /**
      * Write int to difference list
      * @param l difference list
@@ -533,7 +532,7 @@ public class Diff {
         l.write(val >> 16);
         l.write(val >> 24);
     }
-
+    
     private static void out(final String s) {
         if (VERBATIM) {
             System.out.println(s);
@@ -547,14 +546,14 @@ public class Diff {
  * @author Volker Oth
  */
 class DiffException extends Exception {
-
+    
     /**
      * Constructor.
      */
     public DiffException() {
         super();
     }
-
+    
     /**
      * Constructor.
      * @param s Exception string

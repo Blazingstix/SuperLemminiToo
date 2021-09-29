@@ -2,15 +2,16 @@ package lemmini.game;
 
 import java.awt.Image;
 import java.awt.MediaTracker;
-import java.awt.Toolkit;
-import java.awt.Transparency;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Reader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.extract.Extract;
@@ -58,7 +59,7 @@ public class Core {
     /** extensions accepted for replay files in file dialog */
     public static final String[] REPLAY_EXTENSIONS = {"rpl"};
     
-    public static final String[] IMAGE_EXTENSIONS = {"png", "gif", "jpg"};
+    public static final String[] IMAGE_EXTENSIONS = {"png", "bmp", "gif", "jpg", "wbmp"};
     public static final String[] MUSIC_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd",
         "ogg", "xm", "s3m", "mod", "mid"};
     public static final String[] SOUNDBANK_EXTENSIONS = {"sf2", "dls"};
@@ -71,7 +72,7 @@ public class Core {
     /** path for temporary files */
     public static final String TEMP_PATH = "temp/";
     /** The revision string for resource compatibility - not necessarily the version number */
-    public static final String RES_REVISION = "0.103";
+    public static final String RES_REVISION = "0.104";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
@@ -402,7 +403,6 @@ public class Core {
      * Store program properties.
      */
     public static void saveProgramProps() {
-        //programProps.setDouble("scale", scale);
         programProps.save(programPropsFilePath);
         playerProps.set("defaultPlayer", player.getName());
         playerProps.save(PLAYER_PROPS_FILE_NAME);
@@ -426,26 +426,6 @@ public class Core {
             JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
         }
         System.exit(1);
-    }
-    
-    /**
-     * Loads an image from the given resource.
-     * @param tracker media tracker
-     * @param res resource
-     * @return Image
-     * @throws ResourceException
-     */
-    private static Image loadImage(final MediaTracker tracker, final Resource res) throws ResourceException {
-        if (res == null) {
-            return null;
-        }
-        Image image;
-        try {
-            image = Toolkit.getDefaultToolkit().createImage(res.readAllBytes());
-        } catch (IOException ex) {
-            return null;
-        }
-        return addToTracker(tracker, image);
     }
     
     /**
@@ -476,49 +456,19 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadImage(final Resource res) throws ResourceException {
-        MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
-        Image img = loadImage(tracker, res);
+    public static LemmImage loadLemmImage(final Resource res) throws ResourceException {
+        BufferedImage img = null;
+        if (res != null) {
+            try (InputStream in = res.getInputStream()) {
+                img = ImageIO.read(in);
+            } catch (IOException ex) {
+                img = null;
+            }
+        }
         if (img == null) {
             throw new ResourceException(res);
         }
-        return img;
-    }
-    
-    /**
-     * Loads an image from the given resource.
-     * @param res resource
-     * @return Image
-     * @throws ResourceException
-     */
-    public static LemmImage loadLemmImage(final Resource res) throws ResourceException {
-        return loadLemmImage(res, Transparency.TRANSLUCENT);
-    }
-    
-    /**
-     * Loads an image from the given resource.
-     * @param res resource
-     * @param transparency
-     * @return Image
-     * @throws ResourceException
-     */
-    public static LemmImage loadLemmImage(final Resource res, final int transparency) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(res), transparency);
-    }
-    
-    /**
-     * Load an image from inside the JAR or the directory of the main class.
-     * @param fname
-     * @return Image
-     * @throws ResourceException
-     */
-    public static Image loadImageJar(final String fname) throws ResourceException {
-        MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
-        Image img = addToTracker(tracker, Toolkit.getDefaultToolkit().createImage(ToolBox.findFile(fname)));
-        if (img == null) {
-            throw new ResourceException(fname);
-        }
-        return img;
+        return new LemmImage(img);
     }
     
     /**
@@ -528,18 +478,13 @@ public class Core {
      * @throws ResourceException
      */
     public static LemmImage loadLemmImageJar(final String fname) throws ResourceException {
-        return loadLemmImageJar(fname, Transparency.TRANSLUCENT);
-    }
-    
-    /**
-     * Load an image from inside the JAR or the directory of the main class.
-     * @param fname
-     * @param transparency
-     * @return Image
-     * @throws ResourceException
-     */
-    public static LemmImage loadLemmImageJar(final String fname, final int transparency) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImageJar(fname), transparency);
+        BufferedImage img;
+        try {
+            img = ImageIO.read(ToolBox.findFile(fname));
+        } catch (IOException ex) {
+            throw new ResourceException(fname);
+        }
+        return new LemmImage(img);
     }
     
     /**

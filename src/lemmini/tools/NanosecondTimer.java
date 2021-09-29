@@ -25,16 +25,16 @@ package lemmini.tools;
  * @author Volker Oth
  */
 public class NanosecondTimer {
-
+    
     private long timeBase;
-
+    
     /**
      * Constructor.
      */
     public NanosecondTimer() {
         timeBase = System.nanoTime();
     }
-
+    
     /**
      * Return delta time since last update.
      * @return delta time since last update.
@@ -51,7 +51,7 @@ public class NanosecondTimer {
         }
         return delta;
     }
-
+    
     /**
      * Return delta time since last update and perform an update.
      * @return delta time since last update.
@@ -68,7 +68,7 @@ public class NanosecondTimer {
         timeBase = t;
         return delta;
     }
-
+    
     /**
      * Returns true if the given time has passed since the last update.
      * @param dt time delta in nanoseconds
@@ -78,7 +78,7 @@ public class NanosecondTimer {
         long delta = delta();
         return delta >= dt;
     }
-
+    
     /**
      * Returns true if the given time has passed since the last update and performs an update.
      * @param dt time delta in nanoseconds
@@ -93,7 +93,7 @@ public class NanosecondTimer {
         }
         return false;
     }
-
+    
     /**
      * Returns true if the given time has passed since the last update and adds the time delta.
      * @param dt time delta
@@ -107,7 +107,7 @@ public class NanosecondTimer {
         }
         return false;
     }
-
+    
     /**
      * Updates the internal time base to the current timer value.
      */
@@ -115,7 +115,7 @@ public class NanosecondTimer {
         long t = System.nanoTime();
         timeBase = t;
     }
-
+    
     /**
      * Adds a time delta to the internal time base.
      * @param delta time delta in nanoseconds
@@ -123,5 +123,5 @@ public class NanosecondTimer {
     public void update(long delta) {
         timeBase += delta;
     }
-
+    
 }

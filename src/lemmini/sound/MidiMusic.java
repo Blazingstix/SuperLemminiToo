@@ -34,7 +34,7 @@ import lemmini.game.ResourceException;
  * @author Volker Oth
  */
 public class MidiMusic implements MusicPlayer {
-
+    
     /** MIDI sequencer */
     private Sequencer sequencer;
     private Synthesizer synthesizer;
@@ -44,7 +44,7 @@ public class MidiMusic implements MusicPlayer {
     private boolean canPlay;
     private final byte[] gainSysexData = {(byte) 0xF0, 0x7F, 0x7F, 0x04, 0x01, 0x7F, 0x7F, (byte) 0xF7};
     private final SysexMessage gainSysex = new SysexMessage();
-
+    
     /**
      * Constructor.
      * @throws LemmException
@@ -54,15 +54,8 @@ public class MidiMusic implements MusicPlayer {
             canPlay = false;
             sequencer = MidiSystem.getSequencer(false);
             synthesizer = MidiSystem.getSynthesizer();
-            //transmitter = sequencer.getTransmitter();
-            //receiver = synthesizer.getReceiver();
-            //transmitter.setReceiver(receiver);
             if (sequencer == null || synthesizer == null) {
                 throw new LemmException("MIDI not supported.");
-            } else {
-                // Acquire resources and make operational.
-                //sequencer.open();
-                //synthesizer.open();
             }
         } catch (MidiUnavailableException ex) {
             throw new LemmException("MIDI not supported.");
@@ -119,7 +112,7 @@ public class MidiMusic implements MusicPlayer {
             throw new LemmException("MIDI not supported.");
         }
     }
-
+    
     /**
      * Play current MIDI file.
      */
@@ -129,7 +122,7 @@ public class MidiMusic implements MusicPlayer {
             sequencer.start();
         }
     }
-
+    
     /**
      * Stop current MIDI file.
      */
@@ -139,7 +132,7 @@ public class MidiMusic implements MusicPlayer {
             sequencer.stop();
         }
     }
-
+    
     /**
      * Close current MIDI file.
      */
@@ -154,7 +147,7 @@ public class MidiMusic implements MusicPlayer {
         }
         canPlay = false;
     }
-
+    
     /**
      * Set gain (volume) of MIDI output
      * @param gn gain factor: 0.0 (off) - 1.0 (full volume)

@@ -32,10 +32,10 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class LemmCursor  {
-
+    
     /** distance from center of cursor to be used to detect Lemmings under the cursor */
     private static final int HIT_DISTANCE = 12;
-
+    
     /** cursor type */
     public enum CursorType {
         /** normal cursor */
@@ -73,7 +73,7 @@ public class LemmCursor  {
             return walkerOnly;
         }
     }
-
+    
     /** x position in pixels */
     private static int x;
     /** y position in pixels */
@@ -89,7 +89,7 @@ public class LemmCursor  {
     /** list of AWT box cursor Objects */
     private static final List<Cursor> boxCursor = new ArrayList<>(CursorType.values().length);
     private static boolean box;
-
+    
     /**
      * Initialization.
      * @throws ResourceException
@@ -105,18 +105,17 @@ public class LemmCursor  {
         LemmImage firstCursorImg = cursorImg.get(0);
         int cx = firstCursorImg.getWidth() / 2;
         int cy = firstCursorImg.getHeight() / 2;
-        //for (int i = 0; i < cursorTypes.length; i++) {
         for (Iterator<LemmImage> cursorIt = cursorImg.iterator(), boxIt = boxImg.iterator(); cursorIt.hasNext() && boxIt.hasNext(); ) {
             cursor.add(ToolBox.createCursor(cursorIt.next(), cx, cy));
             boxCursor.add(ToolBox.createCursor(boxIt.next(), cx, cy));
         }
-
+        
         type = CursorType.NORMAL;
         box = false;
         setX(0);
         setY(0);
     }
-
+    
     /**
      * Get image for a certain cursor type.
      * @param t cursor type
@@ -125,7 +124,7 @@ public class LemmCursor  {
     public static LemmImage getImage(final CursorType t) {
         return cursorImg.get(t.ordinal());
     }
-
+    
     /**
      * Get image for current cursor type.
      * @return image for current cursor type
@@ -150,7 +149,7 @@ public class LemmCursor  {
     public static LemmImage getBoxImage() {
         return getBoxImage(type);
     }
-
+    
     /**
      * Get current cursor as AWT cursor object.
      * @return current cursor as AWT cursor object
@@ -162,7 +161,7 @@ public class LemmCursor  {
             return cursor.get(type.ordinal());
         }
     }
-
+    
     /**
      * Get current cursor type.
      * @return current cursor type
@@ -170,7 +169,7 @@ public class LemmCursor  {
     public static CursorType getType() {
         return type;
     }
-
+    
     /**
      * Set current cursor type.
      * @param t cursor type
@@ -194,7 +193,7 @@ public class LemmCursor  {
     public static void setBox(final boolean b) {
         box = b;
     }
-
+    
     /**
      * Check if a Lemming is under the cursor.
      * @param l Lemming to check
@@ -206,18 +205,18 @@ public class LemmCursor  {
         // get center of lemming
         int lx = l.midX() - xOfs;
         int ly = l.midY() - yOfs;
-
+        
         // calculate center of cursor
         int cx = getX();
         int cy = getY();
-
+        
         // calculate distance
         int dx = Math.abs(lx - cx);
         int dy = Math.abs(ly - cy);
-
+        
         return dx <= HIT_DISTANCE && dy <= HIT_DISTANCE;
     }
-
+    
     /**
      * Set x position in pixels.
      * @param x x position in pixels.
@@ -225,7 +224,7 @@ public class LemmCursor  {
     public static void setX(final int x) {
         LemmCursor.x = x;
     }
-
+    
     /**
      * Get x position in pixels.
      * @return x position in pixels
@@ -233,7 +232,7 @@ public class LemmCursor  {
     public static int getX() {
         return x;
     }
-
+    
     /**
      * Set y position in pixels.
      * @param y y position in pixels
@@ -241,7 +240,7 @@ public class LemmCursor  {
     public static void setY(final int y) {
         LemmCursor.y = y;
     }
-
+    
     /**
      * Get y position in pixels.
      * @return y position in pixels

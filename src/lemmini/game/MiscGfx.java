@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import java.awt.Transparency;
 import java.util.ArrayList;
 import java.util.List;
 import lemmini.graphics.LemmImage;
@@ -33,7 +32,7 @@ import org.apache.commons.lang3.math.NumberUtils;
  * @author Volker Oth
  */
 public class MiscGfx {
-
+    
     /** Index of images */
     public static enum Index {
         /** border for the minimap */
@@ -57,12 +56,12 @@ public class MiscGfx {
         /** selection marker for replay */
         SELECT
     }
-
+    
     /** list of images */
     private static final List<LemmImage> images = new ArrayList<>(16);
     private static LemmImage minimap;
     private static int minimapWidth;
-
+    
     /**
      * Initialization.
      * @param mmWidth Minimap width
@@ -91,11 +90,11 @@ public class MiscGfx {
         images.add(img);
         /* 8: TILE_GREEN */
         res = Core.findResource("gfx/misc/background_level.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadLemmImage(res, Transparency.OPAQUE);
+        img = Core.loadLemmImage(res);
         images.add(img);
         /* 9: TILE_BROWN */
         res = Core.findResource("gfx/misc/background_main.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadLemmImage(res, Transparency.OPAQUE);
+        img = Core.loadLemmImage(res);
         images.add(img);
         /* 10: REPLAY_1, 11: REPLAY_2 */
         res = Core.findResource("gfx/misc/replay.png", true, Core.IMAGE_EXTENSIONS);
@@ -110,7 +109,7 @@ public class MiscGfx {
         minimapWidth = -1;
         setMinimapWidth(mmWidth);
     }
-
+    
     /**
      * Get image.
      * @param idx Index

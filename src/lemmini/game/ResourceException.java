@@ -27,14 +27,14 @@ package lemmini.game;
 public class ResourceException extends Exception {
     
     private static final long serialVersionUID = 0x00000001L;
-
+    
     /**
      * Constructor.
      */
     public ResourceException() {
         super();
     }
-
+    
     /**
      * Constructor.
      * @param s Exception string
@@ -48,6 +48,6 @@ public class ResourceException extends Exception {
      * @param res resource
      */
     public ResourceException(final Resource res) {
-        super(res.getOriginalPath().toString());
+        super(res.getOriginalPath());
     }
 }

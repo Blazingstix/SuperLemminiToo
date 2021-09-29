@@ -34,84 +34,95 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class NumFont {
-
+    
     /** width in pixels */
     private static int width;
     /** height in pixels */
     private static int height;
     /** list of images - one for each digit 0-9 */
-    private static List<LemmImage> numImg = new ArrayList<>(15);
-    private static final Map<Integer, LemmImage> numImgMap = new HashMap<>();
-
+    private static final List<LemmImage> NUM_IMG = new ArrayList<>(15);
+    private static final Map<Integer, LemmImage> NUM_IMG_MAP = new HashMap<>();
+    
     /**
      * Load and initialize the font.
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
         Resource res = Core.findResource("gfx/misc/numfont.png", true, Core.IMAGE_EXTENSIONS);
-        numImg.clear();
+        NUM_IMG.clear();
         LemmImage sourceImg = Core.loadLemmImage(res);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
         List<LemmImage> numImgTemp = ToolBox.getAnimation(sourceImg, 10);
-        numImg.addAll(numImgTemp);
+        NUM_IMG.addAll(numImgTemp);
         res = Core.findResource("gfx/misc/numfont2.png", true, Core.IMAGE_EXTENSIONS);
         sourceImg = Core.loadLemmImage(res);
         numImgTemp = ToolBox.getAnimation(sourceImg, 5);
-        numImg.addAll(numImgTemp);
+        NUM_IMG.addAll(numImgTemp);
         
-        numImgMap.clear();
+        NUM_IMG_MAP.clear();
         LemmImage numImgTemp2;
         GraphicsContext g = null;
         for (int i = 0; i < 100; i++) {
             numImgTemp2 = ToolBox.createLemmImage(width * 2, height);
             try {
                 g = numImgTemp2.createGraphicsContext();
-                g.drawImage(numImg.get(i / 10), 0, 0);
-                g.drawImage(numImg.get(i % 10), width, 0);
+                g.drawImage(NUM_IMG.get(i / 10), 0, 0);
+                g.drawImage(NUM_IMG.get(i % 10), width, 0);
             } finally {
                 if (g != null) {
                     g.dispose();
                 }
             }
-            numImgMap.put(i, numImgTemp2);
+            NUM_IMG_MAP.put(i, numImgTemp2);
         }
         numImgTemp2 = ToolBox.createLemmImage(width * 2, height);
         try {
             g = numImgTemp2.createGraphicsContext();
-            g.drawImage(numImg.get(13), 0, 0);
-            g.drawImage(numImg.get(14), width, 0);
+            g.drawImage(NUM_IMG.get(13), 0, 0);
+            g.drawImage(NUM_IMG.get(14), width, 0);
         } finally {
             if (g != null) {
                 g.dispose();
             }
         }
-        numImgMap.put(Integer.MAX_VALUE, numImgTemp2);
+        NUM_IMG_MAP.put(Integer.MAX_VALUE, numImgTemp2);
         numImgTemp2 = ToolBox.createLemmImage(width * 3, height);
         try {
             g = numImgTemp2.createGraphicsContext();
-            g.drawImage(numImg.get(10), 0, 0);
-            g.drawImage(numImg.get(13), width, 0);
-            g.drawImage(numImg.get(14), width * 2, 0);
+            g.drawImage(NUM_IMG.get(10), 0, 0);
+            g.drawImage(NUM_IMG.get(13), width, 0);
+            g.drawImage(NUM_IMG.get(14), width * 2, 0);
         } finally {
             if (g != null) {
                 g.dispose();
             }
         }
-        numImgMap.put(Integer.MIN_VALUE, numImgTemp2);
+        NUM_IMG_MAP.put(Integer.MIN_VALUE, numImgTemp2);
+        numImgTemp2 = ToolBox.createLemmImage(width * 2, height);
+        try {
+            g = numImgTemp2.createGraphicsContext();
+            g.drawImage(NUM_IMG.get(10), 0, 0);
+            g.drawImage(NUM_IMG.get(10), width, 0);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
+        NUM_IMG_MAP.put(null, numImgTemp2);
     }
-
+    
     /**
      * Get an image for a number
      * @param n number
      * @return image of the number
      */
-    public static LemmImage numImage(int n) {
-        LemmImage numImgTemp = numImgMap.get(n);
+    public static LemmImage numImage(Integer n) {
+        LemmImage numImgTemp = NUM_IMG_MAP.get(n);
         if (numImgTemp != null) {
             return numImgTemp;
         } else {
-            String numString = Integer.toString(n);
+            String numString = n.toString();
             numImgTemp = ToolBox.createLemmImage(width * numString.length(), height);
             GraphicsContext g = null;
             try {
@@ -154,7 +165,7 @@ public class NumFont {
                             break;
                     }
                     if (numIndex >= 0) {
-                        g.drawImage(numImg.get(numIndex), width * i, 0);
+                        g.drawImage(NUM_IMG.get(numIndex), width * i, 0);
                     }
                 }
             } finally {
@@ -162,7 +173,7 @@ public class NumFont {
                     g.dispose();
                 }
             }
-            numImgMap.put(n, numImgTemp);
+            NUM_IMG_MAP.put(n, numImgTemp);
             return numImgTemp;
         }
     }

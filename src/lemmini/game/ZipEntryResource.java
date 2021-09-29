@@ -54,12 +54,12 @@ public class ZipEntryResource implements Resource {
     public boolean exists() {
         return zipEntry != null;
     }
-
+    
     @Override
     public String getFileName() {
         return ToolBox.getFileName(zipEntryName);
     }
-
+    
     @Override
     public String getOriginalPath() {
         return origPath;
@@ -71,12 +71,12 @@ public class ZipEntryResource implements Resource {
         String newZipEntryName = ToolBox.getParent(zipEntryName) + sibling;
         return new ZipEntryResource(newOrigPath, zipFile, newZipEntryName);
     }
-
+    
     @Override
     public InputStream getInputStream() throws IOException {
         return zipFile.getInputStream(zipEntry);
     }
-
+    
     @Override
     public BufferedReader getBufferedReader() throws IOException {
         InputStream in = null;
@@ -90,7 +90,7 @@ public class ZipEntryResource implements Resource {
             throw ex;
         }
     }
-
+    
     @Override
     public byte[] readAllBytes() throws IOException {
         try (InputStream in = getInputStream()) {
@@ -112,7 +112,7 @@ public class ZipEntryResource implements Resource {
         return zipFile.equals(res2.zipFile)
                 && zipEntry.getName().equals(res2.zipEntry.getName());
     }
-
+    
     @Override
     public int hashCode() {
         int hash = 7;

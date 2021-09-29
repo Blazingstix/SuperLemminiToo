@@ -35,7 +35,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author Volker Oth
  */
 public class LemmFont {
-
+    
     /** Colors */
     public static enum Color {
         /** green color */
@@ -53,7 +53,7 @@ public class LemmFont {
     }
     
     private static final String FONT_INI_STR = "gfx/font/font.ini";
-
+    
     /** width of one character in pixels */
     private static int width;
     /** height of one character in pixels */
@@ -62,7 +62,7 @@ public class LemmFont {
     private static final Map<String, Subset> subsets = new HashMap<>(4);
     private static Glyph missingChar;
     private static final List<Glyph> missingCharFont = new ArrayList<>(16);
-
+    
     /**
      * Initialization.
      * @throws ResourceException
@@ -126,7 +126,7 @@ public class LemmFont {
             missingCharFont.add(new Glyph(missingGlyphImg));
         });
     }
-
+    
     /**
      * Draw string into graphics object in given color.
      * @param g graphics object to draw to.
@@ -151,7 +151,7 @@ public class LemmFont {
             }
         }
     }
-
+    
     /**
      * Draw string into graphics object in given color.
      * @param g graphics object to draw to.
@@ -161,7 +161,7 @@ public class LemmFont {
     public static void strImage(final GraphicsContext g, final String s, final Color color) {
         strImage(g, s, 0, 0, color);
     }
-
+    
     /**
      * Create image of string in given color.
      * @param s string to draw
@@ -181,7 +181,7 @@ public class LemmFont {
         }
         return image;
     }
-
+    
     /**
      * Create image of string in default color (green).
      * @param s string to draw
@@ -190,7 +190,7 @@ public class LemmFont {
     public static LemmImage strImage(final String s) {
         return strImage(s, Color.GREEN);
     }
-
+    
     /**
      * Draw string into graphics object in default color (green).
      * @param g graphics object to draw to.
@@ -222,7 +222,7 @@ public class LemmFont {
             }
         }
     }
-
+    
     /**
      * Get the width of one character in pixels.
      * @return width of one character in pixels
@@ -230,7 +230,7 @@ public class LemmFont {
     public static int getWidth() {
         return width;
     }
-
+    
     /**
      * Get the height of one character in pixels.
      * @return height of one character in pixels

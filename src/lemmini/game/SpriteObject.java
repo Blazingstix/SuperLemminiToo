@@ -1,8 +1,12 @@
 package lemmini.game;
 
+import java.util.ArrayList;
+import java.util.ListIterator;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
+import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -28,7 +32,7 @@ import lemmini.graphics.LemmImage;
  * @author Volker Oth
  */
 public class SpriteObject extends Sprite {
-
+    
     /** Type of level object */
     public static enum Type {
         /** no influence on gameplay */
@@ -70,7 +74,7 @@ public class SpriteObject extends Sprite {
             return oneWay;
         }
     }
-
+    
     /** x position in pixels */
     private int x;
     /** y position in pixels */
@@ -78,13 +82,13 @@ public class SpriteObject extends Sprite {
     /** Type of level object */
     private Type type;
     /** collision mask - only this part is copied into the stencil */
-    private int[] mask;
+    private boolean[][] mask;
     private int maskOffsetX;
     private int maskOffsetY;
     private int maskWidth;
     private int maskHeight;
     private boolean visOnTerrain;
-
+    
     /**
      * Get Type depending on integer value from INI.
      * @param t integer type
@@ -116,28 +120,54 @@ public class SpriteObject extends Sprite {
                 return Type.PASSIVE;
         }
     }
-
+    
     /**
      * Constructor.
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
      * @param animSpeed number of game frames per sprite frame.
+     * @param modifiable
      */
-    public SpriteObject(final LemmImage sourceImg, final int animFrames, final int animSpeed) {
-        super(sourceImg, animFrames, animSpeed);
+    public SpriteObject(final LemmImage sourceImg, final int animFrames, final int animSpeed, final boolean modifiable) {
+        super(sourceImg, animFrames, animSpeed, modifiable);
         type = Type.PASSIVE;
-        setX(0);
-        setY(0);
+        x = 0;
+        y = 0;
     }
-
+    
     /**
-     * Constructor. Create Sprite from other Sprite.
+     * Constructor.
+     * @param obj Level object.
+     * @param orientation
+     * @param modifiable
+     * @throws ResourceException
+     */
+    public SpriteObject(GraphicSet.LvlObject obj, GraphicSet.Orientation orientation, final boolean modifiable) throws ResourceException {
+        super(obj.getImages(orientation), obj.getSpeed(), modifiable);
+        animMode = obj.getAnimationMode();
+        type = obj.getType();
+        mask = obj.getMask();
+        maskOffsetX = obj.getMaskOffsetX();
+        maskOffsetY = obj.getMaskOffsetY();
+        maskWidth = ArrayUtils.isNotEmpty(mask) ? mask[0].length : 0;
+        maskHeight = mask.length;
+        sound = obj.getSound().clone();
+        x = 0;
+        y = 0;
+    }
+    
+    /**
+     * Constructor. Create Sprite from another Sprite.
      * @param src Sprite to clone.
      */
     public SpriteObject(final SpriteObject src) {
         super(src);
-        setX(src.getX());
-        setY(src.getY());
+        x = src.getX();
+        y = src.getY();
+        mask = src.mask.clone();
+        for (int i = 0; i < mask.length; i++) {
+            mask[i] = mask[i].clone();
+        }
         maskOffsetX = src.getMaskOffsetX();
         maskOffsetY = src.getMaskOffsetY();
         maskWidth = src.getMaskWidth();
@@ -145,12 +175,12 @@ public class SpriteObject extends Sprite {
         type = src.type;
         mask = src.mask; // flat copy - no deep copy needed!
     }
-
+    
     /**
      * Set the collision mask.
      * @param imgMask image containing the collision mask.
      */
-    void setMask(final LemmImage imgMask) {
+    /*void setMask(final LemmImage imgMask) {
         maskWidth = imgMask.getWidth();
         maskHeight = imgMask.getHeight();
         mask = new int[maskWidth * maskHeight];
@@ -165,13 +195,13 @@ public class SpriteObject extends Sprite {
                 g.dispose();
             }
         }
-    }
+    }*/
     
     /**
      * Set the collision mask.
      * @param imgMask image containing the collision mask.
      */
-    void setMask(final LemmImage imgMask, final int xOffset, final int yOffset) {
+    /*void setMask(final LemmImage imgMask, final int xOffset, final int yOffset) {
         if (imgMask != null) {
             maskWidth = imgMask.getWidth();
             maskHeight = imgMask.getHeight();
@@ -188,8 +218,8 @@ public class SpriteObject extends Sprite {
         }
         maskOffsetX = xOffset;
         maskOffsetY = yOffset;
-    }
-
+    }*/
+    
     /**
      * Get type of level object.
      * @return mask as used in Stencil
@@ -218,7 +248,7 @@ public class SpriteObject extends Sprite {
                 return -1;
         }
     }
-
+    
     /**
      * Set x position.
      * @param xi x position in pixels
@@ -226,7 +256,7 @@ public class SpriteObject extends Sprite {
     public final void setX(final int xi) {
         x = xi;
     }
-
+    
     /**
      * Get x position.
      * @return x position in pixels
@@ -234,7 +264,7 @@ public class SpriteObject extends Sprite {
     public int getX() {
         return x;
     }
-
+    
     /**
      * Set y position.
      * @param yi y position in pixels
@@ -242,7 +272,7 @@ public class SpriteObject extends Sprite {
     public final void setY(final int yi) {
         y = yi;
     }
-
+    
     /**
      * Get y position.
      * @return y position in pixels
@@ -273,8 +303,21 @@ public class SpriteObject extends Sprite {
      */
     public void setVisOnTerrain(boolean vis) {
         visOnTerrain = vis;
+        if (vis && !modifiable) {
+            frames = new ArrayList<>(frames);
+            origColors = new int[numFrames][];
+            for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+                int i = lit.nextIndex();
+                LemmImage frame = ToolBox.copyLemmImage(lit.next());
+                lit.set(frame);
+                origColors[i] = frame.getRGB(0, 0, width, height, null, 0, width);
+            }
+        } else if (!vis && modifiable) {
+            origColors = null;
+        }
+        modifiable = vis;
     }
-
+    
     /**
      * Set type of level object.
      * @param t type of level object
@@ -282,7 +325,7 @@ public class SpriteObject extends Sprite {
     public void setType(final Type t) {
         type = t;
     }
-
+    
     /**
      * Get type of level object.
      * @return type of level object
@@ -298,21 +341,21 @@ public class SpriteObject extends Sprite {
     public boolean getVisOnTerrain() {
         return visOnTerrain;
     }
-
+    
     /**
      * Get mask value.
      * @param x x position in pixels
      * @param y y position in pixels
-     * @return mask value (ARGB).
+     * @return mask value.
      */
-    public int getMask(final int x, final int y) {
+    public boolean getMask(final int x, final int y) {
         int tempX = x - maskOffsetX;
         int tempY = y - maskOffsetY;
         if (type != Type.PASSIVE && type != Type.ENTRANCE &&
-                tempY * maskWidth + tempX >= 0 && tempY * maskWidth + tempX < mask.length) {
-            return mask[tempY * maskWidth + tempX];
+                tempY >= 0 && tempY < maskHeight && tempX >= 0 && tempX < maskWidth) {
+            return mask[tempY][tempX];
         } else {
-            return 0;
+            return false;
         }
     }
 }

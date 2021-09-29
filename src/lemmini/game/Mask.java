@@ -42,7 +42,7 @@ public class Mask {
     /** array of images. Note: masks may be animated and thus contain multiple frames. */
     private final List<LemmImage> mask;
     private final List<LemmImage> unpatchedMask;
-
+    
     /**
      * Constructor.
      * @param img image which may contain several animation frames one above each other
@@ -54,7 +54,7 @@ public class Mask {
         mask = ToolBox.getAnimation(img, frames);
         unpatchedMask = new ArrayList<>(mask);
     }
-
+    
     /**
      * Apply erase mask (to foreground image, minimap and stencil).
      * @param x0 x position in pixels
@@ -80,9 +80,9 @@ public class Mask {
         if (xMax >= fgImage.getWidth()) {
             xMax = fgImage.getWidth();
         }
-
+        
         int bgCol = Minimap.isTinted() ? 0 : GameController.getLevel().getBgColor().getRGB();
-
+        
         for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
@@ -125,7 +125,7 @@ public class Mask {
             }
         }
     }
-
+    
     /**
      * Paint one step (of a stair created by a Builder)
      * @param x0 x position in pixels
@@ -149,7 +149,7 @@ public class Mask {
         if (xMax >= fgImage.getWidth()) {
             xMax = fgImage.getWidth();
         }
-
+        
         for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
@@ -199,7 +199,7 @@ public class Mask {
             }
         }
     }
-
+    
     /**
      * Create blocker mask in the Stencil only (Lemming is assigned a Blocker)
      * @param x0 x position in pixels
@@ -271,7 +271,7 @@ public class Mask {
         if (xMax >= stencil.getWidth()) {
             xMax = stencil.getWidth();
         }
-
+        
         for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
@@ -290,7 +290,7 @@ public class Mask {
         }
         return false;
     }
-
+    
     /**
      * Erase certain properties from Stencil bitmask.
      * @param x0 x position in pixels
@@ -310,7 +310,7 @@ public class Mask {
         if (xMax >= fgImage.getWidth()) {
             xMax = fgImage.getWidth();
         }
-
+        
         for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
@@ -332,13 +332,13 @@ public class Mask {
         for (ListIterator<LemmImage> itf = unpatchedMask.listIterator();
                 itf.hasNext(); ) { // go through all frames
             int fi = itf.nextIndex();
-            LemmImage i = new LemmImage(itf.next());
+            LemmImage i = ToolBox.copyLemmImage(itf.next());
             i.replaceColor(templateCol, replaceCol);
             i.replaceColor(templateCol2, replaceCol2);
             mask.set(fi, i);
         }
     }
-
+    
     /**
      * Get width.
      * @return width in pixels.
@@ -346,7 +346,7 @@ public class Mask {
     public int getWidth() {
         return width;
     }
-
+    
     /**
      * Get height.
      * @return height in pixels.

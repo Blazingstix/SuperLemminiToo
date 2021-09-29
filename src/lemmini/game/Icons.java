@@ -39,12 +39,12 @@ import lemmini.tools.ToolBox;
 public class Icons {
     
     private static final int DEFAULT_PITCH = 4;
-
+    
     /** icon width in pixels */
     public static final int WIDTH = 32;
     /** icon height in pixels */
     public static final int HEIGHT = 40;
-
+    
     /** Icon types */
     public static enum Type {
         /** minus icon */
@@ -54,34 +54,36 @@ public class Icons {
         /** climber icon */
         CLIMB (0),
         /** floater icon */
-        FLOAT (2),
+        FLOAT (1),
         /** bomber icon */
-        BOMB (4),
+        BOMB (2),
         /** blocker icon */
-        BLOCK (5),
+        BLOCK (3),
         /** builder icon */
-        BUILD (7),
+        BUILD (4),
         /** basher icon */
-        BASH (9),
+        BASH (5),
         /** miner icon */
-        MINE (11),
+        MINE (6),
         /** digger icon */
-        DIG (12),
+        DIG (7),
         /** pause icon */
-        PAUSE (14),
+        PAUSE (8),
         /** nuke icon */
-        NUKE (16),
+        NUKE (9),
         /** fast forward icon */
-        FFWD (17),
+        FFWD (10),
         /** vertical scroll lock icon */
-        VLOCK (19),
+        VLOCK (11),
+        /** restart icon */
+        RESTART (12),
         /** an empty icon (not used) */
         EMPTY (DEFAULT_PITCH);
-
+        
         private static final Map<Integer, Type> LOOKUP = new HashMap<>();
         
         private final int pitch;
-
+        
         static {
             EnumSet.allOf(Type.class).stream().forEach(s -> LOOKUP.put(s.ordinal(), s));
         }
@@ -89,7 +91,7 @@ public class Icons {
         private Type(int newPitch) {
             pitch = newPitch;
         }
-
+        
         /**
          * Reverse lookup implemented via HashMap.
          * @param val Ordinal value
@@ -103,7 +105,7 @@ public class Icons {
             return pitch;
         }
     }
-
+    
     /** 1st radio button */
     static final int FIRST_RADIO = Type.CLIMB.ordinal();
     /** last radio button */
@@ -111,8 +113,8 @@ public class Icons {
     /** number of radio buttons */
     static final int NUM_RADIO = LAST_RADIO - FIRST_RADIO + 1;
     /** last icon to be drawn */
-    static final int LAST_DRAWN = Type.VLOCK.ordinal();
-
+    static final int LAST_DRAWN = Type.RESTART.ordinal();
+    
     /** list of Sprites that contains the icons */
     private static final List<Sprite> icons = new ArrayList<>(Type.values().length);
     /** buffered image that contains the whole icon bar in its current state */
@@ -120,8 +122,8 @@ public class Icons {
     /** graphics object used to draw on iconImg */
     private static GraphicsContext iconGfx = null;
     private static Type pressedIcon = null;
-
-
+    
+    
     /**
      * Initialization.
      * @throws ResourceException
@@ -139,12 +141,12 @@ public class Icons {
                     "gfx/icons/icon_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png",
                     true, Core.IMAGE_EXTENSIONS);
             LemmImage sourceImg = Core.loadLemmImage(res);
-            Sprite icon = new Sprite(sourceImg, 2, 1);
+            Sprite icon = new Sprite(sourceImg, 2, 1, false);
             icons.add(icon);
             iconGfx.drawImage(icon.getImage(), WIDTH * i, 0);
         }
     }
-
+    
     /**
      * Get icon type by x position.
      * @param x x position inside bar in pixels
@@ -156,7 +158,7 @@ public class Icons {
         }
         return Type.get(x / WIDTH);
     }
-
+    
     /**
      * Get buffered image that contains the whole icon bar in its current state.
      * @return image of icon bar
@@ -164,7 +166,7 @@ public class Icons {
     public static LemmImage getImg() {
         return iconImg;
     }
-
+    
     /**
      * Get pressed state of the given icon
      * @param type
@@ -177,7 +179,7 @@ public class Icons {
         }
         return (icons.get(idx).getFrameIdx() == 1);
     }
-
+    
     /**
      * Press down icon.
      * @param type Icon Type
@@ -216,6 +218,7 @@ public class Icons {
             case MINUS:
             case PLUS:
             case NUKE:
+            case RESTART:
                 icon = icons.get(idx);
                 icon.setFrameIdx(1); // set "pressed" frame
                 iconGfx.drawImage(icon.getImage(), WIDTH * idx, 0);
@@ -224,7 +227,7 @@ public class Icons {
                 break;
         }
     }
-
+    
     /**
      * Release icon.
      * @param type Icon Type
@@ -235,6 +238,7 @@ public class Icons {
         switch (type) {
             case MINUS:
             case PLUS:
+            case RESTART:
                 icon = icons.get(idx);
                 icon.setFrameIdx(0); // set "released" frame
                 if (idx <= LAST_DRAWN) {
@@ -284,7 +288,7 @@ public class Icons {
             return null;
         }
     }
-
+    
     /**
      * Reset icon bar.
      */

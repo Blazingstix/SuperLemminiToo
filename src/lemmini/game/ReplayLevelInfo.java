@@ -34,7 +34,7 @@ public class ReplayLevelInfo {
     private int lvlNumber;
     /** level name */
     private String lvlName;
-
+    
     /**
      * Set name of level pack.
      * @param levelPack name of level pack
@@ -49,7 +49,7 @@ public class ReplayLevelInfo {
     public String getLevelPack() {
         return levelPack;
     }
-
+    
     /**
      * Set rating number.
      * @param ratingNumber rating
@@ -57,7 +57,7 @@ public class ReplayLevelInfo {
     public void setRatingNumber(final int ratingNumber) {
         this.ratingNumber = ratingNumber;
     }
-
+    
     /**
      * Get rating number.
      * @return rating
@@ -65,7 +65,7 @@ public class ReplayLevelInfo {
     public int getRatingNumber() {
         return ratingNumber;
     }
-
+    
     /**
      * Set rating name.
      * @param ratingName rating name
@@ -73,7 +73,7 @@ public class ReplayLevelInfo {
     public void setRatingName(final String ratingName) {
         this.ratingName = ratingName;
     }
-
+    
     /**
      * Get rating name.
      * @return rating name
@@ -81,7 +81,7 @@ public class ReplayLevelInfo {
     public String getRatingName() {
         return ratingName;
     }
-
+    
     /**
      * Set level number.
      * @param lvlNumber level number
@@ -89,7 +89,7 @@ public class ReplayLevelInfo {
     public void setLvlNumber(final int lvlNumber) {
         this.lvlNumber = lvlNumber;
     }
-
+    
     /**
      * Get level number.
      * @return level number
@@ -97,7 +97,7 @@ public class ReplayLevelInfo {
     public int getLvlNumber() {
         return lvlNumber;
     }
-
+    
     /**
      * Set level name.
      * @param lvlName level name
@@ -105,7 +105,7 @@ public class ReplayLevelInfo {
     public void setLvlName(final String lvlName) {
         this.lvlName = lvlName;
     }
-
+    
     /**
      * Get level name.
      * @return level name

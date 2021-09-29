@@ -66,10 +66,10 @@ public class LemminiPanel extends JPanel implements Runnable {
     /** y coordinate of icons in pixels */
     static final int ICONS_Y = COUNTER_Y + 14;
     /** x coordinate of minimap in pixels */
-    static final int SMALL_X = ICONS_X + 32 * 14 + 16;
+    static final int SMALL_X = ICONS_X + 32 * 15 + 16;
     /** y coordinate of minimap in pixels */
     static final int SMALL_Y = ICONS_Y;
-
+    
     private int menuOffsetX;
     /** start x position of mouse drag (for mouse scrolling) */
     private int mouseDragStartX;
@@ -113,7 +113,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     private boolean drawNextFrame;
     private int unmaximizedWidth = 0;
     private int unmaximizedHeight = 0;
-
+    
     /**
      * Creates new form LemminiPanel
      */
@@ -133,7 +133,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void init() {
         setBufferSize(Core.unscale(getWidth()), Core.unscale(getHeight()));
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -189,12 +189,12 @@ public class LemminiPanel extends JPanel implements Runnable {
             .addGap(0, 450, Short.MAX_VALUE)
         );
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formComponentResized(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentResized
         mouseHasEntered = false;
         setSize(getWidth(), getHeight());
     }//GEN-LAST:event_formComponentResized
-
+    
     private void formMouseEntered(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseEntered
         mouseDx = 0;
         mouseDy = 0;
@@ -206,7 +206,7 @@ public class LemminiPanel extends JPanel implements Runnable {
             mouseHasEntered = true;
         }
     }//GEN-LAST:event_formMouseEntered
-
+    
     private void formMouseExited(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseExited
         switch (GameController.getGameState()) {
             case BRIEFING:
@@ -223,7 +223,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 x = Core.unscale(x) + GameController.getXPos();
                 xMouse = x;
                 LemmCursor.setX(Core.unscale(xMouseScreen));
-
+                
                 int y = yMouseScreen + Core.scale(mouseDy);
                 if (y >= getHeight()) {
                     y = getHeight() - 1;
@@ -241,7 +241,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 break;
         }
     }//GEN-LAST:event_formMouseExited
-
+    
     private void formMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMousePressed
         int x = Core.unscale(evt.getX());
         int y = Core.unscale(evt.getY());
@@ -252,12 +252,12 @@ public class LemminiPanel extends JPanel implements Runnable {
         int modifiers = evt.getModifiersEx();
         boolean leftMousePressed = BooleanUtils.toBoolean(modifiers & InputEvent.BUTTON1_DOWN_MASK);
         boolean rightMousePressed = BooleanUtils.toBoolean(modifiers & InputEvent.BUTTON3_DOWN_MASK);
-
+        
         if (Fader.getState() != Fader.State.OFF
                 && GameController.getGameState() != GameController.State.LEVEL) {
             return;
         }
-
+        
         switch (GameController.getGameState()) {
             case INTRO:
                 if (buttonPressed == MouseEvent.BUTTON1) {
@@ -426,7 +426,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 break;
         }
     }//GEN-LAST:event_formMousePressed
-
+    
     private void formMouseReleased(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseReleased
         int x = Core.unscale(evt.getX());
         int y = Core.unscale(evt.getY());
@@ -434,7 +434,7 @@ public class LemminiPanel extends JPanel implements Runnable {
         mouseDy = 0;
         boolean swapButtons = GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS);
         int buttonPressed = evt.getButton();
-
+        
         switch (GameController.getGameState()) {
             case LEVEL:
                 if (buttonPressed == MouseEvent.BUTTON1) {
@@ -453,6 +453,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                     GameController.releaseIcon(Icons.Type.MINUS);
                     GameController.releaseIcon(Icons.Type.PLUS);
                     GameController.releaseIcon(Icons.Type.NUKE);
+                    GameController.releaseIcon(Icons.Type.RESTART);
                 }
                 if (buttonPressed == (swapButtons ? MouseEvent.BUTTON2 : MouseEvent.BUTTON3)) {
                     switch (LemmCursor.getType()) {
@@ -482,7 +483,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 break;
         }
     }//GEN-LAST:event_formMouseReleased
-
+    
     private void formMouseDragged(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseDragged
         int modifiers = evt.getModifiersEx();
         boolean leftMousePressed = BooleanUtils.toBoolean(modifiers & InputEvent.BUTTON1_DOWN_MASK);
@@ -516,11 +517,11 @@ public class LemminiPanel extends JPanel implements Runnable {
                 break;
         }
     }//GEN-LAST:event_formMouseDragged
-
+    
     private void formMouseMoved(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_formMouseMoved
         int oldX = xMouse;
         int oldY = yMouse;
-
+        
         xMouse = Core.unscale(evt.getX()) + GameController.getXPos();
         yMouse = Core.unscale(evt.getY()) + GameController.getYPos();
         // LemmCursor
@@ -542,7 +543,7 @@ public class LemminiPanel extends JPanel implements Runnable {
         if (isFocused) {
             mouseHasEntered = true;
         }
-
+        
         switch (GameController.getGameState()) {
             case INTRO:
             case BRIEFING:
@@ -562,7 +563,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 break;
         }
     }//GEN-LAST:event_formMouseMoved
-
+    
     private void formMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_formMouseWheelMoved
         if (GameController.getGameState() == GameController.State.LEVEL) {
             int wheelRotation = evt.getWheelRotation();
@@ -619,6 +620,7 @@ public class LemminiPanel extends JPanel implements Runnable {
         GameController.releaseIcon(Icons.Type.MINUS);
         GameController.releaseIcon(Icons.Type.PLUS);
         GameController.releaseIcon(Icons.Type.NUKE);
+        GameController.releaseIcon(Icons.Type.RESTART);
         LemmCursor.setBox(false);
         setCursor(LemmCursor.CursorType.NORMAL);
         isFocused = false;
@@ -640,7 +642,7 @@ public class LemminiPanel extends JPanel implements Runnable {
         
         synchronized (paintSemaphore) {
             GraphicsContext offGfx = offBuffer.getGraphicsContext();
-
+            
             switch (GameController.getGameState()) {
                 case INTRO:
                 case BRIEFING:
@@ -656,28 +658,28 @@ public class LemminiPanel extends JPanel implements Runnable {
                         int xOfsTemp = GameController.getXPos();
                         int minimapXOfsTemp = Minimap.getXPos();
                         int yOfsTemp = GameController.getYPos();
-
+                        
                         int width = Core.getDrawWidth();
                         int height = Core.getDrawHeight();
                         int levelHeight = Math.min(LemminiFrame.LEVEL_HEIGHT, height);
-
+                        
                         Level level = GameController.getLevel();
                         if (level != null) {
-
+                            
                             // clear screen
                             offGfx.setClip(0, 0, width, levelHeight);
                             offGfx.setBackground(level.getBgColor());
                             offGfx.clearRect(0, 0, width, levelHeight);
-
+                            
                             // draw background
                             GameController.getLevel().drawBackground(offGfx, width, levelHeight, xOfsTemp, yOfsTemp);
-
+                            
                             // draw "behind" objects
                             GameController.getLevel().drawBehindObjects(offGfx, width, height, xOfsTemp, yOfsTemp);
-
+                            
                             // draw foreground
                             offGfx.drawImage(fgImage, 0, 0, width, levelHeight, xOfsTemp, yOfsTemp, xOfsTemp + width, yOfsTemp + levelHeight);
-
+                            
                             // draw "in front" objects
                             GameController.getLevel().drawInFrontObjects(offGfx, width, height, xOfsTemp, yOfsTemp);
                         }
@@ -731,7 +733,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         // draw explosions
                         GameController.drawExplosions(offGfx, width, LemminiFrame.LEVEL_HEIGHT, xOfsTemp, yOfsTemp);
                         offGfx.setClip(0, 0, width, height);
-
+                        
                         // draw info string
                         LemmImage outStrImg = outStrBuffer.getImage();
                         GraphicsContext outStrGfx = outStrBuffer.getGraphicsContext();
@@ -810,7 +812,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 default:
                     break;
             }
-
+            
             // fader
             Fader.apply(offGfx);
 
@@ -915,7 +917,7 @@ public class LemminiPanel extends JPanel implements Runnable {
             default:
                 break;
         }
-
+        
         // fader
         GameController.fade();
     }
@@ -968,7 +970,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                     redraw();
                 }
             }
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             ToolBox.showException(ex);
             System.exit(1);
         }
@@ -1140,7 +1142,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 Core.player.enableCheatMode();
                 return;
             }
-
+            
             // real level code -> get absolute level
             levelCode = levelCode.toUpperCase();
             LevelPack lpack = GameController.getLevelPack(lvlPack);
@@ -1201,7 +1203,7 @@ public class LemminiPanel extends JPanel implements Runnable {
             }
             // now copy all players and create properties
             players.stream().forEachOrdered(Core::addPlayer);
-
+            
             // select new default player
             if (!Core.player.getName().equals(player)
                     && GameController.getGameState() != GameController.State.INTRO) {
@@ -1274,7 +1276,7 @@ public class LemminiPanel extends JPanel implements Runnable {
             } else {
                 outStrBuffer.setSize(width, LemmFont.getHeight());
             }
-
+            
             menuOffsetX = Math.max(0, (width - getMinimumSize().width) / 2);
         }
     }
@@ -1302,7 +1304,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     int getCursorX() {
         return xMouse;
     }
-
+    
     /**
      * Get cursor y position in pixels.
      * @return cursor y position in pixels
@@ -1310,7 +1312,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     int getCursorY() {
         return yMouse;
     }
-
+    
     /**
      * Get flag: Shift key is pressed?
      * @return true if shift key is pressed, false otherwise
@@ -1318,7 +1320,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isShiftPressed() {
         return shiftPressed;
     }
-
+    
     /**
      * Set flag: Shift key is pressed.
      * @param p true: Shift key is pressed, false otherwise
@@ -1326,7 +1328,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setShiftPressed(final boolean p) {
         shiftPressed = p;
     }
-
+    
     /**
      * Get flag: Control key is pressed?
      * @return true if control key is pressed, false otherwise
@@ -1334,7 +1336,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isControlPressed() {
         return controlPressed;
     }
-
+    
     /**
      * Set flag: Control key is pressed.
      * @param p true: control key is pressed, false otherwise
@@ -1342,7 +1344,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setControlPressed(final boolean p) {
         controlPressed = p;
     }
-
+    
     /**
      * Get flag: Left key is pressed?
      * @return true if left key is pressed, false otherwise
@@ -1350,7 +1352,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isLeftPressed() {
         return leftPressed;
     }
-
+    
     /**
      * Set flag: Left key is pressed.
      * @param p true: Left key is pressed, false otherwise
@@ -1358,7 +1360,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setLeftPressed(final boolean p) {
         leftPressed = p;
     }
-
+    
     /**
      * Get flag: Right key is pressed?
      * @return true if right key is pressed, false otherwise
@@ -1366,7 +1368,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isRightPressed() {
         return rightPressed;
     }
-
+    
     /**
      * Set flag: Right key is pressed.
      * @param p true: Right key is pressed, false otherwise
@@ -1374,7 +1376,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setRightPressed(final boolean p) {
         rightPressed = p;
     }
-
+    
     /**
      * Get flag: Up key is pressed?
      * @return true if up key is pressed, false otherwise
@@ -1382,7 +1384,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isUpPressed() {
         return upPressed;
     }
-
+    
     /**
      * Set flag: Up key is pressed.
      * @param p true: Up key is pressed, false otherwise
@@ -1390,7 +1392,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setUpPressed(final boolean p) {
         upPressed = p;
     }
-
+    
     /**
      * Get flag: Down key is pressed?
      * @return true if down key is pressed, false otherwise
@@ -1398,7 +1400,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean isDownPressed() {
         return downPressed;
     }
-
+    
     /**
      * Set flag: Down key is pressed.
      * @param p true: Down key is pressed, false otherwise
@@ -1406,7 +1408,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     void setDownPressed(final boolean p) {
         downPressed = p;
     }
-
+    
     /**
      * Get state of debug draw option.
      * @return true: debug draw is active, false otherwise
@@ -1414,7 +1416,7 @@ public class LemminiPanel extends JPanel implements Runnable {
     boolean getDebugDraw() {
         return draw;
     }
-
+    
     /**
      * Set state of debug draw option.
      * @param d true: debug draw is active, false otherwise

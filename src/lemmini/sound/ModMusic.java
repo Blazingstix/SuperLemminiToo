@@ -52,7 +52,7 @@ public class ModMusic implements Runnable, MusicPlayer {
     private Thread modThread;
     /** data line used to play samples */
     private SourceDataLine line;
-
+    
     /**
      * Load MOD file, initialize player.
      * @param res resource
@@ -91,7 +91,7 @@ public class ModMusic implements Runnable, MusicPlayer {
         modThread = new Thread(this);
         modThread.start();
     }
-
+    
     /* (non-Javadoc)
      * @see java.lang.Runnable#run()
      *
@@ -161,7 +161,7 @@ public class ModMusic implements Runnable, MusicPlayer {
             line.close();
         }
     }
-
+    
     /**
      * Instruct the run() method to pause playback.
      */
@@ -169,7 +169,7 @@ public class ModMusic implements Runnable, MusicPlayer {
     public synchronized void stop() {
         play = false;
     }
-
+    
     /**
      * Instruct the run() method to resume playback.
      */
@@ -178,7 +178,7 @@ public class ModMusic implements Runnable, MusicPlayer {
         play = true;
         notifyAll();
     }
-
+    
     /**
      * Kills the thread.
      */
@@ -196,7 +196,7 @@ public class ModMusic implements Runnable, MusicPlayer {
         } catch (InterruptedException ex) {
         }
     }
-
+    
     /**
      * Set gain (volume) of MOD output
      * @param gain gain factor: 0.0 = off, 1.0 = full volume, 2.0 = double volume
@@ -213,5 +213,3 @@ public class ModMusic implements Runnable, MusicPlayer {
         }
     }
 }
-
-

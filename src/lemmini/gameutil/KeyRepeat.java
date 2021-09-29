@@ -33,7 +33,7 @@ import lemmini.tools.NanosecondTimer;
  * @author Volker Oth
  */
 public class KeyRepeat {
-
+    
     /** key repeat event */
     public static enum Event {
         /** no state reached yet */
@@ -43,7 +43,7 @@ public class KeyRepeat {
         /** double click detected */
         DOUBLE_CLICK
     }
-
+    
     /** repeat state */
     private enum State {
         /** off state */
@@ -53,7 +53,7 @@ public class KeyRepeat {
         /** wait for timeRepeat to pass */
         REPEAT
     }
-
+    
     /** double click state */
     private enum DcState {
         /** not pressed */
@@ -61,7 +61,7 @@ public class KeyRepeat {
         /** pressed and released once */
         PRESSED_ONCE
     }
-
+    
     /** timer used as time base */
     private final NanosecondTimer timer;
     /** internal debounce state */
@@ -78,7 +78,7 @@ public class KeyRepeat {
     private final long timeDoubleClick;
     /** repeat event */
     private Event event = Event.NONE;
-
+    
     /**
      * Constructor.
      * @param tfirst time after which a pressed (and not released) key is recognized as key press (nanoseconds)
@@ -92,7 +92,7 @@ public class KeyRepeat {
         timeDoubleClick = tdc;
         init();
     }
-
+    
     /**
      * Initialize/Reset all states.
      */
@@ -102,7 +102,7 @@ public class KeyRepeat {
         mask = 0;
         timer.update();
     }
-
+    
     /**
      * Button/Icon was pressed.
      * @param m trigger mask
@@ -136,7 +136,7 @@ public class KeyRepeat {
         state = State.DETECT_FIRST;
         timer.update(); // set up lock timer
     }
-
+    
     /**
      * Button/Icon was released.
      * @param m trigger mask
@@ -147,7 +147,7 @@ public class KeyRepeat {
             state = State.OFF;
         }
     }
-
+    
     /**
      * Poll the last event.
      * @return repeat event
@@ -160,12 +160,12 @@ public class KeyRepeat {
             event = Event.NONE;
             return temp;
         }
-
+        
         // no button pressed, no event stored -> return none
         if (mask == 0) {
             return Event.NONE;
         }
-
+        
         // no event stored, but button still pressed: check repeat states
         switch (state) {
             case DETECT_FIRST:

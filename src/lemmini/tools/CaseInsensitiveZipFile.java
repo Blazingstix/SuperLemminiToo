@@ -80,7 +80,7 @@ public class CaseInsensitiveZipFile extends ZipFile {
         return super.getEntry(remappedName);
     }
     
-    private String normalize(String name) {
+    private static String normalize(String name) {
         return name.toLowerCase(Locale.ROOT);
     }
 }

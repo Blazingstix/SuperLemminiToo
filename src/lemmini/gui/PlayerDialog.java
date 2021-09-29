@@ -36,7 +36,7 @@ import lemmini.game.Core;
 public class PlayerDialog extends JDialog {
     
     private Vector<String> players;
-
+    
     /**
      * Creates new form PlayerDialog
      * @param parent
@@ -48,7 +48,7 @@ public class PlayerDialog extends JDialog {
         setMinimumSize(getSize());
         setLocationRelativeTo(parent);
     }
-
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -143,12 +143,12 @@ public class PlayerDialog extends JDialog {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
+    
     private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
         players.clear();
         players = null;
     }//GEN-LAST:event_formWindowClosing
-
+    
     private void jButtonNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewActionPerformed
         String player = JOptionPane.showInputDialog(
                 LemminiFrame.getFrame(), "Enter Player Name", "Input", JOptionPane.QUESTION_MESSAGE);
@@ -174,7 +174,7 @@ public class PlayerDialog extends JDialog {
             }
         }
     }//GEN-LAST:event_jButtonNewActionPerformed
-
+    
     private void jButtonDeleteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDeleteActionPerformed
         int[] indices = jListPlayers.getSelectedIndices();
         for (int i = indices.length - 1; i >= 0; i--) {
@@ -184,17 +184,17 @@ public class PlayerDialog extends JDialog {
         }
         jListPlayers.setListData(players);
     }//GEN-LAST:event_jButtonDeleteActionPerformed
-
+    
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
         dispose();
     }//GEN-LAST:event_jButtonOKActionPerformed
-
+    
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         players.clear();
         players = null;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
-
+    
     /**
      * Get list of players.
      * @return list of players.
@@ -202,7 +202,7 @@ public class PlayerDialog extends JDialog {
     public List<String> getPlayers() {
         return players;
     }
-
+    
     /**
      * Get selected list index.
      * @return selected list index

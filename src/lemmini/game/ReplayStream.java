@@ -44,7 +44,7 @@ public class ReplayStream {
     static final int END = 5;
     
     static final int CURRENT_FORMAT = 1;
-    static final String CURRENT_REVISION = "0.103";
+    static final String CURRENT_REVISION = "0.104";
     
     private List<ReplayEvent> events;
     private int replayIndex;

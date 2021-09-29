@@ -27,7 +27,7 @@ import lemmini.tools.ToolBox;
  */
 
 public class LemmImage {
-
+    
     private final BufferedImage image;
     
     public LemmImage(BufferedImage image) {
@@ -96,36 +96,40 @@ public class LemmImage {
         return new LemmImage(img);
     }
     
-    public void flip(boolean horizontal, boolean vertical) {
+    public LemmImage transform(boolean rotate, boolean flipHoriz, boolean flipVert) {
         int width = image.getWidth();
         int height = image.getHeight();
-        if (horizontal && !vertical) {
-            for (int y = 0; y < height; y++) {
-                for (int x = 0, x2 = width - 1; x < x2; x++, x2--) {
-                    int c = image.getRGB(x, y);
-                    image.setRGB(x, y, image.getRGB(x2, y));
-                    image.setRGB(x2, y, c);
+        BufferedImage tmp;
+        if (rotate) {
+            tmp = ToolBox.createImage(height, width, image.getTransparency());
+        } else {
+            tmp = ToolBox.createImage(width, height, image.getTransparency());
+        }
+        int width2 = tmp.getWidth();
+        int height2 = tmp.getHeight();
+        
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int x2 = x;
+                int y2 = y;
+                
+                if (rotate) {
+                    int oldX2 = x2;
+                    x2 = width2 - 1 - y2;
+                    y2 = oldX2;
                 }
-            }
-        } else if (!horizontal && vertical) {
-            for (int y = 0, y2 = height - 1; y < y2; y++, y2--) {
-                for (int x = 0; x < width; x++) {
-                    int c = image.getRGB(x, y);
-                    image.setRGB(x, y, image.getRGB(x, y2));
-                    image.setRGB(x, y2, c);
+                if (flipVert) {
+                    y2 = height2 - 1 - y2;
                 }
-            }
-        } else if (horizontal && vertical) {
-            int maxY = (height / 2) + (height % 2) - 1;
-            for (int y = 0, y2 = height - 1; y <= maxY; y++, y2--) {
-                int maxX = ((y == y2) ? (width / 2) : width) - 1;
-                for (int x = 0, x2 = width - 1; x <= maxX; x++, x2--) {
-                    int c = image.getRGB(x, y);
-                    image.setRGB(x, y, image.getRGB(x2, y2));
-                    image.setRGB(x2, y2, c);
+                if (flipHoriz) {
+                    x2 = width2 - 1 - x2;
                 }
+                
+                tmp.setRGB(x2, y2, image.getRGB(x, y));
             }
         }
+        
+        return new LemmImage(tmp);
     }
     
     public GraphicsContext createGraphicsContext() {
@@ -135,15 +139,15 @@ public class LemmImage {
     public LemmImage getSubimage(int x, int y, int w, int h) {
         return new LemmImage(image.getSubimage(x, y, w, h));
     }
-
+    
     public int getWidth() {
         return image.getWidth();
     }
-
+    
     public int getHeight() {
         return image.getHeight();
     }
-
+    
     public int getRGB(int x, int y) {
         if (x >= 0 && x < getWidth() && y >= 0 && y < getHeight()) {
             return image.getRGB(x, y);
@@ -155,13 +159,13 @@ public class LemmImage {
     public int[] getRGB(int startX, int startY, int w, int h, int[] rgbArray, int offset, int scansize) {
         return image.getRGB(startX, startY, w, h, rgbArray, offset, scansize);
     }
-
+    
     public void setRGB(int x, int y, int rgb) {
         if (x >= 0 && x < getWidth() && y >= 0 && y < getHeight()) {
             image.setRGB(x, y, rgb);
         }
     }
-
+    
     public void addRGB(int x, int y, int rgb) {
         if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) {
             return;
@@ -283,7 +287,7 @@ public class LemmImage {
         final double redTint = intToDouble((tint >>> 16) & 0xff);
         final double greenTint = intToDouble((tint >>> 8) & 0xff);
         final double blueTint = intToDouble(tint & 0xff);
-
+        
         return applyTint(original, alphaTint, redTint, greenTint, blueTint);
     }
     
@@ -299,14 +303,14 @@ public class LemmImage {
         double redOrig = intToDouble((original >>> 16) & 0xff);
         double greenOrig = intToDouble((original >>> 8) & 0xff);
         double blueOrig = intToDouble(original & 0xff);
-
+        
         double redNew = redTint * alphaTint + redOrig * (1.0 - alphaTint);
         double greenNew = greenTint * alphaTint + greenOrig * (1.0 - alphaTint);
         double blueNew = blueTint * alphaTint + blueOrig * (1.0 - alphaTint);
-
+        
         int rgbNew = (alphaOrig << 24) | (doubleToInt(redNew) << 16)
                 | (doubleToInt(greenNew) << 8) | doubleToInt(blueNew);
-
+        
         return rgbNew;
     }
     

@@ -7,6 +7,7 @@ import java.awt.image.ColorModel;
 import java.awt.image.ComponentColorModel;
 import java.awt.image.DataBuffer;
 import java.io.*;
+import java.math.BigInteger;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -63,7 +64,7 @@ public class ToolBox {
     //private static final GraphicsConfiguration GC = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
     private static final ColorModel BITMASK_COLOR_MODEL = new ComponentColorModel(
             ColorSpace.getInstance(ColorSpace.CS_sRGB),
-            new int[]{1, 8, 8, 8},
+            new int[]{8, 8, 8, 1},
             true, false,
             Transparency.BITMASK, DataBuffer.TYPE_BYTE);
     
@@ -108,7 +109,7 @@ public class ToolBox {
                 throw new IllegalArgumentException("Invalid transparency: " + transparency);
         }
     }
-
+    
     /**
      * Create a compatible buffered image.
      * @param width width of image in pixels
@@ -118,7 +119,7 @@ public class ToolBox {
     public static LemmImage createLemmImage(final int width, final int height) {
         return createLemmImage(width, height, Transparency.TRANSLUCENT);
     }
-
+    
     /**
      * Create a compatible buffered image.
      * @param width width of image in pixels
@@ -129,77 +130,51 @@ public class ToolBox {
     public static LemmImage createLemmImage(final int width, final int height, final int transparency) {
         return new LemmImage(createImage(width, height, transparency));
     }
-
-    /**
-     * Create a compatible buffered image from an image.
-     * @param img existing {@link Image}
-     * @param transparency {@link Transparency}
-     * @return compatible buffered image
-     */
-    public static LemmImage imageToBuffered(final Image img, final int transparency) {
-        BufferedImage bImg = createImage(img.getWidth(null), img.getHeight(null), transparency);
-        Graphics2D g = null;
+    
+    public static LemmImage copyLemmImage(LemmImage img) {
+        return copyLemmImage(img, Transparency.TRANSLUCENT);
+    }
+    
+    public static LemmImage copyLemmImage(LemmImage img, int transparency) {
+        LemmImage newImg = ToolBox.createLemmImage(img.getWidth(), img.getHeight(), transparency);
+        GraphicsContext g = null;
         try {
-            g = bImg.createGraphics();
-            g.drawImage(img, 0, 0, null);
+            g = newImg.createGraphicsContext();
+            g.drawImage(img, 0, 0);
         } finally {
             if (g != null) {
                 g.dispose();
             }
         }
-        return new LemmImage(bImg);
+        return newImg;
     }
-
+    
     /**
-     * Return a list of buffered images which contain an animation.
+     * Return a list of buffered images which contains an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
      * @return a list of images which contains an animation
      */
     public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames) {
-        return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), img.getWidth());
+        return getAnimation(img, frames, img.getWidth());
     }
-
+    
     /**
-     * Return a list of buffered images which contain an animation.
+     * Return a list of buffered images which contains an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
      * @param width image width
      * @return a list of images which contains an animation
      */
     public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames, final int width) {
-        return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), width);
-    }
-
-    /**
-     * Return a list of buffered images which contain an animation.
-     * @param img image containing all the frames one above each other
-     * @param frames number of frames
-     * @param transparency {@link Transparency}
-     * @param width image width
-     * @return a list of images which contains an animation
-     */
-    public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames, final int transparency, final int width) {
-        int height = img.getHeight() / frames;
-        // characters stored one above the other - now separate them into single images
         java.util.List<LemmImage> imgList = new ArrayList<>(frames);
-        int y0 = 0;
-        for (int i = 0; i < frames; i++, y0 += height) {
-            LemmImage frame = new LemmImage(createImage(width, height, transparency));
-            GraphicsContext g = null;
-            try {
-                g = frame.createGraphicsContext();
-                g.drawImage(img, 0, 0, width, height, 0, y0, width, y0 + height);
-            } finally {
-                if (g != null) {
-                    g.dispose();
-                }
-            }
-            imgList.add(frame);
+        int height = img.getHeight() / frames;
+        for (int i = 0, y0 = 0; i < frames; i++, y0 += height) {
+            imgList.add(img.getSubimage(0, y0, width, height));
         }
         return imgList;
     }
-
+    
     /**
      * Use the Loader to find a file.
      * @param fname file name
@@ -209,7 +184,7 @@ public class ToolBox {
         ClassLoader loader = ToolBox.class.getClassLoader();
         return loader.getResource(fname);
     }
-
+    
     /**
      * Open file dialog.
      * @param parent parent frame
@@ -351,7 +326,7 @@ public class ToolBox {
         s = s.replace(":", "\\:");
         s = s.replace("!", "\\!");
         if (addBackslashesToAllSpaces) {
-            s = s.replace(" ", "\\ ");
+            s = s.replace(StringUtils.SPACE, "\\ ");
         } else {
             if (!s.isEmpty() && s.charAt(0) == ' ') {
                 s = "\\" + s;
@@ -360,23 +335,24 @@ public class ToolBox {
         
         return s;
     }
-
+    
     /**
      * Show exception message box.
      * @param ex exception
      */
     public static void showException(final Throwable ex) {
-        String m = "<html>" + ex.getClass().getName() + "<p>";
+        StringBuilder sb = new StringBuilder(1024);
+        sb.append("<html>").append(ex.getClass().getName()).append("<p>");
         if (ex.getMessage() != null) {
-            m += ex.getMessage() + "<p>";
+            sb.append(ex.getMessage()).append("<p>");
         }
         StackTraceElement[] ste = ex.getStackTrace();
         for (StackTraceElement ste1 : ste) {
-            m += ste1.toString() + "<p>";
+            sb.append(ste1.toString()).append("<p>");
         }
-        m += "</html>";
+        sb.append("</html>");
         ex.printStackTrace();
-        JOptionPane.showMessageDialog(null, m, "Error", JOptionPane.ERROR_MESSAGE);
+        JOptionPane.showMessageDialog(null, sb.toString(), "Error", JOptionPane.ERROR_MESSAGE);
     }
     
     public static int cap(int min, int value, int max) {
@@ -426,9 +402,9 @@ public class ToolBox {
     public static double unscale(double n, double s) {
         return n / s;
     }
-
+    
     /**
-     * Parse decimal, hex, binary or octal number as int
+     * Parse decimal, hex, or binary number as int
      * @param s String that contains one number
      * @return Integer value of string
      */
@@ -450,9 +426,6 @@ public class ToolBox {
             if (s.length() <= index) {
                 return 0;
             }
-            if (s.charAt(0) == '-') {
-                throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
-            }
             int radix;
             switch (s.charAt(index)) {
                 case 'X':
@@ -468,24 +441,29 @@ public class ToolBox {
                     index++;
                     break;
                 default:
-                    // octal
-                    radix = 8;
+                    // decimal
+                    radix = 10;
+                    index--;
                     break;
             }
             
-            if (isSign(s.charAt(index))) {
-                throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+            if (radix != 10) {
+                if (s.charAt(0) == '-') {
+                    throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
+                }
+                if (isSign(s.charAt(index))) {
+                    throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+                }
+                return Integer.parseUnsignedInt((hasSign ? s.charAt(0) : StringUtils.EMPTY) + s.substring(index), radix);
             }
-            
-            return Integer.parseUnsignedInt((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
-        } else {
-            // decimal
-            return Integer.parseInt(s);
         }
+        
+        // decimal
+        return Integer.parseInt(s);
     }
     
     /**
-     * Parse decimal, hex, binary or octal number as long
+     * Parse decimal, hex, or binary number as long
      * @param s String that contains one number
      * @return Long value of string
      */
@@ -507,8 +485,57 @@ public class ToolBox {
             if (s.length() <= index) {
                 return 0;
             }
-            if (s.charAt(0) == '-') {
-                throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
+            int radix;
+            switch (s.charAt(index)) {
+                case 'X':
+                case 'x':
+                    // hex
+                    radix = 16;
+                    index++;
+                    break;
+                case 'B':
+                case 'b':
+                    // binary
+                    radix = 2;
+                    index++;
+                    break;
+                default:
+                    // decimal
+                    radix = 10;
+                    break;
+            }
+            
+            if (radix != 10) {
+                if (s.charAt(0) == '-') {
+                    throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
+                }
+                if (isSign(s.charAt(index))) {
+                    throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+                }
+                return Long.parseUnsignedLong((hasSign ? s.charAt(0) : StringUtils.EMPTY) + s.substring(index), radix);
+            }
+        }
+        
+        // decimal
+        return Long.parseLong(s);
+    }
+    
+    /**
+     * Parse decimal, hex, or binary number as BigInteger
+     * @param s String that contains one number
+     * @return BigInteger value of string
+     */
+    public static BigInteger parseBigInteger(final String s) {
+        int index = 0;
+        boolean hasSign = isSign(s.charAt(index));
+        if (hasSign) {
+            index++;
+        }
+        
+        if (s.charAt(index) == '0') {
+            index++;
+            if (s.length() <= index) {
+                return BigInteger.ZERO;
             }
             int radix;
             switch (s.charAt(index)) {
@@ -525,20 +552,21 @@ public class ToolBox {
                     index++;
                     break;
                 default:
-                    // octal
-                    radix = 8;
+                    // decimal
+                    radix = 10;
                     break;
             }
             
-            if (isSign(s.charAt(index))) {
-                throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+            if (radix != 10) {
+                if (isSign(s.charAt(index))) {
+                    throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+                }
+                return new BigInteger((hasSign ? s.charAt(0) : StringUtils.EMPTY) + s.substring(index), radix);
             }
-            
-            return Long.parseUnsignedLong((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
-        } else {
-            // decimal
-            return Long.parseLong(s);
         }
+        
+        // decimal
+        return new BigInteger(s);
     }
     
     public static String intToString(int number, boolean useInfinitySymbol) {
@@ -626,8 +654,8 @@ public class ToolBox {
                 int forwardSlashPos = path.indexOf('/', slashPos + 1);
                 int backslashPos = path.indexOf('\\', slashPos + 1);
                 int newSlashPos = -1;
-                if (forwardSlashPos >= 0) {
-                    if (backslashPos >= 0) {
+                if (forwardSlashPos != StringUtils.INDEX_NOT_FOUND) {
+                    if (backslashPos != StringUtils.INDEX_NOT_FOUND) {
                         newSlashPos = StrictMath.min(forwardSlashPos, backslashPos);
                     } else {
                         newSlashPos = forwardSlashPos;
@@ -659,8 +687,8 @@ public class ToolBox {
                 int forwardSlashPos = path.indexOf('/', slashPos + 1);
                 int backslashPos = path.indexOf('\\', slashPos + 1);
                 int newSlashPos = -1;
-                if (forwardSlashPos >= 0) {
-                    if (backslashPos >= 0) {
+                if (forwardSlashPos != StringUtils.INDEX_NOT_FOUND) {
+                    if (backslashPos != StringUtils.INDEX_NOT_FOUND) {
                         newSlashPos = StrictMath.min(forwardSlashPos, backslashPos);
                     } else {
                         newSlashPos = forwardSlashPos;
@@ -692,7 +720,7 @@ class DeleteTreeFileVisitor extends SimpleFileVisitor<Path> {
         Files.delete(file);
         return FileVisitResult.CONTINUE;
     }
-
+    
     @Override
     public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
         if (exc == null) {

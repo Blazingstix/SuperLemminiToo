@@ -64,10 +64,10 @@ public class RepeatingReleasedEventsFixer implements AWTEventListener {
     private final Map<Integer, ReleasedAction> _map = new HashMap<>();
     
     private static RepeatingReleasedEventsFixer installed;
-    private static final Object installedSync = new Object();
+    private static final Object INSTALLED_SYNC = new Object();
 
     public static void install() {
-        synchronized (installedSync) {
+        synchronized (INSTALLED_SYNC) {
             if (installed == null) {
                 installed = new RepeatingReleasedEventsFixer();
                 Toolkit.getDefaultToolkit().addAWTEventListener(installed, AWTEvent.KEY_EVENT_MASK);
@@ -76,7 +76,7 @@ public class RepeatingReleasedEventsFixer implements AWTEventListener {
     }
 
     public static void remove() {
-        synchronized (installedSync) {
+        synchronized (INSTALLED_SYNC) {
             if (installed != null) {
                 Toolkit.getDefaultToolkit().removeAWTEventListener(installed);
                 installed = null;
@@ -110,36 +110,41 @@ public class RepeatingReleasedEventsFixer implements AWTEventListener {
         }
 
         // ?: Is this RELEASED? (the problem we're trying to fix!)
-        if (keyEvent.getID() == KeyEvent.KEY_RELEASED) {
-            // -> Yes, so stick in wait
-            /**
-             * Really just wait until "immediately", as the point is that the subsequent PRESSED shall already have been
-             * posted on the event queue, and shall thus be the direct next event no matter which events are posted
-             * afterwards. The code with the ReleasedAction handles if the Timer thread actually fires the action due to
-             * lags, by cancelling the action itself upon the PRESSED.
-             */
-            final Timer timer = new Timer(2, null);
-            ReleasedAction action = new ReleasedAction(keyEvent, timer);
-            timer.addActionListener(action);
-            timer.start();
+        switch (keyEvent.getID()) {
+            case KeyEvent.KEY_RELEASED:
+                {
+                    // -> Yes, so stick in wait
+                    /**
+                     * Really just wait until "immediately", as the point is that the subsequent PRESSED shall already have been
+                     * posted on the event queue, and shall thus be the direct next event no matter which events are posted
+                     * afterwards. The code with the ReleasedAction handles if the Timer thread actually fires the action due to
+                     * lags, by cancelling the action itself upon the PRESSED.
+                     */
+                    final Timer timer = new Timer(2, null);
+                    ReleasedAction action = new ReleasedAction(keyEvent, timer);
+                    timer.addActionListener(action);
+                    timer.start();
 
-            _map.put(keyEvent.getKeyCode(), action);
+                    _map.put(keyEvent.getKeyCode(), action);
 
-            // Consume the original
-            keyEvent.consume();
-        }
-        else if (keyEvent.getID() == KeyEvent.KEY_PRESSED) {
-            // Remember that this is single threaded (EDT), so we can't have races.
-            ReleasedAction action = _map.remove(Integer.valueOf(keyEvent.getKeyCode()));
-            // ?: Do we have a corresponding RELEASED waiting?
-            if (action != null) {
-                // -> Yes, so dump it
-                action.cancel();
-            }
-            // System.out.println("PRESSED: [" + keyEvent + "]");
-        }
-        else {
-            throw new AssertionError("All IDs should be covered.");
+                    // Consume the original
+                    keyEvent.consume();
+                }
+                break;
+            case KeyEvent.KEY_PRESSED:
+                {
+                    // Remember that this is single threaded (EDT), so we can't have races.
+                    ReleasedAction action = _map.remove(keyEvent.getKeyCode());
+                    // ?: Do we have a corresponding RELEASED waiting?
+                    if (action != null) {
+                        // -> Yes, so dump it
+                        action.cancel();
+                    }
+                    // System.out.println("PRESSED: [" + keyEvent + "]");
+                }
+                break;
+            default:
+                throw new AssertionError("All IDs should be covered.");
         }
     }
  
@@ -178,7 +183,7 @@ public class RepeatingReleasedEventsFixer implements AWTEventListener {
             cancel();
             // Creating new KeyEvent (we've consumed the original).
             KeyEvent newEvent = new RepostedKeyEvent((Component) _originalKeyEvent.getSource(),
-                    _originalKeyEvent.getID(), _originalKeyEvent.getWhen(), _originalKeyEvent.getModifiers(),
+                    _originalKeyEvent.getID(), _originalKeyEvent.getWhen(), _originalKeyEvent.getModifiersEx(),
                     _originalKeyEvent.getKeyCode(), _originalKeyEvent.getKeyChar(), _originalKeyEvent.getKeyLocation());
             // Posting to EventQueue.
             Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(newEvent);
