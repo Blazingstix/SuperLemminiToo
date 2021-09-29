@@ -1,8 +1,10 @@
 package lemmini.game;
 
 import java.awt.Cursor;
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
@@ -79,14 +81,14 @@ public class LemmCursor  {
     private static int y;
     /** current cursor type */
     private static CursorType type;
-    /** array of images - one for each cursor type */
-    private static LemmImage[] cursorImg;
-    /** array of images - one for each box type */
-    private static LemmImage[] boxImg;
-    /** array of AWT cursor Objects */
-    private static Cursor[] cursor;
-    /** array of AWT box cursor Objects */
-    private static Cursor[] boxCursor;
+    /** list of images - one for each cursor type */
+    private static List<LemmImage> cursorImg;
+    /** list of images - one for each box type */
+    private static List<LemmImage> boxImg;
+    /** list of AWT cursor Objects */
+    private static final List<Cursor> cursor = new ArrayList<>(CursorType.values().length);
+    /** list of AWT box cursor Objects */
+    private static final List<Cursor> boxCursor = new ArrayList<>(CursorType.values().length);
     private static boolean box;
 
     /**
@@ -94,18 +96,20 @@ public class LemmCursor  {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
+        cursor.clear();
+        boxCursor.clear();
         CursorType[] cursorTypes = CursorType.values();
-        Path fn = Core.findResource(Paths.get("gfx/misc/cursor.png"), Core.IMAGE_EXTENSIONS);
-        cursorImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), cursorTypes.length);
-        fn = Core.findResource(Paths.get("gfx/misc/box.png"), Core.IMAGE_EXTENSIONS);
-        boxImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), cursorTypes.length);
-        int cx = cursorImg[0].getWidth() / 2;
-        int cy = cursorImg[0].getHeight() / 2;
-        cursor = new Cursor[cursorTypes.length];
-        boxCursor = new Cursor[cursorTypes.length];
-        for (int i = 0; i < cursorTypes.length; i++) {
-            cursor[i] = ToolBox.createCursor(cursorImg[i], cx, cy);
-            boxCursor[i] = ToolBox.createCursor(boxImg[i], cx, cy);
+        Resource res = Core.findResource("gfx/misc/cursor.png", true, Core.IMAGE_EXTENSIONS);
+        cursorImg = ToolBox.getAnimation(Core.loadTranslucentImage(res), cursorTypes.length);
+        res = Core.findResource("gfx/misc/box.png", true, Core.IMAGE_EXTENSIONS);
+        boxImg = ToolBox.getAnimation(Core.loadTranslucentImage(res), cursorTypes.length);
+        LemmImage firstCursorImg = cursorImg.get(0);
+        int cx = firstCursorImg.getWidth() / 2;
+        int cy = firstCursorImg.getHeight() / 2;
+        //for (int i = 0; i < cursorTypes.length; i++) {
+        for (Iterator<LemmImage> cursorIt = cursorImg.iterator(), boxIt = boxImg.iterator(); cursorIt.hasNext() && boxIt.hasNext(); ) {
+            cursor.add(ToolBox.createCursor(cursorIt.next(), cx, cy));
+            boxCursor.add(ToolBox.createCursor(boxIt.next(), cx, cy));
         }
 
         type = CursorType.NORMAL;
@@ -120,7 +124,7 @@ public class LemmCursor  {
      * @return image for the given cursor type
      */
     public static LemmImage getImage(final CursorType t) {
-        return cursorImg[t.ordinal()];
+        return cursorImg.get(t.ordinal());
     }
 
     /**
@@ -137,7 +141,7 @@ public class LemmCursor  {
      * @return box image for the given cursor type
      */
     public static LemmImage getBoxImage(final CursorType t) {
-        return boxImg[t.ordinal()];
+        return boxImg.get(t.ordinal());
     }
     
     /**
@@ -154,9 +158,9 @@ public class LemmCursor  {
      */
     public static Cursor getCursor() {
         if (box) {
-            return boxCursor[type.ordinal()];
+            return boxCursor.get(type.ordinal());
         } else {
-            return cursor[type.ordinal()];
+            return cursor.get(type.ordinal());
         }
     }
 

@@ -21,6 +21,7 @@ package lemmini.gui;
 
 import java.awt.Toolkit;
 import java.util.List;
+import java.util.Locale;
 import java.util.Vector;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
@@ -154,7 +155,7 @@ public class PlayerDialog extends javax.swing.JDialog {
             // if it already exists, reset the existing profile
             boolean found = false;
             for (String p : players) {
-                if (p.equalsIgnoreCase(player)) {
+                if (p.toLowerCase(Locale.ROOT).equals(player.toLowerCase(Locale.ROOT))) {
                     player = p;
                     found = true;
                     break;

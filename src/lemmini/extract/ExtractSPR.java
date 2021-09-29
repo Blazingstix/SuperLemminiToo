@@ -10,9 +10,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import javax.imageio.ImageIO;
-import lemmini.game.Core;
 import org.apache.commons.lang3.BooleanUtils;
 
 /*
@@ -42,8 +43,8 @@ public class ExtractSPR {
     /** palette index of transparent color */
     private static final int TRANSPARENT_INDEX = 0;
 
-    /** array of PNG images to store to disk */
-    private PNGImage[] images;
+    /** list of PNG images to store to disk */
+    private List<PNGImage> images;
     /** color palette */
     private Palette palette = null;
     /** buffer used to compress the palette (remove double entries) to work around issues on MacOS */
@@ -138,10 +139,10 @@ public class ExtractSPR {
     /**
      * Load SPR file. Load palette first!
      * @param fname Name of SPR file
-     * @return Array of Images representing all images stored in the SPR file
+     * @return List of Images representing all images stored in the SPR file
      * @throws ExtractException
      */
-    PNGImage[] loadSPR(final Path fname) throws ExtractException {
+    List<PNGImage> loadSPR(final Path fname) throws ExtractException {
         ByteBuffer buffer;
 
         if (palette == null) {
@@ -167,7 +168,7 @@ public class ExtractSPR {
         int ofs = buffer.getShort() & 0xffff;
         buffer.position(ofs);
 
-        images = new PNGImage[frames];
+        images = new ArrayList<>(frames);
         byte b;
         int lineOfs;
 
@@ -235,7 +236,7 @@ public class ExtractSPR {
                 y += width;
             }
             // convert byte array into BufferedImage
-            images[frame] = new PNGImage(width, height, pixels, palette);
+            images.add(new PNGImage(width, height, pixels, palette));
         }
 
         return images;
@@ -250,58 +251,27 @@ public class ExtractSPR {
         byte[] tempGreen = {0x00, 0x00};
         byte[] tempBlue = {0x00, (byte) 0xFF};
         palette = new Palette(tempRed, tempGreen, tempBlue);
-        for (PNGImage img : images) {
-            img.createMask();
-        }
+        images.stream().forEach(PNGImage::createMask);
     }
 
     /**
      * Save all images of currently loaded SPR file
      * @param fname Filename of PNG files to export. "_N.png" will be appended with N being the image number.
-     * @param keepAnims If true, consequently stored imaged with same size will be stored inside one PNG (one beneath the other)
-     * @return Array of all the filenames stored
+     * @return List of all the filenames stored
      * @throws ExtractException
      */
-    Path[] saveAll(final Path fname, final boolean keepAnims) throws ExtractException {
-        int width = images[0].getWidth();
-        int height = images[0].getHeight();
-        int startIdx = 0;
-        int animNum = 0;
+    List<Path> saveAll(final Path fname) throws ExtractException {
         List<Path> files = new ArrayList<>(64);
-
-        for (int idx = 1; idx <= images.length; idx++) {
-            // search for first image with different size
-            if (keepAnims && idx < images.length && images[idx].getWidth() == width && images[idx].getHeight() == height) {
-                continue;
-            }
-            // now save all the images in one: one above the other
-            int num;
-            if (keepAnims) {
-                num = idx - startIdx;
-            } else {
-                num = 1;
-            }
-            byte[] pixels = new byte[width * num * height];
-            PNGImage anim = new PNGImage(width, num * height, pixels, palette);
-            for (int n = 0; n < num; n++) {
-                System.arraycopy(images[startIdx + n].getPixels(), 0, pixels, n * height * width, images[startIdx + n].getPixels().length);
-            }
-
-            startIdx = idx;
+        for (ListIterator<PNGImage> lit = images.listIterator(); lit.hasNext(); ) {
             // construct filename
-            Path fn = fname.resolveSibling(fname.getFileName().toString() + "_" + (animNum++) + ".png");
+            Path fn = fname.resolveSibling(fname.getFileName().toString() + "_" + lit.nextIndex() + ".png");
             // save png
-            savePng(anim, fn);
+            savePng(lit.next(), fn);
             files.add(fn);
-            // remember new size
-            if (idx < images.length) {
-                width = images[idx].getWidth();
-                height = images[idx].getHeight();
-            }
         }
-        return files.toArray(Core.EMPTY_PATH_ARRAY);
+        return Collections.unmodifiableList(files);
     }
-
+    
     /**
      * Save a number of images of currently loaded SPR file into one PNG (one image beneath the other)
      * @param fname Name of PNG file to create (".png" will NOT be appended)
@@ -310,16 +280,18 @@ public class ExtractSPR {
      * @throws ExtractException
      */
     void saveAnim(final Path fname, final int startIdx, final int frames) throws ExtractException {
-        int width = images[startIdx].getWidth();
-        int height = images[startIdx].getHeight();
+        PNGImage firstImage = images.get(startIdx);
+        int width = firstImage.getWidth();
+        int height = firstImage.getHeight();
 
         byte[] pixels = new byte[width * frames * height];
-        PNGImage anim = new PNGImage(width, frames * height, pixels, palette);
-        for (int n = 0; n < frames; n++) {
-            System.arraycopy(images[startIdx + n].getPixels(), 0, pixels, n * height * width, images[startIdx + n].getPixels().length);
+        int n = 0;
+        for (ListIterator<PNGImage> lit = images.listIterator(startIdx); lit.hasNext() && n < frames; n++) {
+            byte[] sourcePixels = lit.next().getPixels();
+            System.arraycopy(sourcePixels, 0, pixels, n * height * width, sourcePixels.length);
         }
         // save png
-        savePng(anim, fname);
+        savePng(new PNGImage(width, frames * height, pixels, palette), fname);
     }
     
     /**
@@ -358,7 +330,7 @@ public class ExtractSPR {
      * Storage class for palettes.
      * @author Volker Oth
      */
-    class Palette {
+    static class Palette {
         /** byte array of red components */
         private final byte[] red;
         /** byte array of green components */
@@ -408,7 +380,7 @@ public class ExtractSPR {
     /**
      * Stores PNG Image in RAM.
      */
-    class PNGImage {
+    static class PNGImage {
         /** width in pixels */
         private int width;
         /** height in pixels */

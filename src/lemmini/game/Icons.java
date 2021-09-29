@@ -1,9 +1,11 @@
 package lemmini.game;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import lemmini.gameutil.Sprite;
@@ -82,9 +84,7 @@ public class Icons {
         private final int pitch;
 
         static {
-            for (Type s : EnumSet.allOf(Type.class)) {
-                LOOKUP.put(s.ordinal(), s);
-            }
+            EnumSet.allOf(Type.class).stream().forEach(s -> LOOKUP.put(s.ordinal(), s));
         }
         
         private Type(int newPitch) {
@@ -114,8 +114,8 @@ public class Icons {
     /** last icon to be drawn */
     static final int LAST_DRAWN = Type.VLOCK.ordinal();
 
-    /** array of Sprites that contains the icons */
-    private static Sprite[] icons;
+    /** list of Sprites that contains the icons */
+    private static final List<Sprite> icons = new ArrayList<>(Type.values().length);
     /** buffered image that contains the whole icon bar in its current state */
     private static LemmImage iconImg;
     /** graphics object used to draw on iconImg */
@@ -128,19 +128,21 @@ public class Icons {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
+        icons.clear();
         if (iconGfx != null) {
             iconGfx.dispose();
         }
         iconImg = ToolBox.createTranslucentImage(WIDTH * (1 + LAST_DRAWN), HEIGHT);
         iconGfx = iconImg.createGraphicsContext();
         Type[] iconTypes = Type.values();
-        icons = new Sprite[iconTypes.length];
         for (int i = 0; i <= LAST_DRAWN; i++) {
-            Path fn = Core.findResource(Paths.get(
-                    "gfx", "icons", "icon_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png"), Core.IMAGE_EXTENSIONS);
-            LemmImage sourceImg = Core.loadTranslucentImage(fn);
-            icons[i] = new Sprite(sourceImg, 2, 1);
-            iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
+            Resource res = Core.findResource(
+                    "gfx/icons/icon_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png",
+                    true, Core.IMAGE_EXTENSIONS);
+            LemmImage sourceImg = Core.loadTranslucentImage(res);
+            Sprite icon = new Sprite(sourceImg, 2, 1);
+            icons.add(icon);
+            iconGfx.drawImage(icon.getImage(), WIDTH * i, 0);
         }
     }
 
@@ -174,7 +176,7 @@ public class Icons {
         if (idx > LAST_DRAWN) {
             return false;
         }
-        return (icons[idx].getFrameIdx() == 1);
+        return (icons.get(idx).getFrameIdx() == 1);
     }
 
     /**
@@ -183,13 +185,15 @@ public class Icons {
      */
     static void press(final Type type) {
         int idx = type.ordinal();
+        Sprite icon;
         switch (type) {
             case PAUSE:
             case FFWD:
             case VLOCK:
-                icons[idx].setFrameIdx((icons[idx].getFrameIdx() == 0) ? 1 : 0); // toggle
+                icon = icons.get(idx);
+                icon.setFrameIdx((icon.getFrameIdx() == 0) ? 1 : 0); // toggle
                 if (idx <= LAST_DRAWN) {
-                    iconGfx.drawImage(icons[idx].getImage(), WIDTH * idx, 0);
+                    iconGfx.drawImage(icon.getImage(), WIDTH * idx, 0);
                 }
                 break;
             case CLIMB:
@@ -200,10 +204,12 @@ public class Icons {
             case BASH:
             case MINE:
             case DIG:
-                for (int i = FIRST_RADIO; i <= LAST_RADIO; i++) {
+                for (ListIterator<Sprite> lit = icons.listIterator(FIRST_RADIO); lit.nextIndex() <= LAST_RADIO; ) {
+                    int i = lit.nextIndex();
+                    icon = lit.next();
                     if (i != idx) {
-                        icons[i].setFrameIdx(0);
-                        iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
+                        icon.setFrameIdx(0);
+                        iconGfx.drawImage(icon.getImage(), WIDTH * i, 0);
                     }
                 }
                 pressedIcon = type;
@@ -211,10 +217,9 @@ public class Icons {
             case MINUS:
             case PLUS:
             case NUKE:
-                icons[idx].setFrameIdx(1); // set "pressed" frame
-                if (idx <= LAST_DRAWN) {
-                    iconGfx.drawImage(icons[idx].getImage(), WIDTH * idx, 0);
-                }
+                icon = icons.get(idx);
+                icon.setFrameIdx(1); // set "pressed" frame
+                iconGfx.drawImage(icon.getImage(), WIDTH * idx, 0);
                 break;
             default:
                 break;
@@ -227,19 +232,22 @@ public class Icons {
      */
     static void release(final Type type) {
         int idx = type.ordinal();
+        Sprite icon;
         switch (type) {
             case MINUS:
             case PLUS:
-                icons[idx].setFrameIdx(0); // set "released" frame
+                icon = icons.get(idx);
+                icon.setFrameIdx(0); // set "released" frame
                 if (idx <= LAST_DRAWN) {
-                    iconGfx.drawImage(icons[idx].getImage(), WIDTH * idx, 0);
+                    iconGfx.drawImage(icon.getImage(), WIDTH * idx, 0);
                 }
                 break;
             case NUKE:
                 if (!GameController.isNuked()) {
-                    icons[idx].setFrameIdx(0); // set "released" frame
+                    icon = icons.get(idx);
+                    icon.setFrameIdx(0); // set "released" frame
                     if (idx <= LAST_DRAWN) {
-                        iconGfx.drawImage(icons[idx].getImage(), WIDTH * idx, 0);
+                        iconGfx.drawImage(icon.getImage(), WIDTH * idx, 0);
                     }
                 }
                 break;
@@ -282,9 +290,11 @@ public class Icons {
      * Reset icon bar.
      */
     static void reset() {
-        for (int i = 0; i <= LAST_DRAWN; i++) {
-            icons[i].setFrameIdx(0);
-            iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
+        for (ListIterator<Sprite> lit = icons.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            Sprite icon = lit.next();
+            icon.setFrameIdx(0);
+            iconGfx.drawImage(icon.getImage(), WIDTH * i, 0);
         }
         pressedIcon = null;
     }

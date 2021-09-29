@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,8 +58,8 @@ public class MiscGfx {
         SELECT
     }
 
-    /** array of images */
-    private static LemmImage[] image;
+    /** list of images */
+    private static final List<LemmImage> images = new ArrayList<>(16);
     private static LemmImage minimap;
     private static int minimapWidth;
 
@@ -70,52 +69,42 @@ public class MiscGfx {
      * @throws ResourceException
      */
     public static void init(int mmWidth) throws ResourceException {
-        List<LemmImage> images = new ArrayList<>(16);
+        images.clear();
         /* 0: MINIMAP_LEFT */
-        Path fn = Core.findResource(Paths.get("gfx/misc/minimap_left.png"), Core.IMAGE_EXTENSIONS);
-        LemmImage img = Core.loadTranslucentImage(fn);
+        Resource res = Core.findResource("gfx/misc/minimap_left.png", true, Core.IMAGE_EXTENSIONS);
+        LemmImage img = Core.loadTranslucentImage(res);
         images.add(img);
         /* 1: MINIMAP_CENTER */
-        fn = Core.findResource(Paths.get("gfx/misc/minimap_center.png"), Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(fn);
+        res = Core.findResource("gfx/misc/minimap_center.png", true, Core.IMAGE_EXTENSIONS);
+        img = Core.loadTranslucentImage(res);
         images.add(img);
         /* 2: MINIMAP_RIGHT */
-        fn = Core.findResource(Paths.get("gfx/misc/minimap_right.png"), Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(fn);
+        res = Core.findResource("gfx/misc/minimap_right.png", true, Core.IMAGE_EXTENSIONS);
+        img = Core.loadTranslucentImage(res);
         images.add(img);
-        /* 3: MINIMAP_ARROW_LEFT */
-        fn = Core.findResource(Paths.get("gfx/misc/minimap_arrows.png"), Core.IMAGE_EXTENSIONS);
-        LemmImage[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 4);
-        images.add(anim[0]);
-        /* 4: MINIMAP_ARROW_UP */
-        images.add(anim[1]);
-        /* 5: MINIMAP_ARROW_RIGHT */
-        images.add(anim[2]);
-        /* 6: MINIMAP_ARROW_DOWN */
-        images.add(anim[3]);
+        /* 3: MINIMAP_ARROW_LEFT, 4: MINIMAP_ARROW_UP, 5: MINIMAP_ARROW_RIGHT, 6: MINIMAP_ARROW_DOWN */
+        res = Core.findResource("gfx/misc/minimap_arrows.png", true, Core.IMAGE_EXTENSIONS);
+        List<LemmImage> anim = ToolBox.getAnimation(Core.loadTranslucentImage(res), 4);
+        images.addAll(anim);
         /* 7: LEMMINI */
         img = Core.loadTranslucentImageJar("lemmini.png");
         images.add(img);
         /* 8: TILE_GREEN */
-        fn = Core.findResource(Paths.get("gfx/misc/background_level.png"), Core.IMAGE_EXTENSIONS);
-        img = Core.loadOpaqueImage(fn);
+        res = Core.findResource("gfx/misc/background_level.png", true, Core.IMAGE_EXTENSIONS);
+        img = Core.loadOpaqueImage(res);
         images.add(img);
         /* 9: TILE_BROWN */
-        fn = Core.findResource(Paths.get("gfx/misc/background_main.png"), Core.IMAGE_EXTENSIONS);
-        img = Core.loadOpaqueImage(fn);
+        res = Core.findResource("gfx/misc/background_main.png", true, Core.IMAGE_EXTENSIONS);
+        img = Core.loadOpaqueImage(res);
         images.add(img);
-        /* 10: REPLAY_1 */
-        fn = Core.findResource(Paths.get("gfx/misc/replay.png"), Core.IMAGE_EXTENSIONS);
-        anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 2);
-        images.add(anim[0]);
-        /* 11: REPLAY_2 */
-        images.add(anim[1]);
+        /* 10: REPLAY_1, 11: REPLAY_2 */
+        res = Core.findResource("gfx/misc/replay.png", true, Core.IMAGE_EXTENSIONS);
+        anim = ToolBox.getAnimation(Core.loadTranslucentImage(res), 2);
+        images.addAll(anim);
         /* 12: SELECT */
-        fn = Core.findResource(Paths.get("gfx/misc/select.png"), Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(fn);
+        res = Core.findResource("gfx/misc/select.png", true, Core.IMAGE_EXTENSIONS);
+        img = Core.loadTranslucentImage(res);
         images.add(img);
-
-        image = images.toArray(new LemmImage[images.size()]);
         
         /* Assemble minimap */
         minimapWidth = -1;
@@ -128,7 +117,7 @@ public class MiscGfx {
      * @return image of the given index
      */
     public static LemmImage getImage(Index idx) {
-        return image[idx.ordinal()];
+        return images.get(idx.ordinal());
     }
     
     public static LemmImage getMinimapImage() {
@@ -144,9 +133,9 @@ public class MiscGfx {
             return;
         }
         
-        LemmImage minimapLeft = image[Index.MINIMAP_LEFT.ordinal()];
-        LemmImage minimapCenter = image[Index.MINIMAP_CENTER.ordinal()];
-        LemmImage minimapRight = image[Index.MINIMAP_RIGHT.ordinal()];
+        LemmImage minimapLeft = images.get(Index.MINIMAP_LEFT.ordinal());
+        LemmImage minimapCenter = images.get(Index.MINIMAP_CENTER.ordinal());
+        LemmImage minimapRight = images.get(Index.MINIMAP_RIGHT.ordinal());
         
         int leftWidth = Math.min(minimapLeft.getWidth(), 4 + width);
         int centerWidth = width + 4 - leftWidth;

@@ -5,13 +5,14 @@ import java.awt.MediaTracker;
 import java.awt.Toolkit;
 import java.awt.Transparency;
 import java.io.IOException;
+import java.io.Reader;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.extract.Extract;
@@ -65,11 +66,12 @@ public class Core {
     /** file name of patching configuration */
     public static final String PATCH_INI_NAME = "patch.ini";
     public static final String EXTERNAL_LEVELS_CACHE_FOLDER = "$external";
+    public static final String ROOT_ZIP_NAME = "root.lzp";
+    /** The revision string for resource compatibility - not necessarily the version number */
+    public static final String RES_REVISION = "0.102";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
-    /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.101";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
     
@@ -81,6 +83,7 @@ public class Core {
     public static Path externalLevelCachePath;
     /** path for temporary files */
     public static Path tempPath;
+    public static List<ZipFile> zipFiles;
     /** current player */
     public static Player player;
     
@@ -92,7 +95,7 @@ public class Core {
     private static Props playerProps;
     /** list of all players */
     private static List<String> players;
-    private static Set<Path> resourceSet;
+    private static Set<String> resourceSet;
     /** Zoom scale */
     private static double scale = 1.0;
     private static boolean bilinear;
@@ -115,7 +118,7 @@ public class Core {
         programPropsFilePath = programPropsFilePath.resolve(INI_NAME);
         // read main ini file
         programProps = new Props();
-
+        
         if (!programProps.load(programPropsFilePath)) { // might exist or not - if not, it's created
             LegalFrame ld = new LegalFrame();
             ld.setVisible(true);
@@ -124,14 +127,13 @@ public class Core {
                 return false;
             }
         }
-
-        //scale = Core.programProps.getDouble("scale", 1.0);
+        
         bilinear = Core.programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
         resourcePath = Paths.get(resourcePathStr);
         
         Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
-        String rev = programProps.get("revision", StringUtils.EMPTY);
+        String rev = programProps.get("revision", "zip-invalid");
         GameController.setMusicOn(programProps.getBoolean("music", true));
         GameController.setSoundOn(programProps.getBoolean("sound", true));
         double gain;
@@ -144,12 +146,25 @@ public class Core {
         GameController.setSwapButtons(programProps.getBoolean("swapButtons", false));
         GameController.setFasterFastForward(programProps.getBoolean("fasterFastForward", false));
         GameController.setNoPercentages(programProps.getBoolean("noPercentages", false));
-        if (resourcePathStr.isEmpty() || !REVISION.equalsIgnoreCase(rev) || createPatches) {
+        if (rev.equalsIgnoreCase("zip")) {
+            try (ZipFile zip = new ZipFile(resourcePath.resolve(ROOT_ZIP_NAME).toFile())) {
+                ZipEntry entry = zip.getEntry("revision.ini");
+                try (Reader r = ToolBox.getBufferedReader(zip.getInputStream(entry))) {
+                    Props p = new Props();
+                    if (p.load(r)) {
+                        rev = p.get("revision", StringUtils.EMPTY);
+                    }
+                }
+            } catch (IOException ex) {
+            }
+        }
+        if (resourcePathStr.isEmpty() || !rev.equalsIgnoreCase(RES_REVISION) || createPatches) {
             // extract resources
             try {
-                Extract.extract(sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
+                boolean deleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
+                Extract.extract(sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches, deleteOldFiles);
                 resourcePath = Extract.getResourcePath();
-                programProps.set("revision", REVISION);
+                programProps.set("revision", "zip");
             } catch (ExtractException ex) {
                 if (ex.isCanceledByUser()) {
                     return false;
@@ -168,7 +183,7 @@ public class Core {
             for (int i = 0; true; i++) {
                 String[] entry = patchINI.getArray("extract_" + i, null);
                 if (ArrayUtils.isNotEmpty(entry)) {
-                    resourceSet.add(Paths.get(entry[0]));
+                    resourceSet.add(entry[0]);
                 } else {
                     break;
                 }
@@ -176,7 +191,7 @@ public class Core {
             for (int i = 0; true; i++) {
                 String[] entry = patchINI.getArray("check_" + i, null);
                 if (ArrayUtils.isNotEmpty(entry)) {
-                    resourceSet.add(Paths.get(entry[0]));
+                    resourceSet.add(entry[0]);
                 } else {
                     break;
                 }
@@ -184,7 +199,7 @@ public class Core {
             for (int i = 0; true; i++) {
                 String[] entry = patchINI.getArray("patch_" + i, null);
                 if (ArrayUtils.isNotEmpty(entry)) {
-                    resourceSet.add(Paths.get(entry[0]));
+                    resourceSet.add(entry[0]);
                 } else {
                     break;
                 }
@@ -198,8 +213,21 @@ public class Core {
         externalLevelCachePath = resourcePath.resolve("levels").resolve(EXTERNAL_LEVELS_CACHE_FOLDER);
         Files.createDirectories(externalLevelCachePath);
         
+        // scan for and open zip files in resource folder, being sure to open root.lzp last
+        zipFiles = new ArrayList<>(16);
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(resourcePath,
+                file -> FilenameUtils.isExtension(file.toString().toLowerCase(Locale.ROOT), "lzp"))) {
+            for (Path file : stream) {
+                if (!file.getFileName().toString().equals(ROOT_ZIP_NAME)) {
+                    ZipFile zipFile = new ZipFile(file.toFile());
+                    zipFiles.add(zipFile);
+                }
+            }
+        }
+        zipFiles.add(new ZipFile(resourcePath.resolve(ROOT_ZIP_NAME).toFile()));
+        
         System.gc(); // force garbage collection here before the game starts
-
+        
         // read player names
         playerPropsFilePath = resourcePath.resolve("players.ini");
         playerProps = new Props();
@@ -232,67 +260,158 @@ public class Core {
         }
     }
     
-    public static Path removeResourcePath(Path fname) {
-        if (fname.startsWith(resourcePath)) {
-            fname = fname.subpath(resourcePath.getNameCount(), fname.getNameCount());
-        }
-        return fname;
-    }
-    
     /**
      * Get Path to resource in resource path.
-     * @param fname file name (with or without resource path)
-     * @return absolute path to resource
+     * @param fname file name (without resource path)
+     * @param searchMods
+     * @return resource object
      * @throws ResourceException if file is not found
      */
-    public static Path findResource(Path fname) throws ResourceException {
-        fname = removeResourcePath(fname);
-        // check for the file in the mod folder
-        for (Path mod : GameController.getModPaths()) {
-            Path file = resourcePath.resolve(mod).resolve(fname);
-            if (Files.isRegularFile(file)) {
-                return file;
-            }
-        }
-        // file not found in mod folders, so look for it in the main folders
-        Path file = resourcePath.resolve(fname);
-        if (Files.isRegularFile(file)) {
-            return file;
-        }
-        // file still not found, so throw a ResourceException
-        throw new ResourceException(fname.toString());
-    }
-    
-    /**
-     * Get Path to resource in resource path.
-     * @param fname file name (with or without resource path)
-     * @param extensions 
-     * @return absolute path to resource
-     * @throws ResourceException if file is not found
-     */
-    public static Path findResource(Path fname, String[] extensions) throws ResourceException {
-        fname = removeResourcePath(fname);
-        String fnameNoExt = FilenameUtils.removeExtension(fname.toString());
-        // try to load the file from the mod paths with each extension
-        for (Path mod : GameController.getModPaths()) {
-            for (String ext : extensions) {
-                Path file = resourcePath.resolve(mod).resolve(fnameNoExt + "." + ext);
+    public static Resource findResource(String fname, boolean searchMods) throws ResourceException {
+        if (searchMods) {
+            // try to load the file from the mod paths
+            for (String mod : GameController.getModPaths()) {
+                String resString = mod + "/" + fname;
+                Path file = resourcePath.resolve(resString);
                 if (Files.isRegularFile(file)) {
-                    return file;
+                    return new FileResource(fname, file);
+                }
+                for (ZipFile zipFile : zipFiles) {
+                    ZipEntry entry = zipFile.getEntry(resString);
+                    if (entry != null && !entry.isDirectory()) {
+                        return new ZipEntryResource(fname, zipFile, entry);
+                    }
                 }
             }
         }
-        // file not found in mod folders, so look for it in the main folders, again with each extension
-        for (String ext : extensions) {
-            Path file = resourcePath.resolve(fnameNoExt + "." + ext);
-            if (Files.isRegularFile(file)) {
-                return file;
+        // file not found in mod folders or mods not searched,
+        // so look for it in the main folders
+        Path file = resourcePath.resolve(fname);
+        if (Files.isRegularFile(file)) {
+            return new FileResource(fname, file);
+        }
+        for (ZipFile zipFile : zipFiles) {
+            ZipEntry entry = zipFile.getEntry(fname);
+            if (entry != null && !entry.isDirectory()) {
+                return new ZipEntryResource(fname, zipFile, entry);
             }
         }
         // file still not found, so throw a ResourceException
-        throw new ResourceException(fname.toString());
+        throw new ResourceException(fname);
     }
-
+    
+    /**
+     * Get Path to resource in resource path.
+     * @param fname file name (without resource path)
+     * @param searchMods
+     * @param extensions 
+     * @return resource object
+     * @throws ResourceException if file is not found
+     */
+    public static Resource findResource(String fname, boolean searchMods, String... extensions) throws ResourceException {
+        String fnameNoExt = FilenameUtils.removeExtension(fname);
+        if (searchMods) {
+            // try to load the file from the mod paths with each extension
+            for (String mod : GameController.getModPaths()) {
+                for (String ext : extensions) {
+                    Path file = resourcePath.resolve(mod).resolve(fnameNoExt + "." + ext);
+                    if (Files.isRegularFile(file)) {
+                        return new FileResource(fname, file);
+                    }
+                }
+                for (ZipFile zipFile : zipFiles) {
+                    for (String ext : extensions) {
+                        ZipEntry entry = zipFile.getEntry(mod + "/" + fnameNoExt + "." + ext);
+                        if (entry != null && !entry.isDirectory()) {
+                            return new ZipEntryResource(fname, zipFile, entry);
+                        }
+                    }
+                }
+            }
+        }
+        // file not found in mod folders or mods not searched,
+        // so look for it in the main folders, again with each extension
+        for (String ext : extensions) {
+            Path file = resourcePath.resolve(fnameNoExt + "." + ext);
+            if (Files.isRegularFile(file)) {
+                return new FileResource(fname, file);
+            }
+        }
+        for (ZipFile zipFile : zipFiles) {
+            for (String ext : extensions) {
+                ZipEntry entry = zipFile.getEntry(fnameNoExt + "." + ext);
+                if (entry != null && !entry.isDirectory()) {
+                    return new ZipEntryResource(fname, zipFile, entry);
+                }
+            }
+        }
+        // file still not found, so throw a ResourceException
+        throw new ResourceException(fname);
+    }
+    
+    public static List<String> searchForResources(String folder, boolean searchMods, String... extensions) {
+        Set<String> resources = new LinkedHashSet<>(64);
+        DirectoryStream.Filter<Path> filter = entry -> {
+            if (!Files.isRegularFile(entry)) {
+                return false;
+            }
+            for (String ext : extensions) {
+                String lowercaseName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
+                if (lowercaseName.endsWith("." + ext)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        
+        if (searchMods) {
+            GameController.getModPaths().stream().forEachOrdered(mod -> {
+                try (DirectoryStream<Path> files = Files.newDirectoryStream(resourcePath.resolve("mods").resolve(mod).resolve(folder), filter)) {
+                    for (Path file : files) {
+                        resources.add(file.getFileName().toString());
+                    }
+                } catch (IOException ex) {
+                }
+                zipFiles.stream().forEachOrdered(zipFile -> {
+                    zipFile.stream()
+                            .filter(entry -> !entry.isDirectory())
+                            .filter(entry -> {
+                                String name = entry.getName();
+                                for (String ext : extensions) {
+                                    if (name.startsWith("mods/" + mod + "/" + folder) && name.endsWith("." + ext)) {
+                                        return true;
+                                    }
+                                }
+                                return false;
+                            }).forEachOrdered(entry -> resources.add(FilenameUtils.getName(entry.getName())));
+                });
+            });
+        }
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(resourcePath.resolve(folder), filter)) {
+            for (Path file : files) {
+                resources.add(file.getFileName().toString());
+            }
+        } catch (IOException ex) {
+        }
+        zipFiles.stream().forEachOrdered(zipFile -> {
+            zipFile.stream()
+                    .filter(entry -> !entry.isDirectory())
+                    .filter(entry -> {
+                        String name = entry.getName();
+                        for (String ext : extensions) {
+                            if (name.startsWith(folder) && name.endsWith("." + ext)) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }).forEachOrdered(entry -> {
+                        resources.add(FilenameUtils.getName(entry.getName()));
+                    });
+        });
+        
+        return new ArrayList<>(resources);
+    }
+    
     /**
      * Set the title
      * @param title
@@ -311,19 +430,18 @@ public class Core {
         playerProps.save(playerPropsFilePath);
         player.store();
     }
-
+    
     /**
      * Output error message box in case of a missing resource.
      * @param rsrc name of missing resource.
      */
     public static void resourceError(final String rsrc) {
-        Path rsrcPath = removeResourcePath(Paths.get(rsrc));
-        if (resourceSet.contains(rsrcPath)) {
+        if (resourceSet.contains(rsrc)) {
             String out = String.format("The resource %s is missing.%n"
                     + "Please restart to extract all resources.", rsrc);
             JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
             // invalidate resources
-            programProps.set("revision", "invalid");
+            programProps.set("revision", "zip-invalid");
             programProps.save(programPropsFilePath);
         } else {
             String out = String.format("The resource %s is missing.%n", rsrc);
@@ -331,37 +449,35 @@ public class Core {
         }
         System.exit(1);
     }
-
+    
     /**
-     * Load an image from the resource path.
+     * Loads an image from the given resource.
      * @param tracker media tracker
-     * @param fName file name
+     * @param res resource
      * @return Image
      * @throws ResourceException
      */
-    private static Image loadImage(final MediaTracker tracker, final Path fName) throws ResourceException {
-        //String fileLoc = findResource(fName);
-        if (fName == null) {
+    private static Image loadImage(final MediaTracker tracker, final Resource res) throws ResourceException {
+        if (res == null) {
             return null;
         }
-        return loadImage(tracker, fName.toString(), false);
+        Image image;
+        try {
+            image = Toolkit.getDefaultToolkit().createImage(res.readAllBytes());
+        } catch (IOException ex) {
+            return null;
+        }
+        return addToTracker(tracker, image);
     }
-
+    
     /**
-     * Load an image from either the resource path or from inside the JAR (or the directory of the main class).
+     * Adds the given image to the given tracker.
      * @param tracker media tracker
-     * @param fName file name
-     * @param jar true: load from the jar/class path, false: load from resource path
-     * @return Image
+     * @param image image to add
+     * @return given image if operation was successful; null otherwise
      * @throws ResourceException
      */
-    private static Image loadImage(final MediaTracker tracker, final String fName, final boolean jar) throws ResourceException {
-        Image image;
-        if (jar) {
-            image = Toolkit.getDefaultToolkit().createImage(ToolBox.findFile(fName));
-        } else {
-            image = Toolkit.getDefaultToolkit().createImage(fName);
-        }
+    private static Image addToTracker(final MediaTracker tracker, Image image) throws ResourceException {
         if (image != null) {
             tracker.addImage(image, 0);
             try {
@@ -373,57 +489,54 @@ public class Core {
                 image = null;
             }
         }
-        if (image == null) {
-            throw new ResourceException(fName);
-        }
         return image;
     }
-
+    
     /**
-     * Load an image from the resource path.
-     * @param fname file name
+     * Loads an image from the given resource.
+     * @param res resource
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadImage(final Path fname) throws ResourceException {
+    public static Image loadImage(final Resource res) throws ResourceException {
         MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
-        Image img = loadImage(tracker, fname);
+        Image img = loadImage(tracker, res);
         if (img == null) {
-            throw new ResourceException(fname.toString());
+            throw new ResourceException(res);
         }
         return img;
     }
-
+    
     /**
-     * Load an image from the resource path.
-     * @param fname file name
+     * Loads an image from the given resource.
+     * @param res resource
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadOpaqueImage(final Path fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(fname), Transparency.OPAQUE);
+    public static LemmImage loadOpaqueImage(final Resource res) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImage(res), Transparency.OPAQUE);
     }
-
+    
     /**
-     * Load an image from the resource path.
-     * @param fname file name
+     * Loads an image from the given resource.
+     * @param res resource
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadBitmaskImage(final Path fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(fname), Transparency.BITMASK);
+    public static LemmImage loadBitmaskImage(final Resource res) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImage(res), Transparency.BITMASK);
     }
-
+    
     /**
-     * Load an image from the resource path.
-     * @param fname file name
+     * Loads an image from the given resource.
+     * @param res resource
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadTranslucentImage(final Path fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(fname), Transparency.TRANSLUCENT);
+    public static LemmImage loadTranslucentImage(final Resource res) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImage(res), Transparency.TRANSLUCENT);
     }
-
+    
     /**
      * Load an image from inside the JAR or the directory of the main class.
      * @param fname
@@ -432,13 +545,13 @@ public class Core {
      */
     public static Image loadImageJar(final String fname) throws ResourceException {
         MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
-        Image img = loadImage(tracker, fname, true);
+        Image img = addToTracker(tracker, Toolkit.getDefaultToolkit().createImage(ToolBox.findFile(fname)));
         if (img == null) {
             throw new ResourceException(fname);
         }
         return img;
     }
-
+    
     /**
      * Load an image from inside the JAR or the directory of the main class.
      * @param fname
@@ -448,7 +561,7 @@ public class Core {
     public static LemmImage loadOpaqueImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.OPAQUE);
     }
-
+    
     /**
      * Load an image from inside the JAR or the directory of the main class.
      * @param fname
@@ -458,7 +571,7 @@ public class Core {
     public static LemmImage loadBitmaskImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.BITMASK);
     }
-
+    
     /**
      * Load an image from inside the JAR or the directory of the main class.
      * @param fname
@@ -468,7 +581,7 @@ public class Core {
     public static LemmImage loadTranslucentImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.TRANSLUCENT);
     }
-
+    
     /**
      * Get player name via index.
      * @param idx player index
@@ -477,7 +590,7 @@ public class Core {
     public static String getPlayer(final int idx) {
         return players.get(idx);
     }
-
+    
     /**
      * Get number of players.
      * @return number of player.
@@ -497,7 +610,7 @@ public class Core {
         Player.deletePlayerINIFile(players.get(idx));
         players.remove(idx);
     }
-
+    
     /**
      * Reset list of players.
      */
@@ -505,7 +618,7 @@ public class Core {
         players.clear();
         playerProps.clear();
     }
-
+    
     /**
      * Add player.
      * @param name player name

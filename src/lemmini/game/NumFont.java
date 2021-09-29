@@ -1,8 +1,9 @@
 package lemmini.game;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
@@ -39,8 +40,8 @@ public class NumFont {
     private static int width;
     /** height in pixels */
     private static int height;
-    /** array of images - one for each digit 0-9 */
-    private static LemmImage[] numImg;
+    /** list of images - one for each digit 0-9 */
+    private static List<LemmImage> numImg = new ArrayList<>(15);
     private static final Map<Integer, LemmImage> numImgMap = new HashMap<>();
 
     /**
@@ -48,17 +49,17 @@ public class NumFont {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        Path fn = Core.findResource(Paths.get("gfx/misc/numfont.png"), Core.IMAGE_EXTENSIONS);
-        numImg = new LemmImage[15];
-        LemmImage sourceImg = Core.loadTranslucentImage(fn);
+        Resource res = Core.findResource("gfx/misc/numfont.png", true, Core.IMAGE_EXTENSIONS);
+        numImg.clear();
+        LemmImage sourceImg = Core.loadTranslucentImage(res);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
-        LemmImage[] numImgTemp = ToolBox.getAnimation(sourceImg, 10);
-        System.arraycopy(numImgTemp, 0, numImg, 0, 10);
-        fn = Core.findResource(Paths.get("gfx/misc/numfont2.png"), Core.IMAGE_EXTENSIONS);
-        sourceImg = Core.loadTranslucentImage(fn);
+        List<LemmImage> numImgTemp = ToolBox.getAnimation(sourceImg, 10);
+        numImg.addAll(numImgTemp);
+        res = Core.findResource("gfx/misc/numfont2.png", true, Core.IMAGE_EXTENSIONS);
+        sourceImg = Core.loadTranslucentImage(res);
         numImgTemp = ToolBox.getAnimation(sourceImg, 5);
-        System.arraycopy(numImgTemp, 0, numImg, 10, 5);
+        numImg.addAll(numImgTemp);
         
         numImgMap.clear();
         LemmImage numImgTemp2;
@@ -67,8 +68,8 @@ public class NumFont {
             numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
             try {
                 g = numImgTemp2.createGraphicsContext();
-                g.drawImage(numImg[i / 10], 0, 0);
-                g.drawImage(numImg[i % 10], width, 0);
+                g.drawImage(numImg.get(i / 10), 0, 0);
+                g.drawImage(numImg.get(i % 10), width, 0);
             } finally {
                 if (g != null) {
                     g.dispose();
@@ -79,8 +80,8 @@ public class NumFont {
         numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
         try {
             g = numImgTemp2.createGraphicsContext();
-            g.drawImage(numImg[13], 0, 0);
-            g.drawImage(numImg[14], width, 0);
+            g.drawImage(numImg.get(13), 0, 0);
+            g.drawImage(numImg.get(14), width, 0);
         } finally {
             if (g != null) {
                 g.dispose();
@@ -90,9 +91,9 @@ public class NumFont {
         numImgTemp2 = ToolBox.createTranslucentImage(width * 3, height);
         try {
             g = numImgTemp2.createGraphicsContext();
-            g.drawImage(numImg[10], 0, 0);
-            g.drawImage(numImg[13], width, 0);
-            g.drawImage(numImg[14], width * 2, 0);
+            g.drawImage(numImg.get(10), 0, 0);
+            g.drawImage(numImg.get(13), width, 0);
+            g.drawImage(numImg.get(14), width * 2, 0);
         } finally {
             if (g != null) {
                 g.dispose();
@@ -154,7 +155,7 @@ public class NumFont {
                             break;
                     }
                     if (numIndex >= 0) {
-                        g.drawImage(numImg[numIndex], width * i, 0);
+                        g.drawImage(numImg.get(numIndex), width * i, 0);
                     }
                 }
             } finally {

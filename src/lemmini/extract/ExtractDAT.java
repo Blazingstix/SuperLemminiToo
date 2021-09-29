@@ -22,6 +22,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import org.apache.commons.lang3.BooleanUtils;
 
@@ -31,7 +32,7 @@ import org.apache.commons.lang3.BooleanUtils;
  */
 public class ExtractDAT {
     
-    public static byte[][] decompress(Path source) throws Exception {
+    public static List<byte[]> decompress(Path source) throws Exception {
         List<byte[]> decompressedSections = new ArrayList<>(32);
         try (SeekableByteChannel datFile = Files.newByteChannel(source)) {
             do {
@@ -50,7 +51,7 @@ public class ExtractDAT {
         } catch (IOException e) {
             throw new Exception(String.format("I/O error while reading %s.", source));
         }
-        return decompressedSections.toArray(new byte[decompressedSections.size()][]);
+        return Collections.unmodifiableList(decompressedSections);
     }
 }
 
@@ -97,7 +98,7 @@ class DATSection {
     /**
      * Constructor for DatSection.
      * @param compressedData
-     * @param sizeInBits
+     * @param numBitsInFirstByte
      * @param decompressedDataSize 
      */
     DATSection(byte[] compressedData, int numBitsInFirstByte, int decompressedDataSize) {

@@ -6,10 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
+import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 import org.apache.commons.io.FilenameUtils;
 
@@ -89,11 +92,11 @@ public class Music {
      * @throws ResourceException
      * @throws LemmException
      */
-    public static void load(final Path fName) throws ResourceException, LemmException {
+    public static void load(final String fName) throws ResourceException, LemmException {
         close();
         playing = false;
-        Path fName2 = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
-        switch (FilenameUtils.getExtension(fName2.getFileName().toString()).toLowerCase(Locale.ROOT)) {
+        Resource res = Core.findResource(fName, true, Core.MUSIC_EXTENSIONS);
+        switch (FilenameUtils.getExtension(res.getFileName()).toLowerCase(Locale.ROOT)) {
             case "mid":
                 if (!midiAvailable) {
                     throw new LemmException("MIDI not supported.");
@@ -112,7 +115,7 @@ public class Music {
                 type = Type.WAVE;
                 break;
         }
-        musicPlayer.load(fName2, true);
+        musicPlayer.load(res, true);
     }
 
     /**
@@ -121,61 +124,39 @@ public class Music {
      * @param specialStyle
      * @return file name of a random track
      */
-    public static Path getRandomTrack(final String style, final String specialStyle) {
-        Path dir = Core.resourcePath.resolve("music");
-        DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>() {
-            @Override
-            public boolean accept(Path entry) {
-                if (!Files.isRegularFile(entry)) {
-                    return false;
+    public static String getRandomTrack(final String style, final String specialStyle) {
+        if (!specialStyle.isEmpty()) {
+            List<String> musicList = Core.searchForResources("music/special/", true, Core.MUSIC_EXTENSIONS);
+            for (String music : musicList) {
+                if (specialStyle.toLowerCase(Locale.ROOT).equals(FilenameUtils.removeExtension(music).toLowerCase(Locale.ROOT))) {
+                    return "special/" + music;
                 }
-                for (String ext : Core.MUSIC_EXTENSIONS) {
-                    String lowercaseName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
-                    if (lowercaseName.endsWith("." + ext) && !lowercaseName.endsWith("_intro." + ext)) {
-                        return true;
-                    }
-                }
-                return false;
-            }
-        };
-        
-        if (specialStyle != null && !specialStyle.isEmpty()) {
-            Path dir2 = dir.resolve("special");
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(dir2, filter)) {
-                for (Path file : files) {
-                    String name = FilenameUtils.removeExtension(file.getFileName().toString());
-                    if (specialStyle.equalsIgnoreCase(name)) {
-                        return Paths.get("special").resolve(file.getFileName());
-                    }
-                }
-            } catch (IOException ex) {
             }
         }
         
-        List<Path> fileList = new ArrayList<>(128);
-        if (style != null && !style.isEmpty()) {
-            Path dir2 = dir.resolve(style);
-            try (DirectoryStream<Path> files = Files.newDirectoryStream(dir2, filter)) {
-                for (Path file : files) {
-                    fileList.add(file);
+        if (!style.isEmpty()) {
+            List<String> musicList = Core.searchForResources("music/" + style + "/", true, Core.MUSIC_EXTENSIONS);
+            for (Iterator<String> it = musicList.iterator(); it.hasNext(); ) {
+                String music = it.next();
+                if (FilenameUtils.removeExtension(music).toLowerCase(Locale.ROOT).endsWith("_intro")) {
+                    it.remove();
                 }
-            } catch (IOException ex) {
             }
-            if (fileList.size() > 0) {
-                double r = Math.random() * fileList.size();
-                return Paths.get(style).resolve(fileList.get((int) r).getFileName());
+            if (musicList.size() > 0) {
+                double r = Math.random() * musicList.size();
+                return style + "/" + musicList.get((int) r);
             }
         }
         
-        fileList.clear();
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, filter)) {
-            for (Path file : files) {
-                fileList.add(file);
+        List<String> musicList = Core.searchForResources("music/", true, Core.MUSIC_EXTENSIONS);
+        for (Iterator<String> it = musicList.iterator(); it.hasNext(); ) {
+            String music = it.next();
+            if (FilenameUtils.removeExtension(music).toLowerCase(Locale.ROOT).endsWith("_intro")) {
+                it.remove();
             }
-        } catch (IOException ex) {
         }
-        double r = Math.random() * fileList.size();
-        return fileList.get((int) r).getFileName();
+        double r = Math.random() * musicList.size();
+        return musicList.get((int) r);
     }
 
     /**

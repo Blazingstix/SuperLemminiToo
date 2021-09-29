@@ -260,7 +260,7 @@ public class ReplayStream {
             LevelPack lp = GameController.getCurLevelPack();
             w.write(String.format("#%s, %d, %d, %s, %s",
                     lp.getName().trim(), GameController.getCurRating(), GameController.getCurLevelNumber(),
-                    lp.getRatings()[GameController.getCurRating()].trim(), GameController.getLevel().getLevelName().trim()));
+                    lp.getRatings().get(GameController.getCurRating()).trim(), GameController.getLevel().getLevelName().trim()));
             w.newLine();
             for (ReplayEvent r : events) {
                 w.write(r.toString()); // will use toString of the correct child object

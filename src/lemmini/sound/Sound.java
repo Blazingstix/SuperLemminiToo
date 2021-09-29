@@ -4,13 +4,11 @@ import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import javax.sound.sampled.*;
 import lemmini.game.Core;
 import lemmini.game.GameController;
+import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
@@ -58,19 +56,9 @@ public class Sound {
         STEP_WARNING ("stepWarning");
         
         private final String keyName;
-        private int sampleID;
         
         private Effect(String newKeyName) {
             keyName = newKeyName;
-            sampleID = -1;
-        }
-        
-        private void setSampleID(int newID) {
-            sampleID = newID;
-        }
-        
-        public int getSampleID() {
-            return sampleID;
         }
         
         public String getKeyName() {
@@ -132,10 +120,11 @@ public class Sound {
     private static int lineCounter = 0;
 
     private boolean loaded = false;
-    private final LineHandler[] lineHandlers;
+    private final Map<Effect, Integer> effects = new EnumMap<>(Effect.class);
+    private final List<LineHandler> lineHandlers = new ArrayList<>(MAX_SIMUL_SOUNDS);
     private Deque<LineHandler> availableLineHandlers;
-    private Path[] fNames;
-    private final List<Path> sampleNames;
+    private Resource[] resources;
+    private final List<String> sampleNames;
     private final int[] pitchedSampleID;
     /** sound buffers to store the samples */
     private byte[][] soundBuffers;
@@ -151,8 +140,8 @@ public class Sound {
     private double gain;
     /** selected mixer index */
     static int mixerIdx;
-    /** array of available mixers */
-    static Mixer[] mixers;
+    /** list of available mixers */
+    static List<Mixer> mixers;
     /** number of samples to be used */
     static int sampleNum;
     private final float sampleRate;
@@ -201,81 +190,80 @@ public class Sound {
 
         // get all available mixers
         Mixer.Info[] mixInfo = AudioSystem.getMixerInfo();
-        List<Mixer> mix = new ArrayList<>(16);
+        mixers = new ArrayList<>(16);
         for (Mixer.Info mixInfo1 : mixInfo) {
             Mixer mixer = AudioSystem.getMixer(mixInfo1);
             Line.Info info = new Line.Info(Clip.class);
             int num = mixer.getMaxLines(info);
             if (num != 0) {
-                mix.add(mixer);
+                mixers.add(mixer);
             }
         }
-        mixers = mix.toArray(new Mixer[mix.size()]);
         
-        lineHandlers = new LineHandler[MAX_SIMUL_SOUNDS];
         availableLineHandlers = new LinkedList<>();
-        for (int i = 0; i < lineHandlers.length; i++) {
-            lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), availableLineHandlers);
-            availableLineHandlers.add(lineHandlers[i]);
-            lineHandlers[i].setGain(gain);
-            lineHandlers[i].start();
+        for (int i = 0; i < MAX_SIMUL_SOUNDS; i++) {
+            LineHandler lineHandler = new LineHandler((SourceDataLine) getLine(info), availableLineHandlers);
+            availableLineHandlers.add(lineHandler);
+            lineHandler.setGain(gain);
+            lineHandler.start();
+            lineHandlers.add(lineHandler);
         }
     }
     
     public final void load() throws ResourceException {
-        Path fn = Core.findResource(Paths.get(SOUND_INI_STR));
+        Resource res = Core.findResource(SOUND_INI_STR, true);
         Props p = new Props();
-        if (!p.load(fn)) {
+        if (!p.load(res)) {
             throw new ResourceException(SOUND_INI_STR);
         }
         sampleNames.clear();
         for (int i = 0; true; i++) {
             String sName = p.get("sound_" + i, null);
             if (sName != null) {
-                sampleNames.add(Paths.get(sName));
+                sampleNames.add(sName);
             } else {
                 break;
             }
         }
         
         for (Effect e : Effect.values()) {
-            e.setSampleID(p.getInt(e.getKeyName(), -1));
+            effects.put(e, p.getInt(e.getKeyName(), -1));
         }
         
         PitchedEffect[] peValues = PitchedEffect.values();
         
-        Path fName = Paths.get(StringUtils.EMPTY);
         boolean reloadPitched = false;
         if (!loaded) {
             sampleNum = sampleNames.size();
-            fNames = new Path[sampleNum];
+            resources = new Resource[sampleNum];
             soundBuffers = new byte[sampleNum][];
             reloadPitched = true;
             for (int i = 0; i < peValues.length; i++) {
-                pitchedSampleID[i] = peValues[i].getEffect().getSampleID();
+                pitchedSampleID[i] = effects.get(peValues[i].getEffect());
             }
         } else {
             if (sampleNames.size() != sampleNum) {
                 sampleNum = sampleNames.size();
-                fNames = Arrays.copyOf(fNames, sampleNum);
+                resources = Arrays.copyOf(resources, sampleNum);
                 soundBuffers = Arrays.copyOf(soundBuffers, sampleNum);
             }
 
             for (int i = 0; i < peValues.length; i++) {
-                if (peValues[i].getEffect().getSampleID() != pitchedSampleID[i]) {
+                int sampleID = effects.get(peValues[i].getEffect());
+                if (sampleID != pitchedSampleID[i]) {
                     reloadPitched = true;
-                    pitchedSampleID[i] = peValues[i].getEffect().getSampleID();
+                    pitchedSampleID[i] = sampleID;
                 }
             }
         }
         
         try {
             for (int i = 0; i < sampleNum; i++) {
-                fName = Core.findResource(
-                        Paths.get("sound").resolve(sampleNames.get(i)),
-                        Core.SOUND_EXTENSIONS);
+                res = Core.findResource(
+                        "sound/" + sampleNames.get(i),
+                        true, Core.SOUND_EXTENSIONS);
                 if (loaded) {
-                    if (fName.equals(fNames[i])) {
+                    if (res.equals(resources[i])) {
                         continue;
                     }
                     if (!reloadPitched) {
@@ -287,12 +275,12 @@ public class Sound {
                         }
                     }
                 } else {
-                    fNames[i] = fName;
+                    resources[i] = res;
                 }
                 
                 AudioFormat currentFormat;
                 
-                try (InputStream in = new BufferedInputStream(Files.newInputStream(fName));
+                try (InputStream in = new BufferedInputStream(res.getInputStream());
                         AudioInputStream ais = AudioSystem.getAudioInputStream(in)) {
                     currentFormat = ais.getFormat();
                     soundBuffers[i] = new byte[(int) ais.getFrameLength() * currentFormat.getFrameSize()];
@@ -307,7 +295,7 @@ public class Sound {
                         format.getEncoding() == AudioFormat.Encoding.PCM_SIGNED,
                         format.isBigEndian());
                 for (int j = 0; j < peValues.length; j++) {
-                    if (peValues[j].getEffect().getSampleID() == i) {
+                    if (effects.get(peValues[j].getEffect()) == i) {
                         origPitchBuffers[j] = soundBuffers[i];
                         origPitchFormats[j] = currentFormat;
                     }
@@ -315,7 +303,7 @@ public class Sound {
                 soundBuffers[i] = resample(soundBuffers[i], currentFormat, format.getSampleRate(),  resamplingQuality);
             }
         } catch (UnsupportedAudioFileException | IOException ex) {
-            throw new ResourceException(fName.toString());
+            throw new ResourceException(res);
         }
 
         if (reloadPitched) {
@@ -342,11 +330,7 @@ public class Sound {
         if (mixers == null) {
             return null;
         }
-        String[] s = new String[mixers.length];
-        for (int i = 0; i < mixers.length; i++) {
-            s[i] = mixers[i].getMixerInfo().getName();
-        }
-        return s;
+        return mixers.stream().map(mixer -> mixer.getMixerInfo().getName()).toArray(String[]::new);
     }
 
     /**
@@ -356,7 +340,7 @@ public class Sound {
     public synchronized void setMixerIdx(final int idx) {
         int oldMixerIdx = mixerIdx;
         
-        if (idx > mixers.length) {
+        if (idx >= mixers.size()) {
             mixerIdx = 0;
         } else {
             mixerIdx = idx;
@@ -364,12 +348,14 @@ public class Sound {
         
         if (oldMixerIdx != mixerIdx) {
             Deque<LineHandler> tempLineHandlers = new LinkedList<>();
-            for (int i = 0; i < lineHandlers.length; i++) {
-                lineHandlers[i].close();
-                lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), tempLineHandlers);
-                tempLineHandlers.add(lineHandlers[i]);
-                lineHandlers[i].setGain(gain);
-                lineHandlers[i].start();
+            lineHandlers.stream().forEach(LineHandler::close);
+            lineHandlers.clear();
+            for (int i = 0; i < MAX_SIMUL_SOUNDS; i++) {
+                LineHandler lineHandler = new LineHandler((SourceDataLine) getLine(info), tempLineHandlers);
+                tempLineHandlers.add(lineHandler);
+                lineHandler.setGain(gain);
+                lineHandler.start();
+                lineHandlers.add(lineHandler);
             }
             availableLineHandlers = tempLineHandlers;
         }
@@ -390,7 +376,7 @@ public class Sound {
      */
     public final Line getLine(final DataLine.Info info) {
         try {
-            return mixers[mixerIdx].getLine(info);
+            return mixers.get(mixerIdx).getLine(info);
         } catch (LineUnavailableException ex) {
             ex.printStackTrace();
             return null;
@@ -434,8 +420,7 @@ public class Sound {
      * @param pan panning
      */
     public void play(final Effect e, final double pan) {
-        int idx = e.getSampleID();
-        play(idx, pan);
+        play(effects.get(e), pan);
     }
     
     /**
@@ -443,8 +428,7 @@ public class Sound {
      * @param e
      */
     public void play(final Effect e) {
-        int idx = e.getSampleID();
-        play(idx, 0.0);
+        play(effects.get(e), 0.0);
     }
 
     /**

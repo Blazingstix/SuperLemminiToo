@@ -1,11 +1,7 @@
 package lemmini.game;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import lemmini.graphics.LemmImage;
 import lemmini.sound.Sound;
 import lemmini.tools.Props;
@@ -114,12 +110,10 @@ public class Lemming {
         RIGHT,
         LEFT;
 
-        private static final Map<Integer, Direction> lookup = new HashMap<>();
+        private static final Map<Integer, Direction> LOOKUP = new HashMap<>();
 
         static {
-            for (Direction s : EnumSet.allOf(Direction.class)) {
-                lookup.put(s.ordinal(), s);
-            }
+            EnumSet.allOf(Direction.class).stream().forEach(s -> LOOKUP.put(s.ordinal(), s));
         }
 
         /**
@@ -128,7 +122,7 @@ public class Lemming {
          * @return Parameter with ordinal value val
          */
         public static Direction get(final int val) {
-            return lookup.get(val);
+            return LOOKUP.get(val);
         }
 
     }
@@ -218,8 +212,8 @@ public class Lemming {
     /** counter used to display the select image in replay mode */
     private int selectCtr;
 
-    /** static array of resources for each Lemming skill/type */
-    private static LemmingResource[] lemmings;
+    /** list of resources for each Lemming skill/type */
+    private static List<LemmingResource> lemmings = new ArrayList<>(NUM_RESOURCES);
     /** font used for the explosion counter */
     private static ExplodeFont explodeFont;
     private static int templateColor;
@@ -234,7 +228,7 @@ public class Lemming {
     public Lemming(final int sx, final int sy, final Direction d) {
         frameIdx = 0;
         type = Type.FALLER; // always start with a faller
-        lemRes = lemmings[getOrdinal(type)];
+        lemRes = getResource(type);
         counter = 0;
         explodeNumCtr = 0;
         selectCtr = 0;
@@ -620,7 +614,7 @@ public class Lemming {
                                 }
                                 // check for conversion to faller
                                 free = freeBelow(BASHER_FALL_DISTANCE);
-                                if (free == BASHER_FALL_DISTANCE) {
+                                if (free >= BASHER_FALL_DISTANCE) {
                                     y += FALLER_STEP;
                                     newType = Type.FALLER;
                                     break;
@@ -1166,7 +1160,7 @@ public class Lemming {
     private void changeType(final Type oldType, final Type newType) {
         if (oldType != newType) {
             type = newType;
-            lemRes = lemmings[getOrdinal(type)];
+            lemRes = getResource(type);
             if (newType == Type.DIGGER) {
                 frameIdx = lemRes.frames * TIME_SCALE - 1; // start digging immediately
             } else {
@@ -1575,9 +1569,10 @@ public class Lemming {
     }
     
     private void eraseBlockerMask() {
-        Mask m = lemmings[getOrdinal(Type.BLOCKER)].getMask(dir);
-        int maskX = x - lemmings[getOrdinal(Type.BLOCKER)].maskX;
-        int maskY = y - lemmings[getOrdinal(Type.BLOCKER)].maskY;
+        LemmingResource res = getResource(Type.BLOCKER);
+        Mask m = res.getMask(dir);
+        int maskX = x - res.maskX;
+        int maskY = y - res.maskY;
         m.clearType(maskX, maskY, 0, Stencil.MSK_BLOCKER_LEFT);
         m.clearType(maskX, maskY, 1, Stencil.MSK_BLOCKER_CENTER);
         m.clearType(maskX, maskY, 2, Stencil.MSK_BLOCKER_RIGHT);
@@ -1590,9 +1585,9 @@ public class Lemming {
      * @param replaceCol2 second color to replace
      */
     public static void replaceColors(final int replaceCol, final int replaceCol2) {
-        for (int l = 0; l < NUM_RESOURCES; l++) { // go through all the lemmings
-            lemmings[l].replaceColors(templateColor, replaceCol, templateColor2, replaceCol2);
-        }
+        lemmings.stream().forEach(lemm -> { // go through all the lemmings
+            lemm.replaceColors(templateColor, replaceCol, templateColor2, replaceCol2);
+        });
     }
 
     /**
@@ -1602,69 +1597,71 @@ public class Lemming {
     public static void loadLemmings() throws ResourceException {
         explodeFont = new ExplodeFont();
         // read lemmings definition file
-        Path fn = Core.findResource(Paths.get(LEMM_INI_STR));
+        Resource res = Core.findResource(LEMM_INI_STR, true);
         Props p = new Props();
-        if (!p.load(fn)) {
+        if (!p.load(res)) {
             throw new ResourceException(LEMM_INI_STR);
         }
-        lemmings = new LemmingResource[NUM_RESOURCES];
+        lemmings.clear();
         // read lemmings
         templateColor = p.getInt("templateColor", DEF_TEMPLATE_COLOR) & 0x00ffffff;
         templateColor2 = p.getInt("templateColor2", templateColor) & 0x00ffffff;
         Type[] lemmTypes = Type.values();
-        for (int i = 0; i < lemmings.length; i++) {
+        for (int i = 0; i < NUM_RESOURCES; i++) {
             // frames, directions, animation type
             Type type = lemmTypes[i];
             boolean bidirectional = type.bidirectional;
+            LemmingResource newLemResource;
             if (type.frames > 0) {
-                fn = Core.findResource(
-                        Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
-                        Core.IMAGE_EXTENSIONS);
-                LemmImage sourceImg = Core.loadTranslucentImage(fn);
+                res = Core.findResource(
+                        "gfx/lemming/lemm_" + type.name().toLowerCase(Locale.ROOT) + ".png",
+                        true, Core.IMAGE_EXTENSIONS);
+                LemmImage sourceImg = Core.loadTranslucentImage(res);
                 if (bidirectional) {
-                    fn = Core.findResource(
-                            Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
-                            Core.IMAGE_EXTENSIONS);
-                    LemmImage sourceImgLeft = Core.loadTranslucentImage(fn);
-                    lemmings[i] = new LemmingResource(sourceImg, sourceImgLeft, type.frames);
+                    res = Core.findResource(
+                            "gfx/lemming/lemm_" + type.name().toLowerCase(Locale.ROOT) + "_left.png",
+                            true, Core.IMAGE_EXTENSIONS);
+                    LemmImage sourceImgLeft = Core.loadTranslucentImage(res);
+                    newLemResource = new LemmingResource(sourceImg, sourceImgLeft, type.frames);
                 } else {
-                    lemmings[i] = new LemmingResource(sourceImg, type.frames);
+                    newLemResource = new LemmingResource(sourceImg, type.frames);
                 }
             } else {
-                lemmings[i] = new LemmingResource();
+                newLemResource = new LemmingResource();
             }
-            lemmings[i].animMode = type.loop ? Animation.LOOP : Animation.ONCE;
+            newLemResource.animMode = type.loop ? Animation.LOOP : Animation.ONCE;
             // read mask
             if (type.maskFrames > 0) {
                 // mask_Y: frames, directions, step
-                fn = Core.findResource(
-                        Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
-                        Core.IMAGE_EXTENSIONS);
-                LemmImage sourceImg = Core.loadTranslucentImage(fn);
-                Mask mask = new Mask(sourceImg, type.maskFrames);
-                lemmings[i].setMask(Direction.RIGHT, mask);
+                res = Core.findResource(
+                        "gfx/lemming/mask_" + type.name().toLowerCase(Locale.ROOT) + ".png",
+                        true, Core.IMAGE_EXTENSIONS);
+                LemmImage sourceImg = Core.loadTranslucentImage(res);
+                List<Mask> masks = new ArrayList<>(2);
+                masks.add(new Mask(sourceImg, type.maskFrames));
                 if (bidirectional) {
-                    fn = Core.findResource(
-                            Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
-                            Core.IMAGE_EXTENSIONS);
-                    LemmImage sourceImgLeft = Core.loadTranslucentImage(fn);
-                    Mask maskLeft = new Mask(sourceImgLeft, type.maskFrames);
-                    lemmings[i].setMask(Direction.LEFT, maskLeft);
+                    res = Core.findResource(
+                            "gfx/lemming/mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png",
+                            true, Core.IMAGE_EXTENSIONS);
+                    LemmImage sourceImgLeft = Core.loadTranslucentImage(res);
+                    masks.add(new Mask(sourceImgLeft, type.maskFrames));
                 }
-                lemmings[i].maskStep = type.maskStep;
+                newLemResource.setMasks(masks);
+                newLemResource.maskStep = type.maskStep;
             }
             // read foot position and size
             int[] val = p.getIntArray("pos_" + i, null);
             if (val != null && val.length == 3) {
-                lemmings[i].footX = val[0];
-                lemmings[i].footY = val[1];
-                lemmings[i].size  = val[2];
+                newLemResource.footX = val[0];
+                newLemResource.footY = val[1];
+                newLemResource.size  = val[2];
             }
             val = p.getIntArray("maskPos_" + i, null);
             if (val != null && val.length == 2) {
-                lemmings[i].maskX = val[0];
-                lemmings[i].maskY = val[1];
+                newLemResource.maskX = val[0];
+                newLemResource.maskY = val[1];
             }
+            lemmings.add(newLemResource);
         }
     }
 
@@ -1814,9 +1811,10 @@ public class Lemming {
                     }
                     break;
                 case BLOCKER:
-                    Mask m = Lemming.getResource(Type.BLOCKER).getMask(Direction.LEFT);
-                    int maskX = x - lemmings[getOrdinal(Type.BLOCKER)].maskX;
-                    int maskY = y - lemmings[getOrdinal(Type.BLOCKER)].maskY;
+                    LemmingResource lem = getResource(Type.BLOCKER);
+                    Mask m = lem.getMask(Direction.LEFT);
+                    int maskX = x - lem.maskX;
+                    int maskY = y - lem.maskY;
                     for (int i = 0; i < m.getNumFrames(); i++) {
                         if (m.checkType(maskX, maskY, i, Stencil.MSK_BLOCKER | Stencil.MSK_EXIT)) {
                             canSet = 0; // overlaps exit or existing blocker
@@ -1869,7 +1867,7 @@ public class Lemming {
      * @return static resource for this skill/type
      */
     private static LemmingResource getResource(final Type type) {
-        return lemmings[getOrdinal(type)];
+        return lemmings.get(getOrdinal(type));
     }
 
     /**
@@ -2042,25 +2040,24 @@ class LemmingResource {
     /** number of directions (1 or 2) */
     int dirs;
     int maskStep;
-    /** array of images to store the animation [Direction][AnimationFrame] */
-    private final LemmImage[][] img;
-    private final LemmImage[][] unpatchedImg;
-    /** array of removal masks used for digging/bashing/mining/explosions etc. [Direction] */
-    private final Mask[] mask;
+    /** list of images to store the animation [Direction][AnimationFrame] */
+    private final List<List<LemmImage>> img = new ArrayList<>(2);
+    private final List<List<LemmImage>> unpatchedImg = new ArrayList<>(2);
+    /** list of removal masks used for digging/bashing/mining/explosions etc. [Direction] */
+    private List<Mask> mask = null;
     
     /**
      * Constructor.
      */
     LemmingResource() {
-        img = new LemmImage[1][1];
-        unpatchedImg = new LemmImage[1][1];
-        mask = new Mask[1];
         width = 1;
         height = 1;
         dirs = 1;
         animMode = Lemming.Animation.NONE;
-        img[Lemming.Direction.RIGHT.ordinal()][0] = ToolBox.createBitmaskImage(width, height);
-        unpatchedImg[Lemming.Direction.RIGHT.ordinal()][0] = img[Lemming.Direction.RIGHT.ordinal()][0];
+        List<LemmImage> imgTemp = new ArrayList<>(1);
+        imgTemp.add(ToolBox.createBitmaskImage(width, height));
+        img.add(imgTemp);
+        unpatchedImg.add(new ArrayList<>(imgTemp));
     }
 
     /**
@@ -2069,16 +2066,14 @@ class LemmingResource {
      * @param animFrames number of animation frames.
      */
     LemmingResource(final LemmImage sourceImg, final int animFrames) {
-        img = new LemmImage[1][];
-        unpatchedImg = new LemmImage[1][];
-        mask = new Mask[1];
         frames = animFrames;
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / animFrames;
         dirs = 1;
         animMode = Lemming.Animation.NONE;
-        img[Lemming.Direction.RIGHT.ordinal()] = ToolBox.getAnimation(sourceImg, animFrames);
-        unpatchedImg[Lemming.Direction.RIGHT.ordinal()] = img[Lemming.Direction.RIGHT.ordinal()].clone();
+        List<LemmImage> anim = ToolBox.getAnimation(sourceImg, animFrames);
+        img.add(anim);
+        unpatchedImg.add(new ArrayList<>(anim));
     }
     
     /**
@@ -2088,18 +2083,17 @@ class LemmingResource {
      * @param animFrames number of animation frames.
      */
     LemmingResource(final LemmImage sourceImg, final LemmImage sourceImgLeft, final int animFrames) {
-        img = new LemmImage[2][];
-        unpatchedImg = new LemmImage[2][];
-        mask = new Mask[2];
         frames = animFrames;
         width = Math.min(sourceImg.getWidth(), sourceImgLeft.getWidth());
         height = Math.min(sourceImg.getHeight() / animFrames, sourceImgLeft.getHeight() / animFrames);
         dirs = 2;
         animMode = Lemming.Animation.NONE;
-        img[Lemming.Direction.RIGHT.ordinal()] = ToolBox.getAnimation(sourceImg, animFrames);
-        img[Lemming.Direction.LEFT.ordinal()] = ToolBox.getAnimation(sourceImgLeft, animFrames);
-        unpatchedImg[Lemming.Direction.RIGHT.ordinal()] = img[Lemming.Direction.RIGHT.ordinal()].clone();
-        unpatchedImg[Lemming.Direction.LEFT.ordinal()] = img[Lemming.Direction.LEFT.ordinal()].clone();
+        List<LemmImage> animRight = ToolBox.getAnimation(sourceImg, animFrames);
+        List<LemmImage> animLeft = ToolBox.getAnimation(sourceImgLeft, animFrames);
+        img.add(animRight);
+        img.add(animLeft);
+        unpatchedImg.add(new ArrayList<>(animRight));
+        unpatchedImg.add(new ArrayList<>(animLeft));
     }
 
     /**
@@ -2109,23 +2103,18 @@ class LemmingResource {
      */
     Mask getMask(final Lemming.Direction dir) {
         if (dirs > 1) {
-            return mask[dir.ordinal()];
+            return mask.get(dir.ordinal());
         } else {
-            return mask[0];
+            return mask.get(0);
         }
     }
 
     /**
-     * Set the mask for stencil manipulation.
-     * @param dir Direction
-     * @param m mask for stencil manipulation
+     * Set the masks for stencil manipulation.
+     * @param m list of masks for stencil manipulation
      */
-    void setMask(final Lemming.Direction dir, final Mask m) {
-        if (dirs > 1) {
-            mask[dir.ordinal()] = m;
-        } else {
-            mask[0] = m;
-        }
+    void setMasks(final List<Mask> m) {
+        mask = m;
     }
 
     /**
@@ -2136,26 +2125,30 @@ class LemmingResource {
      */
     LemmImage getImage(final Lemming.Direction dir, final int frame) {
         if (dirs > 1) {
-            return img[dir.ordinal()][frame];
+            return img.get(dir.ordinal()).get(frame);
         } else {
-            return img[0][frame];
+            return img.get(0).get(frame);
         }
     }
     
     void replaceColors(final int templateCol, final int replaceCol,
             final int templateCol2, final int replaceCol2) {
-        for (int d = 0; d < img.length; d++) { // go though all directions
-            for (int f = 0; f < img[d].length; f++) { // go through all frames
-                LemmImage i = new LemmImage(unpatchedImg[d][f]);
+        for (ListIterator<List<LemmImage>> itd = unpatchedImg.listIterator();
+                itd.hasNext(); ) { // go though all directions
+            int di = itd.nextIndex();
+            for (ListIterator<LemmImage> itf = itd.next().listIterator();
+                    itf.hasNext(); ) { // go through all frames
+                int fi = itf.nextIndex();
+                LemmImage i = new LemmImage(itf.next());
                 i.replaceColor(templateCol, replaceCol);
                 i.replaceColor(templateCol2, replaceCol2);
-                img[d][f] = i;
+                img.get(di).set(fi, i);
             }
         }
-        for (Mask d : mask) { // go though all directions
-            if (d != null) {
+        if (mask != null) {
+            mask.stream().filter(d -> d != null).forEach(d -> { // go though all directions
                 d.replaceColors(templateCol, replaceCol, templateCol2, replaceCol2);
-            }
+            });
         }
     }
 }
@@ -2167,8 +2160,8 @@ class LemmingResource {
  */
 class ExplodeFont {
 
-    /** array of images for each counter value */
-    private final LemmImage[] img;
+    /** list of images for each counter value */
+    private final List<LemmImage> img;
 
     /**
      * Constructor.
@@ -2176,8 +2169,8 @@ class ExplodeFont {
      * @throws ResourceException
      */
     ExplodeFont() throws ResourceException {
-        Path fn = Core.findResource(Paths.get("gfx/lemming/countdown.png"), Core.IMAGE_EXTENSIONS);
-        LemmImage sourceImg = Core.loadTranslucentImage(fn);
+        Resource res = Core.findResource("gfx/lemming/countdown.png", true, Core.IMAGE_EXTENSIONS);
+        LemmImage sourceImg = Core.loadTranslucentImage(res);
         img = ToolBox.getAnimation(sourceImg, 5);
     }
 
@@ -2187,6 +2180,6 @@ class ExplodeFont {
      * @return
      */
     LemmImage getImage(final int num) {
-        return img[num];
+        return img.get(num);
     }
 }

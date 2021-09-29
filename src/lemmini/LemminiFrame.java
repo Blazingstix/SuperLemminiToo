@@ -35,6 +35,7 @@ import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
@@ -49,7 +50,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.101";
+    public static final String REVISION = "0.102";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -339,7 +340,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                         break;
                     case KeyEvent.VK_L: // print current level on the console
                         if (GameController.isCheat()) {
-                            System.out.println(GameController.getLevelPack(GameController.getCurLevelPackIdx()).getInfo(GameController.getCurRating(), GameController.getCurLevelNumber()).getFileName());
+                            System.out.println(GameController.getLevelPack(GameController.getCurLevelPackIdx()).getInfo(GameController.getCurRating(), GameController.getCurLevelNumber()).getLevelResource());
                         }
                         break;
                     case KeyEvent.VK_S:
@@ -596,8 +597,9 @@ public class LemminiFrame extends javax.swing.JFrame {
     /**
      * The main function. Entry point of the program.
      * @param args the command line arguments
+     * @throws java.io.IOException
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Path level = null;
         for (int i = 0; i < args.length; i++) {
             switch (args[i].toLowerCase(Locale.ROOT)) {
@@ -632,8 +634,8 @@ public class LemminiFrame extends javax.swing.JFrame {
         /*
          * Check JVM version
          */
-        if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7)) {
-            JOptionPane.showMessageDialog(null, "SuperLemmini requires JVM 1.7 or later.", "Error", JOptionPane.ERROR_MESSAGE);
+        if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8)) {
+            JOptionPane.showMessageDialog(null, "SuperLemmini requires JVM 1.8 or later.", "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         
@@ -644,7 +646,7 @@ public class LemminiFrame extends javax.swing.JFrame {
             System.exit(1);
         }
         
-        // workaround to adjust time base to 1ms under XP
+        // workaround to adjust time base to 1ms under Windows
         // see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
         new Thread() {
             {
@@ -676,6 +678,8 @@ public class LemminiFrame extends javax.swing.JFrame {
      * Common exit method to use in exit events.
      */
     void exit() {
+        // close the zip files
+        Core.zipFiles.stream().forEach(IOUtils::closeQuietly);
         // store width and height
         Core.programProps.setInt("frameWidth", lemminiPanelMain.getUnmaximizedWidth());
         Core.programProps.setInt("frameHeight", lemminiPanelMain.getUnmaximizedHeight());

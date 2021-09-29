@@ -1,6 +1,7 @@
 package lemmini.game;
 
 import java.awt.Color;
+import java.util.List;
 import lemmini.LemminiFrame;
 import static lemmini.game.LemmFont.Color.*;
 import lemmini.graphics.GraphicsContext;
@@ -97,10 +98,12 @@ public class TextScreen {
     /** step width of scroll text in pixels */
     private static final int SCROLL_STEP = 2;
     private static final int FAILURE_THRESHOLD_FOR_HINTS = 3;
+    /** counter threshold used to trigger the rotation animation (in animation update frames) */
+    private static final int MAX_ROT_CTR = 99;
     /** scroll text */
     private static final String SCROLL_TEXT =
         "SuperLemmini - a game engine for Lemmings(tm) in Java. "
-        + "Coded by Ryan Sakowski 2013-2015. "
+        + "Coded by Ryan Sakowski 2013-2016. "
         + "Original Lemmini by Volker Oth 2005-2014. "
         + "Original website: www.lemmini.de. "
         + "Thanks to Martin Cameron for his IBXM library, "
@@ -127,8 +130,6 @@ public class TextScreen {
     private static GraphicsOperation at;
     /** counter used to trigger the rotation animation (in animation update frames) */
     private static int rotCtr;
-    /** counter threshold used to trigger the rotation animation (in animation update frames) */
-    private static final int maxRotCtr = 99;
     /** used to stop the rotation only after it was flipped twice -> original direction */
     private static int flipCtr;
     /** counter for scrolled pixels */
@@ -170,7 +171,7 @@ public class TextScreen {
     static void initIntro() {
         textDialog.clear();
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN), true);
-        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 7/2015", null, 4, RED);
+        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 3/2016", null, 4, RED);
         textDialog.addTextButton("Play Level", "Play Level", null, -5, -2, Button.PLAY_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Load Replay", "Load Replay", null, -14, 0, Button.LOAD_REPLAY, BLUE, BROWN);
         textDialog.addTextButton("Enter Code", "Enter Code", null, 3, 0, Button.ENTER_CODE, BLUE, BROWN);
@@ -227,32 +228,32 @@ public class TextScreen {
         String pointWord = (score == 1) ? "point" : "points";
         textDialog.addString(String.format("Your score: %d %s", score, pointWord), null, -10, -3, VIOLET);
         LevelPack lp = GameController.getCurLevelPack();
-        String[] debriefings = lp.getDebriefings();
+        List<String> debriefings = lp.getDebriefings();
         if (GameController.wasLost()) {
             String debriefing;
             if (GameController.getNumExited() <= 0) {
-                debriefing = debriefings[0];
+                debriefing = debriefings.get(0);
             } else if (rescuedOfToRescue < 50) {
-                debriefing = debriefings[1];
+                debriefing = debriefings.get(1);
             } else if (rescuedPercent < toRescuePercent - 5) {
-                debriefing = debriefings[2];
+                debriefing = debriefings.get(2);
             } else if (rescuedPercent < toRescuePercent - 1) {
-                debriefing = debriefings[3];
+                debriefing = debriefings.get(3);
             } else {
-                debriefing = debriefings[4];
+                debriefing = debriefings.get(4);
             }
             textDialog.addStringCentered(debriefing, null, -1, RED);
             textDialog.addTextButton("Retry", "Retry", null, -2, 6, Button.RESTART, BLUE, BROWN);
         } else {
             String debriefing;
             if (rescued <= toRescue && rescued < numLemmings) {
-                debriefing = debriefings[5];
+                debriefing = debriefings.get(5);
             } else if (rescuedPercent < toRescuePercent + 20 && rescued < numLemmings) {
-                debriefing = debriefings[6];
+                debriefing = debriefings.get(6);
             } else if (rescued < numLemmings) {
-                debriefing = debriefings[7];
+                debriefing = debriefings.get(7);
             } else {
-                debriefing = debriefings[8];
+                debriefing = debriefings.get(8);
             }
             textDialog.addStringCentered(debriefing, null, -1, RED);
             int lpn = GameController.getCurLevelPackIdx();
@@ -267,9 +268,10 @@ public class TextScreen {
                 }
                 textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.CONTINUE, BLUE, BROWN);
             } else if (!(lpn == 0 && r == 0)) {
+                List<String> ratings = lp.getRatings();
                 textDialog.addStringCentered("Congratulations!", null, 2, BROWN);
-                textDialog.addStringCentered(String.format("You finished all the %s levels!", lp.getRatings()[GameController.getCurRating()]), null, 3, GREEN);
-                if (lpn != 0 && lp.getLevelCount(r) <= ln + 1 && lp.getRatings().length > r + 1) {
+                textDialog.addStringCentered(String.format("You finished all the %s levels!", ratings.get(GameController.getCurRating())), null, 3, GREEN);
+                if (lpn != 0 && lp.getLevelCount(r) <= ln + 1 && ratings.size() > r + 1) {
                     textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.NEXT_RATING, BLUE, BROWN);
                 }
             }
@@ -285,7 +287,7 @@ public class TextScreen {
         synchronized (monitor) {
             textDialog.clearGroup("info");
             Level level = GameController.getLevel();
-            String rating = GameController.getCurLevelPack().getRatings()[GameController.getCurRating()];
+            String rating = GameController.getCurLevelPack().getRatings().get(GameController.getCurRating());
             textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), "info", -9, -2, BLUE);
             if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
                 textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), "info", -9, -1, GREEN);
@@ -428,7 +430,7 @@ public class TextScreen {
     private static void update_intro() {
         textDialog.clearGroup("introAnimation");
         // manage logo rotation
-        if (++rotCtr > maxRotCtr) {
+        if (++rotCtr > MAX_ROT_CTR) {
             // animate
             rotFact += rotDelta;
             if (rotFact <= 0.0) {

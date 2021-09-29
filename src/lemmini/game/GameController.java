@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.regex.Pattern;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.extract.ExtractDAT;
@@ -21,7 +22,6 @@ import lemmini.tools.NanosecondTimer;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
 
@@ -111,6 +111,7 @@ public class GameController {
     /** +/- icons: time for key repeat rate */
     private static final long NANOSEC_KEYREPEAT_REPEAT = 67_000_000;
     
+    private static final Pattern LEVEL_DIR_PATTERN = Pattern.compile("^levels/[^/]+/levelpack.ini$");
     private static final String LEVEL_CACHE_INI = "$levelcache.ini";
 
     /** sound object */
@@ -179,7 +180,7 @@ public class GameController {
     private static int nextLevelPack;
     /** index of next level */
     private static int nextLevelNumber;
-    private static Path[] modPaths = Core.EMPTY_PATH_ARRAY;
+    private static List<String> modPaths;
     /** list of all active Lemmings in the Level */
     private static final List<Lemming> lemmings = new LinkedList<>();
     /** list of all active explosions */
@@ -187,7 +188,7 @@ public class GameController {
     /** list of all Lemmings under the mouse cursor */
     private static final Queue<Lemming> lemmsUnderCursor = Collections.asLifoQueue(new ArrayDeque<Lemming>(128));
     /** array of available level packs */
-    private static LevelPack[] levelPacks;
+    private static List<LevelPack> levelPacks;
     private static Set<ExternalLevelEntry> externalLevelList;
     /** small preview version of level used in briefing screen */
     private static LemmImage mapPreview;
@@ -284,25 +285,12 @@ public class GameController {
         // read level packs
 
         Path dir = Core.resourcePath.resolve("levels");
-        // now get the names of the directories
-        List<Path> dirs = new ArrayList<>(32);
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, new DirectoryStream.Filter<Path>() {
-            @Override
-            public boolean accept(Path entry) throws IOException {
-                return Files.isDirectory(entry) && !entry.endsWith(Core.EXTERNAL_LEVELS_CACHE_FOLDER);
-            }
-        })) {
-            for (Path file : files) {
-                dirs.add(file.getFileName());
-            }
-        } catch (IOException ex) {
-        }
-        Collections.sort(dirs);
 
-        List<LevelPack> levelPackList = new ArrayList<>(32);
+        levelPacks = new ArrayList<>(32);
         externalLevelList = new LinkedHashSet<>();
         LevelPack externalLevels = new LevelPack();
         Props externalLevelsINI = new Props();
+        modPaths = Collections.emptyList();
         if (externalLevelsINI.load(Core.externalLevelCachePath.resolve(LEVEL_CACHE_INI))) {
             boolean updateINI = false;
             for (int i = 0; true; i++) {
@@ -324,18 +312,38 @@ public class GameController {
                 saveExternalLevelList();
             }
         }
-        levelPackList.add(externalLevels);
-        for (Path lvlName : dirs) {
-            Path lp = Core.resourcePath.resolve("levels").resolve(lvlName).resolve("levelpack.ini");
-            if (Files.isRegularFile(lp)) {
-                levelPackList.add(new LevelPack(lp));
+        levelPacks.add(externalLevels);
+        
+        // now get the names of the directories
+        Set<String> dirs = new TreeSet<>();
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, entry -> Files.isDirectory(entry) && !entry.endsWith(Core.EXTERNAL_LEVELS_CACHE_FOLDER))) {
+            for (Path file : files) {
+                Path lp = Core.resourcePath.resolve("levels").resolve(file).resolve("levelpack.ini");
+                if (Files.isRegularFile(lp)) {
+                    dirs.add(file.getFileName().toString());
+                }
             }
+        } catch (IOException ex) {
         }
-        levelPacks = levelPackList.toArray(new LevelPack[levelPackList.size()]);
+        Core.zipFiles.stream().forEachOrdered(zipFile -> {
+           zipFile.stream().forEach(entry -> {
+               String entryName = entry.getName();
+               if (LEVEL_DIR_PATTERN.matcher(entryName).matches()) {
+                   dirs.add(entryName.substring(entryName.indexOf('/') + 1, entryName.lastIndexOf('/')));
+               }
+           });
+        });
+        dirs.stream().sorted(String.CASE_INSENSITIVE_ORDER).forEachOrdered(lvlName -> {
+            try {
+                Resource res = Core.findResource("levels/" + lvlName + "/levelpack.ini", false);
+                levelPacks.add(new LevelPack(res));
+            } catch (ResourceException ex) {
+            }
+        });
         curRating = 0;
         curLevelPack = 0;
         curLevelNumber = 0;
-        modPaths = levelPacks[curLevelPack].getModPaths();
+        modPaths = levelPacks.get(curLevelPack).getModPaths();
         
         sound = new Sound();
         sound.setGain(soundGain);
@@ -371,7 +379,7 @@ public class GameController {
      * @return absolute level number (0-127)
      */
     static int absLevelNum(final int lvlPack, final int rating, final int level) {
-        LevelPack lpack = levelPacks[lvlPack];
+        LevelPack lpack = levelPacks.get(lvlPack);
         // calculate absolute level number
         int absLvl = level;
         for (int i = 0; i < rating; i++) {
@@ -388,8 +396,8 @@ public class GameController {
      */
     public static int[] relLevelNum(final int lvlPack, final int lvlAbs) {
         int[] retval = new int[2];
-        LevelPack lpack = levelPacks[lvlPack];
-        int ratings = lpack.getRatings().length;
+        LevelPack lpack = levelPacks.get(lvlPack);
+        int ratings = lpack.getRatings().size();
         int lvl = -1;
         int rating = -1;
         for (int i = 0, ls = 0; i < ratings; i++) {
@@ -414,7 +422,7 @@ public class GameController {
     public static synchronized boolean nextLevel() {
         int num = curLevelNumber + 1;
 
-        if (num < levelPacks[curLevelPack].getLevelCount(curRating)) {
+        if (num < levelPacks.get(curLevelPack).getLevelCount(curRating)) {
             curLevelNumber = num;
             return true;
         } else {
@@ -429,7 +437,7 @@ public class GameController {
     public static synchronized boolean nextRating() {
         int num = curRating + 1;
 
-        if (num < levelPacks[curLevelPack].getRatings().length) {
+        if (num < levelPacks.get(curLevelPack).getRatings().size()) {
             curRating = num;
             curLevelNumber = 0;
             return true;
@@ -461,9 +469,10 @@ public class GameController {
 
         if (!wasLost() && curLevelPack != 0) {
             LevelPack lvlPack = getCurLevelPack();
-            Core.player.setLevelRecord(lvlPack.getName(), lvlPack.getRatings()[curRating], curLevelNumber, getLevelRecord());
+            String curRatingString = lvlPack.getRatings().get(curRating);
+            Core.player.setLevelRecord(lvlPack.getName(), curRatingString, curLevelNumber, getLevelRecord());
             if (curLevelNumber + 1 < lvlPack.getLevelCount(curRating)) {
-                Core.player.setAvailable(lvlPack.getName(), lvlPack.getRatings()[curRating], curLevelNumber + 1);
+                Core.player.setAvailable(lvlPack.getName(), curRatingString, curLevelNumber + 1);
             }
             Core.player.store();
         }
@@ -594,11 +603,14 @@ public class GameController {
         nukeOld = false;
         
         try {
-            Path music = level.getMusic();
+            String music = level.getMusic();
             if (music == null) {
-                music = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getMusic();
+                music = levelPacks.get(curLevelPack).getInfo(curRating, curLevelNumber).getMusic();
             }
-            Music.load(Paths.get("music").resolve(music));
+            if (music == null) {
+                music = Music.getRandomTrack(level.getStyle(), level.getSpecialStyle());
+            }
+            Music.load("music/" + music);
         } catch (ResourceException ex) {
             Core.resourceError(ex.getMessage());
         } catch (LemmException ex) {
@@ -665,9 +677,9 @@ public class GameController {
         curRating = rating;
         curLevelNumber = lNum;
         
-        Path[] oldMods = modPaths;
-        modPaths = levelPacks[curLevelPack].getModPaths();
-        if (!Arrays.equals(modPaths, oldMods)) {
+        List<String> oldMods = modPaths;
+        modPaths = levelPacks.get(curLevelPack).getModPaths();
+        if (!modPaths.equals(oldMods)) {
             sound.load();
             MiscGfx.init(ToolBox.scale(width, 1.0 / 16.0));
             Icons.init();
@@ -679,9 +691,9 @@ public class GameController {
             Lemming.loadLemmings();
         }
         
-        Path lvlPath = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
+        Resource lvlRes = levelPacks.get(curLevelPack).getInfo(curRating, curLevelNumber).getLevelResource();
         // loading the level will patch appropriate lemmings pixels to the correct colors
-        level = new Level(lvlPath, level);
+        level = new Level(lvlRes, level);
         
         initLevel();
         
@@ -1149,16 +1161,14 @@ public class GameController {
         // open trap doors?
         if (!entranceOpened) {
             if (++entranceOpenCtr == MAX_ENTRANCE_OPEN_CTR) {
-                for (int i = 0; i < level.getSprObjectNum(); i++) {
+                for (int i = 0; i < level.getNumSprObjects(); i++) {
                     SpriteObject spr = level.getSprObject(i);
                     if (spr != null && spr.getAnimMode() == Sprite.Animation.ONCE_ENTRANCE) {
                         spr.setAnimMode(Sprite.Animation.ONCE);
                     }
                 }
                 level.openBackgroundEntrances();
-                for (int i : entranceSounds) {
-                    sound.play(i);
-                }
+                entranceSounds.stream().forEach(sound::play);
             } else if (entranceOpenCtr == MAX_ENTRANCE_OPEN_CTR + 30) {
                 //System.out.println("opened");
                 entranceOpened = true;
@@ -1172,7 +1182,7 @@ public class GameController {
         if ((nukeTemp || numLemmingsOut == getNumLemmingsMax()) && lemmings.isEmpty()) {
             // End the level only if no objects are triggered.
             boolean endLevel = true;
-            for (int i = 0; i < level.getSprObjectNum(); i++) {
+            for (int i = 0; i < level.getNumSprObjects(); i++) {
                 SpriteObject sprite = level.getSprObject(i);
                 if (sprite != null && sprite.isTriggered()) {
                     endLevel = false;
@@ -1184,27 +1194,25 @@ public class GameController {
             }
         }
 
-        Iterator<Lemming> lit = lemmings.iterator();
-        while (lit.hasNext()) {
-            Lemming l = lit.next();
+        for (Iterator<Lemming> it = lemmings.iterator(); it.hasNext(); ) {
+            Lemming l = it.next();
             l.animate();
             if (l.hasDied() || l.hasExited()) {
-                lit.remove();
+                it.remove();
             }
         }
 
-        Iterator<Explosion> eit = explosions.iterator();
-        while (eit.hasNext()) {
-            Explosion e = eit.next();
+        for (Iterator<Explosion> it = explosions.iterator(); it.hasNext(); ) {
+            Explosion e = it.next();
             if (e.isFinished()) {
-                eit.remove();
+                it.remove();
             } else {
                 e.update();
             }
         }
 
         // animate level objects
-        for (int n = 0; n < level.getSprObjectNum(); n++) {
+        for (int n = 0; n < level.getNumSprObjects(); n++) {
             SpriteObject spr = level.getSprObject(n);
             if (spr != null) {
                 spr.getImageAnim(); // just to animate
@@ -1367,10 +1375,10 @@ public class GameController {
             }
             // add to replay stream
             if (!wasCheated) {
-                for (Lemming l : lemmings) {
-                    if (l == lemm) { // if 2nd try (delete == true) assign to next frame
-                        replay.addAssignSkillEvent(replayFrame + ((delete) ? 1 : 0), lemmSkill, lemmings.indexOf(l));
-                    }
+                int idx = lemmings.indexOf(lemm);
+                if (idx >= 0) {
+                    // if 2nd try (delete == true) assign to next frame
+                    replay.addAssignSkillEvent(replayFrame + ((delete) ? 1 : 0), lemmSkill, idx);
                 }
             }
         } else if (!delete) {
@@ -1666,9 +1674,7 @@ public class GameController {
      */
     public static synchronized void drawExplosions(final GraphicsContext g,
             final int width, final int height, final int xOfs, final int yOfs) {
-        for (Explosion e : explosions) {
-            e.draw(g, width, height, xOfs, yOfs);
-        }
+        explosions.stream().forEachOrdered(e -> e.draw(g, width, height, xOfs, yOfs));
     }
 
     /**
@@ -1682,7 +1688,7 @@ public class GameController {
     }
     
     public static synchronized void drawLemmings(final GraphicsContext g) {
-        for (Lemming l : lemmings) {
+        lemmings.stream().forEachOrdered(l -> {
             int lx = l.screenX();
             int ly = l.screenY();
             int mx = l.midX();
@@ -1700,7 +1706,7 @@ public class GameController {
                     g.drawImage(cd, x, y);
                 }
             }
-
+            
             LemmImage sel = l.getSelectImg();
             if (sel != null) {
                 int x = mx - xPos - sel.getWidth() / 2;
@@ -1710,16 +1716,16 @@ public class GameController {
                     g.drawImage(sel, x, y);
                 }
             }
-        }
+        });
     }
     
     public static synchronized void drawMinimapLemmings(final GraphicsContext g, final int x, final int y) {
-        for (Lemming l : lemmings) {
+        lemmings.stream().forEachOrdered(l -> {
             int lx = l.footX();
             int ly = l.footY();
             // draw pixel in minimap
             Minimap.drawLemming(g, x, y, lx, ly);
-        }
+        });
     }
 
     /**
@@ -1800,7 +1806,7 @@ public class GameController {
      * @return current level pack
      */
     public static LevelPack getCurLevelPack() {
-        return levelPacks[curLevelPack];
+        return levelPacks.get(curLevelPack);
     }
 
     /**
@@ -1808,7 +1814,7 @@ public class GameController {
      * @return number of level packs
      */
     public static int getLevelPackCount() {
-        return levelPacks.length;
+        return levelPacks.size();
     }
 
     /**
@@ -1817,7 +1823,7 @@ public class GameController {
      * @return LevelPack
      */
     public static LevelPack getLevelPack(final int i) {
-        return levelPacks[i];
+        return levelPacks.get(i);
     }
 
     /**
@@ -1838,7 +1844,7 @@ public class GameController {
     
     public static int[] addExternalLevel(Path name, LevelPack lp, boolean showErrors) {
         if (lp == null) {
-            lp = levelPacks[0];
+            lp = levelPacks.get(0);
         }
         if (name != null) {
             try {
@@ -1850,9 +1856,10 @@ public class GameController {
                     if (externalLevelList.contains(entry)) {
                         switch (format) {
                             case DAT:
-                                String[] ratings = lp.getRatings();
-                                for (int i = 1; i < ratings.length; i++) {
-                                    if (ratings[i].toLowerCase(Locale.ROOT).equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
+                                List<String> ratings = lp.getRatings();
+                                for (ListIterator<String> lit = ratings.listIterator(1); lit.hasNext(); ) {
+                                    int i = lit.nextIndex();
+                                    if (lit.next().toLowerCase(Locale.ROOT).equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
                                         return new int[]{0, i, 0};
                                     }
                                 }
@@ -1861,7 +1868,7 @@ public class GameController {
                             case INI:
                                 int numLevels = lp.getLevelCount(0);
                                 for (int i = 0; i < numLevels; i++) {
-                                    if (FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString().toLowerCase(Locale.ROOT))
+                                    if (FilenameUtils.removeExtension(lp.getInfo(0, i).getLevelResource().getFileName().toLowerCase(Locale.ROOT))
                                             .equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
                                         return new int[]{0, 0, i};
                                     }
@@ -1873,33 +1880,35 @@ public class GameController {
                     } else {
                         switch (format) {
                             case DAT:
-                                byte[][] levels = ExtractDAT.decompress(name);
-                                if (ArrayUtils.isEmpty(levels)) {
+                                List<byte[]> levels = ExtractDAT.decompress(name);
+                                if (levels.isEmpty()) {
                                     if (showErrors) {
                                         JOptionPane.showMessageDialog(LemminiFrame.getFrame(), "DAT file is empty.", "Load Level", JOptionPane.ERROR_MESSAGE);
                                     }
                                     return null;
                                 }
-                                LevelInfo[] liArray = new LevelInfo[levels.length];
-                                for (int i = 0; i < levels.length; i++) {
+                                List<LevelInfo> liList = new ArrayList<>(levels.size());
+                                for (ListIterator<byte[]> lit = levels.listIterator(); lit.hasNext(); ) {
+                                    int i = lit.nextIndex();
                                     Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + "_" + i + ".ini");
-                                    ExtractLevel.convertLevel(levels[i], fNameStr + " (section " + i + ")", outName, false, false);
-                                    liArray[i] = new LevelInfo(outName, null);
-                                    if (!liArray[i].isValidLevel()) {
+                                    ExtractLevel.convertLevel(lit.next(), fNameStr + " (section " + i + ")", outName, false, false);
+                                    LevelInfo li = new LevelInfo(new FileResource(outName), null);
+                                    if (!li.isValidLevel()) {
                                         return null;
                                     }
+                                    liList.add(li);
                                 }
-                                lp.addRating(fNameStrNoExt, liArray);
+                                lp.addRating(fNameStrNoExt, liList);
                                 externalLevelList.add(entry);
                                 saveExternalLevelList();
-                                return new int[]{0, lp.getRatings().length - 1, 0};
+                                return new int[]{0, lp.getRatings().size() - 1, 0};
                             case LVL:
                                 Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + ".ini");
                                 ExtractLevel.convertLevel(name, outName, false, false);
                                 name = outName;
                                 /* falls through */
                             case INI:
-                                LevelInfo li = new LevelInfo(name, null);
+                                LevelInfo li = new LevelInfo(new FileResource(name), null);
                                 if (li.isValidLevel()) {
                                     lp.addLevel(0, li);
                                     externalLevelList.add(entry);
@@ -1925,7 +1934,7 @@ public class GameController {
     
     public static void clearExternalLevelList() {
         externalLevelList.clear();
-        levelPacks[0] = new LevelPack();
+        levelPacks.set(0, new LevelPack());
         saveExternalLevelList();
     }
     
@@ -2227,7 +2236,7 @@ public class GameController {
     
     public static synchronized void updateLemmsUnderCursor() {
         lemmsUnderCursor.clear();
-        for (Lemming l : lemmings) {
+        lemmings.stream().forEachOrdered(l -> {
             int lx = l.screenX();
             int ly = l.screenY();
             if (lx + l.width() >= xPos && lx < xPos + Core.getDrawWidth()
@@ -2236,7 +2245,7 @@ public class GameController {
                     lemmsUnderCursor.add(l);
                 }
             }
-        }
+        });
     }
 
     /**
@@ -2483,7 +2492,7 @@ public class GameController {
         return height;
     }
     
-    public static Path[] getModPaths() {
+    public static List<String> getModPaths() {
         return modPaths;
     }
 }

@@ -87,16 +87,16 @@ public class TextDialog {
                 g.drawImage(backgroundImage, xa, ya);
             }
         }
-        for (String s : images.keySet()) {
-            for (TextDialogImage img : images.get(s)) {
+        images.keySet().stream().forEachOrdered(s -> {
+            images.get(s).stream().forEachOrdered(img -> {
                 img.draw(g, centerX, centerY);
-            }
-        }
-        for (String s : buttons.keySet()) {
-            for (Button b : buttons.get(s)) {
+            });
+        });
+        buttons.keySet().stream().forEachOrdered(s -> {
+            buttons.get(s).stream().forEachOrdered(b -> {
                 b.draw(g, centerX, centerY);
-            }
-        }
+            });
+        });
     }
 
     /**
@@ -125,14 +125,16 @@ public class TextDialog {
         }
         int width = LemmFont.getWidth();
         int height = LemmFont.getHeight();
-        String[] sa = LemmFont.split(s, 0);
+        List<String> sa = LemmFont.split(s, 0);
         addImageGroup(group);
         List<TextDialogImage> groupList = images.get(group);
         int x = x0 * width;
-        for (int i = 0; i < sa.length; i++) {
-            if (LemmFont.getCharCount(sa[i]) > 0) {
+        for (ListIterator<String> lit = sa.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            String line = lit.next();
+            if (LemmFont.getCharCount(line) > 0) {
                 int y = (y0 + i) * (height + 4);
-                groupList.add(new TextDialogImage(sa[i], x, y, col));
+                groupList.add(new TextDialogImage(line, x, y, col));
             }
         }
     }
@@ -162,18 +164,20 @@ public class TextDialog {
         }
         int width = LemmFont.getWidth();
         int height = LemmFont.getHeight();
-        String[] sa = LemmFont.split(s, Math.max(1, 800 / width));
+        List<String> sa = LemmFont.split(s, Math.max(1, 800 / width));
         addImageGroup(group);
         List<TextDialogImage> groupList = images.get(group);
-        for (int i = 0; i < sa.length; i++) {
-            int charCount = LemmFont.getCharCount(sa[i]);
+        for (ListIterator<String> lit = sa.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            String line = lit.next();
+            int charCount = LemmFont.getCharCount(line);
             if (charCount > 0) {
                 if (charCount % 2 > 0) {
                     charCount = (charCount + 2) - charCount % 2;
                 }
                 int y = (y0 + i) * (height + 4);
                 int x = -(charCount * width / 2);
-                groupList.add(new TextDialogImage(sa[i], x, y, col));
+                groupList.add(new TextDialogImage(line, x, y, col));
             }
         }
     }
@@ -276,11 +280,11 @@ public class TextDialog {
      * @param y Y position relative to center
      */
     public void handleMouseMove(final int x, final int y) {
-        for (String s : buttons.keySet()) {
-            for (Button b : buttons.get(s)) {
+        buttons.keySet().stream().forEach(s -> {
+            buttons.get(s).stream().forEach(b -> {
                 b.selected = b.inside(x, y);
-            }
-        }
+            });
+        });
     }
     
     public void clearGroup(String group) {
@@ -294,13 +298,13 @@ public class TextDialog {
     
     private void addImageGroup(String group) {
         if (!images.containsKey(group)) {
-            images.put(group, new ArrayList<TextDialogImage>(16));
+            images.put(group, new ArrayList<>(16));
         }
     }
     
     private void addButtonGroup(String group) {
         if (!buttons.containsKey(group)) {
-            buttons.put(group, new ArrayList<Button>(16));
+            buttons.put(group, new ArrayList<>(16));
         }
     }
 }

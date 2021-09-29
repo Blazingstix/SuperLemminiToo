@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Properties;
+import lemmini.game.Resource;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -247,6 +248,14 @@ public class Props {
         if (s == null) {
             return def;
         }
+        s = s.trim();
+        if (s.equalsIgnoreCase("Infinity")) {
+            s = "Infinity";
+        } else if (s.equalsIgnoreCase("+Infinity")) {
+            s = "+Infinity";
+        } else if (s.equalsIgnoreCase("-Infinity")) {
+            s = "-Infinity";
+        }
         return Double.parseDouble(s);
     }
 
@@ -282,6 +291,14 @@ public class Props {
         double[] ret;
         ret = new double[members.length];
         for (int i = 0; i < members.length; i++) {
+            members[i] = members[i].trim();
+            if (members[i].equalsIgnoreCase("Infinity")) {
+                members[i] = "Infinity";
+            } else if (members[i].equalsIgnoreCase("+Infinity")) {
+                members[i] = "+Infinity";
+            } else if (members[i].equalsIgnoreCase("-Infinity")) {
+                members[i] = "-Infinity";
+            }
             ret[i] = Double.parseDouble(members[i]);
         }
 
@@ -413,6 +430,20 @@ public class Props {
      */
     public boolean load(final URL file) {
         try (Reader r = ToolBox.getBufferedReader(file)) {
+            hash.load(r);
+            return true;
+        } catch (IOException | NullPointerException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * Load property file
+     * @param res property file resource
+     * @return True if OK, false if exception occurred
+     */
+    public boolean load(final Resource res) {
+        try (Reader r = res.getBufferedReader()) {
             hash.load(r);
             return true;
         } catch (IOException | NullPointerException e) {

@@ -1,20 +1,14 @@
 package lemmini.game;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.BreakIterator;
 import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /*
@@ -65,55 +59,47 @@ public class LemmFont {
     private static int width;
     /** height of one character in pixels */
     private static int height;
-    private static Map<Integer, LemmChar> chars;
-    private static Map<String, Subset> subsets;
+    private static final Map<Integer, LemmChar> chars = new HashMap<>(512);
+    private static final Map<String, Subset> subsets = new HashMap<>(4);
     private static Glyph missingChar;
-    private static Glyph[] missingCharFont;
+    private static final List<Glyph> missingCharFont = new ArrayList<>(16);
 
     /**
      * Initialization.
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        Path fn = Core.findResource(Paths.get(FONT_INI_STR));
+        Resource res = Core.findResource(FONT_INI_STR, true);
         Props p = new Props();
-        if (!p.load(fn)) {
+        if (!p.load(res)) {
             throw new ResourceException(FONT_INI_STR);
         }
         
         width = p.getInt("width", 0);
         height = p.getInt("height", 0);
         
-        if (chars == null) {
-            chars = new HashMap<>(512);
-        } else {
-            chars.clear();
-        }
-        
-        if (subsets == null) {
-            subsets = new HashMap<>(4);
-        } else {
-            subsets.clear();
-        }
+        chars.clear();
+        subsets.clear();
+        missingCharFont.clear();
         
         for (int i = 0; true; i++) {
-            String fileNameStr = p.get("subset_" + i + "_fileName", StringUtils.EMPTY);
-            Path fileName = Paths.get(fileNameStr);
+            String fileName = p.get("subset_" + i + "_fileName", StringUtils.EMPTY);
             int numChars = p.getInt("subset_" + i + "_numChars", 0);
             
-            if (fileNameStr.isEmpty() | numChars <= 0) {
+            if (fileName.isEmpty() | numChars <= 0) {
                 break;
             }
             
-            fn = Core.findResource(Paths.get("gfx/font").resolve(fileName), Core.IMAGE_EXTENSIONS);
+            res = Core.findResource("gfx/font/" + fileName, true, Core.IMAGE_EXTENSIONS);
             
-            String name = FilenameUtils.removeExtension(fileNameStr);
+            String name = FilenameUtils.removeExtension(fileName);
             
-            LemmImage sourceImg = Core.loadTranslucentImage(fn);
-            LemmImage[] glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
-            Glyph[] glyphs = new Glyph[numChars];
-            for (int c = 0; c < numChars; c++) {
-                glyphs[c] = new Glyph(glyphImg[c]);
+            LemmImage sourceImg = Core.loadTranslucentImage(res);
+            List<LemmImage> glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
+            List<Glyph> glyphs = new ArrayList<>(numChars);
+            for (ListIterator<LemmImage> lit = glyphImg.listIterator(); lit.hasNext(); ) {
+                int c = lit.nextIndex();
+                glyphs.add(new Glyph(lit.next()));
                 int codePoint = p.getInt("subset_" + i + "_char_" + c + "_codePoint", -1);
                 if (Character.isValidCodePoint(codePoint)) {
                     chars.put(codePoint, new LemmChar(name, c));
@@ -136,11 +122,10 @@ public class LemmFont {
         missingChar = new Glyph(img);
         
         img = Core.loadTranslucentImageJar("missing_char_font.png");
-        LemmImage[] missingGlyphFontImg = ToolBox.getAnimation(img, 16);
-        missingCharFont = new Glyph[missingGlyphFontImg.length];
-        for (int i = 0; i < missingGlyphFontImg.length; i++) {
-            missingCharFont[i] = new Glyph(missingGlyphFontImg[i]);
-        }
+        List<LemmImage> missingGlyphFontImg = ToolBox.getAnimation(img, 16);
+        missingGlyphFontImg.stream().forEachOrdered(missingGlyphImg -> {
+            missingCharFont.add(new Glyph(missingGlyphImg));
+        });
     }
 
     /**
@@ -231,7 +216,7 @@ public class LemmFont {
         int digitsPerRow = (bmpCodePoint ? 2 : 3);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < digitsPerRow; j++) {
-                LemmImage hexDigit = missingCharFont[(c >>> ((digitsPerRow * 2 - 1 - (i * digitsPerRow + j)) * 4)) & 0xF].getColor(color);
+                LemmImage hexDigit = missingCharFont.get((c >>> ((digitsPerRow * 2 - 1 - (i * digitsPerRow + j)) * 4)) & 0xF).getColor(color);
                 g.drawImage(hexDigit,
                         x + (width / 2 + (j - 1) * hexDigit.getWidth()) - (bmpCodePoint ? 0 : hexDigit.getWidth() / 2),
                         y + (height / 2 + (i - 1) * hexDigit.getHeight()));
@@ -281,9 +266,9 @@ public class LemmFont {
      * @param s string to split
      * @param maxLineLength maximum number of characters allowed per line; 0 if
      * no word wrapping should be performed
-     * @return an array of strings, one string for each line
+     * @return a list of strings, one string for each line
      */
-    public static String[] split(String s, int maxLineLength) {
+    public static List<String> split(String s, int maxLineLength) {
         s = Normalizer.normalize(s, Normalizer.Form.NFC);
         
         boolean wordWrap = maxLineLength > 0;
@@ -381,7 +366,7 @@ public class LemmFont {
         if (i > lastBreak) {
             sl.add(s.substring(lastBreak, i));
         }
-        return sl.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
+        return Collections.unmodifiableList(sl);
     }
     
     private static boolean isLegalChar(int c) {
@@ -393,34 +378,33 @@ public class LemmFont {
     
     private static class Subset {
         
-        Glyph[] glyphs;
+        List<Glyph> glyphs;
         
-        Subset(Glyph[] glyphs) {
+        Subset(List<Glyph> glyphs) {
             this.glyphs = glyphs;
         }
         
         Glyph getGlyph(int g) {
-            return glyphs[g];
+            return glyphs.get(g);
         }
     }
     
     private static class Glyph {
         
-        private final LemmImage[] glyphColors;
+        private final List<LemmImage> glyphColors;
         
         Glyph(LemmImage glyph) {
-            glyphColors = new LemmImage[6];
-            
-            glyphColors[0] = glyph;
-            
             int width = glyph.getWidth();
             int height = glyph.getHeight();
             
-            glyphColors[1] = ToolBox.createTranslucentImage(width, height);
-            glyphColors[2] = ToolBox.createTranslucentImage(width, height);
-            glyphColors[3] = ToolBox.createTranslucentImage(width, height);
-            glyphColors[4] = ToolBox.createTranslucentImage(width, height);
-            glyphColors[5] = ToolBox.createTranslucentImage(width, height);
+            LemmImage[] glyphColorsArray = {
+                glyph,
+                ToolBox.createTranslucentImage(width, height),
+                ToolBox.createTranslucentImage(width, height),
+                ToolBox.createTranslucentImage(width, height),
+                ToolBox.createTranslucentImage(width, height),
+                ToolBox.createTranslucentImage(width, height),
+            };
             
             for (int xp = 0; xp < width; xp++) {
                 for (int yp = 0; yp < height; yp++) {
@@ -431,25 +415,27 @@ public class LemmFont {
                     int b = col & 0xff;
                     // patch image to blue version by swapping blue and green components
                     col = a | (r << 16) | (b << 8) | g;
-                    glyphColors[1].setRGB(xp, yp, col);
+                    glyphColorsArray[1].setRGB(xp, yp, col);
                     // patch image to red version by swapping red and green components
                     col = a | (g << 16) | (r << 8) | b;
-                    glyphColors[2].setRGB(xp, yp, col);
+                    glyphColorsArray[2].setRGB(xp, yp, col);
                     // patch image to brown version by setting red component to value of green component
                     col = a | (g << 16) | (g << 8) | b;
-                    glyphColors[3].setRGB(xp, yp, col);
+                    glyphColorsArray[3].setRGB(xp, yp, col);
                     // patch image to turquoise version by setting blue component to value of green component
                     col = a | (r << 16) | (g << 8) | g;
-                    glyphColors[4].setRGB(xp, yp, col);
+                    glyphColorsArray[4].setRGB(xp, yp, col);
                     // patch image to violet version by exchanging red and blue with green
                     col = a | (g << 16) | (((r + b) << 7) & 0xff00) | g;
-                    glyphColors[5].setRGB(xp, yp, col);
+                    glyphColorsArray[5].setRGB(xp, yp, col);
                 }
             }
+            
+            glyphColors = Arrays.asList(glyphColorsArray);
         }
         
         LemmImage getColor(Color color) {
-            return glyphColors[color.ordinal()];
+            return glyphColors.get(color.ordinal());
         }
     }
     

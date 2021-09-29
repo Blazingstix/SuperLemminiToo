@@ -1,6 +1,5 @@
 package lemmini.tools;
 
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -8,10 +7,18 @@ import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -134,38 +141,38 @@ public class ToolBox {
     }
 
     /**
-     * Return an array of buffered images which contain an animation.
+     * Return a list of buffered images which contain an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
-     * @return an array of images which contains an animation
+     * @return a list of images which contains an animation
      */
-    public static LemmImage[] getAnimation(final LemmImage img, final int frames) {
-        return getAnimation(img, frames, img.getWidth());
+    public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames) {
+        return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), img.getWidth());
     }
 
     /**
-     * Return an array of buffered images which contain an animation.
+     * Return a list of buffered images which contain an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
      * @param width image width
-     * @return an array of images which contains an animation
+     * @return a list of images which contains an animation
      */
-    public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int width) {
+    public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames, final int width) {
         return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), width);
     }
 
     /**
-     * Return an array of buffered images which contain an animation.
+     * Return a list of buffered images which contain an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
      * @param transparency {@link java.awt.Transparency}
      * @param width image width
-     * @return an array of images which contains an animation
+     * @return a list of images which contains an animation
      */
-    public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int transparency, final int width) {
+    public static java.util.List<LemmImage> getAnimation(final LemmImage img, final int frames, final int transparency, final int width) {
         int height = img.getHeight() / frames;
         // characters stored one above the other - now separate them into single images
-        LemmImage[] arrImg = new LemmImage[frames];
+        java.util.List<LemmImage> imgList = new ArrayList<>(frames);
         int y0 = 0;
         for (int i = 0; i < frames; i++, y0 += height) {
             LemmImage frame = new LemmImage(createImage(width, height, transparency));
@@ -178,9 +185,9 @@ public class ToolBox {
                     g.dispose();
                 }
             }
-            arrImg[i] = frame;
+            imgList.add(frame);
         }
-        return arrImg;
+        return imgList;
     }
 
     /**
@@ -197,13 +204,14 @@ public class ToolBox {
      * Open file dialog.
      * @param parent parent frame
      * @param path default file name
-     * @param ext array of allowed extensions
      * @param load true: load, false: save
      * @param allowDirectories allow directories to be selected if true
+     * @param ext allowed extensions
      * @return absolute file name of selected file or null
      */
-    public static Path getFileName(final Component parent, final Path path, final String[] ext,
-            final boolean load, final boolean allowDirectories) {
+    public static Path getFileName(final Component parent, final Path path,
+            final boolean load, final boolean allowDirectories,
+            final String... ext) {
         JFileChooser jf = new JFileChooser(path.toFile());
         if (ext != null) {
             StringBuilder sb = new StringBuilder(32);
@@ -234,13 +242,14 @@ public class ToolBox {
      * Open file dialog.
      * @param parent parent frame
      * @param path default file name
-     * @param ext array of allowed extensions
      * @param load true: load, false: save
      * @param allowDirectories allow directories to be selected if true
+     * @param ext allowed extensions
      * @return absolute file names of selected files or null
      */
-    public static Path[] getFileNames(final Component parent, final Path path, final String[] ext,
-            final boolean load, final boolean allowDirectories) {
+    public static java.util.List<Path> getFileNames(final Component parent, final Path path,
+            final boolean load, final boolean allowDirectories,
+            final String... ext) {
         JFileChooser jf = new JFileChooser(path.toFile());
         if (ext != null) {
             StringBuilder sb = new StringBuilder(32);
@@ -260,12 +269,9 @@ public class ToolBox {
         }
         int returnVal = jf.showDialog(parent, null);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            File[] f = jf.getSelectedFiles();
-            Path[] ret = new Path[f.length];
-            for (int i = 0; i < f.length; i++) {
-                ret[i] = f[i].toPath().toAbsolutePath();
-            }
-            return ret;
+            return Arrays.stream(jf.getSelectedFiles())
+                    .map(f -> f.toPath().toAbsolutePath())
+                    .collect(Collectors.toList());
         }
         return null;
     }
@@ -315,7 +321,7 @@ public class ToolBox {
         }
     }
     
-    private static BufferedReader getBufferedReader(final InputStream in) throws IOException {
+    public static BufferedReader getBufferedReader(final InputStream in) throws IOException {
         BOMInputStream in2 = new BOMInputStream(in, BYTE_ORDER_MARKS);
         Charset encoding;
         if (in2.hasBOM()) {
@@ -412,17 +418,74 @@ public class ToolBox {
     }
 
     /**
-     * Parse decimal, hex, binary or octal number
+     * Parse decimal, hex, binary or octal number as int
      * @param s String that contains one number
      * @return Integer value of string
      */
     public static int parseInt(final String s) {
+        if (s.equalsIgnoreCase("Infinity") || s.equalsIgnoreCase("+Infinity")) {
+            return Integer.MAX_VALUE;
+        } else if (s.equalsIgnoreCase("-Infinity")) {
+            return Integer.MIN_VALUE;
+        }
+        
+        int index = 0;
+        boolean hasSign = isSign(s.charAt(index));
+        if (hasSign) {
+            index++;
+        }
+        
+        if (s.charAt(index) == '0') {
+            index++;
+            if (s.length() <= index) {
+                return 0;
+            }
+            if (s.charAt(0) == '-') {
+                throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
+            }
+            int radix;
+            switch (s.charAt(index)) {
+                case 'X':
+                case 'x':
+                    // hex
+                    radix = 16;
+                    index++;
+                    break;
+                case 'B':
+                case 'b':
+                    // binary
+                    radix = 2;
+                    index++;
+                    break;
+                default:
+                    // octal
+                    radix = 8;
+                    break;
+            }
+            
+            if (isSign(s.charAt(index))) {
+                throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
+            }
+            
+            return Integer.parseUnsignedInt((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
+        } else {
+            // decimal
+            return Integer.parseInt(s);
+        }
+    }
+    
+    /**
+     * Parse decimal, hex, binary or octal number as long
+     * @param s String that contains one number
+     * @return Long value of string
+     */
+    public static long parseLong(final String s) {
         switch (s) {
             case "Infinity":
             case "+Infinity":
-                return Integer.MAX_VALUE;
+                return Long.MAX_VALUE;
             case "-Infinity":
-                return Integer.MIN_VALUE;
+                return Long.MIN_VALUE;
             default:
                 break;
         }
@@ -465,15 +528,10 @@ public class ToolBox {
                 throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
             }
             
-            long retval = Long.parseLong((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
-            if ((retval & 0xFFFF_FFFF_0000_0000L) == 0) {
-                return (int) retval;
-            } else {
-                throw new NumberFormatException(String.format("String value %s exceeds range of unsigned int.", s));
-            }
+            return Long.parseUnsignedLong((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
         } else {
             // decimal
-            return Integer.parseInt(s);
+            return Long.parseLong(s);
         }
     }
     
@@ -512,5 +570,28 @@ public class ToolBox {
     public static boolean looselyEquals(String s1, String s2) {
         return Normalizer.normalize(s1.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFKC)
                 .equals(Normalizer.normalize(s2.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFKC));
+    }
+    
+    public static void deleteFileTree(Path path) throws IOException {
+        Files.walkFileTree(path, new DeleteTreeFileVisitor());
+    }
+}
+
+class DeleteTreeFileVisitor extends SimpleFileVisitor<Path> {
+    
+    @Override
+    public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+        Files.delete(file);
+        return FileVisitResult.CONTINUE;
+    }
+
+    @Override
+    public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+        if (exc == null) {
+            Files.delete(dir);
+            return FileVisitResult.CONTINUE;
+        } else {
+            throw exc;
+        }
     }
 }

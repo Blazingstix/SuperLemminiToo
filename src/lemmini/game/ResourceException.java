@@ -42,4 +42,12 @@ public class ResourceException extends Exception {
     public ResourceException(final String s) {
         super(s);
     }
+    
+    /**
+     * Constructor that accepts a resource.
+     * @param res resource
+     */
+    public ResourceException(final Resource res) {
+        super(res.getOriginalPath().toString());
+    }
 }

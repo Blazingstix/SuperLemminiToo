@@ -1,7 +1,6 @@
 package lemmini.game;
 
 import java.awt.Color;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
@@ -72,8 +71,8 @@ public class Explosion {
      * @throws ResourceException
      */
     static void init() throws ResourceException {
-        Path fn = Core.findResource(Paths.get("gfx/misc/explode.png"), Core.IMAGE_EXTENSIONS);
-        expImg = Core.loadTranslucentImage(fn);
+        Resource res = Core.findResource("gfx/misc/explode.png", true, Core.IMAGE_EXTENSIONS);
+        expImg = Core.loadTranslucentImage(res);
     }
 
     /**
@@ -86,7 +85,7 @@ public class Explosion {
         yExp = y - expImg.getHeight() / 2;
         maxCounter = 0;
         particles = new Particle[PARTICLE_NUM];
-        for (int i = 0; i < PARTICLE_NUM; i++) {
+        for (int i = 0; i < particles.length; i++) {
             double dx = (Math.random() * (MAX_DX - MIN_DX) + MIN_DX);
             double dy = (Math.random() * (MAX_DY - MIN_DY) + MIN_DY);
             int color = GameController.getLevel().getParticleCol()[(int) (Math.random() * GameController.getLevel().getParticleCol().length)];
@@ -105,7 +104,7 @@ public class Explosion {
      */
     public void update() {
         if (counter > REMOVE_IMAGE_CTR) {
-            for (int i = 0; i < PARTICLE_NUM; i++) {
+            for (int i = 0; i < particles.length; i++) {
                 Particle p = particles[i];
                 if (p != null) {
                     // calculate new position
@@ -146,8 +145,7 @@ public class Explosion {
                 }
             } else {
                 // draw particles
-                for (int i = 0; i < PARTICLE_NUM; i++) {
-                    Particle p = particles[i];
+                for (Particle p : particles) {
                     if (p != null) {
                         // draw
                         int x = (int) p.x - xOfs;

@@ -19,9 +19,11 @@
 package lemmini.extract;
 
 import java.awt.Toolkit;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import org.apache.commons.lang3.StringUtils;
 
@@ -35,9 +37,9 @@ public class FolderFrame extends javax.swing.JFrame {
     private static final long serialVersionUID = 0x01L;
 
     /** target (Lemmini resource) path for extraction */
-    private String targetPath;
+    private String target;
     /** source (WINLEMM) path for extraction */
-    private String sourcePath;
+    private String source;
     /** flag that tells whether to extract or not */
     private boolean doExtract = false;
 
@@ -182,44 +184,50 @@ public class FolderFrame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-        sourcePath = jTextFieldSrc.getText();
-        targetPath = jTextFieldTrg.getText();
+        source = jTextFieldSrc.getText();
+        target = jTextFieldTrg.getText();
         synchronized (this) {
             notifyAll();
         }
     }//GEN-LAST:event_formWindowClosed
     
     private void jTextFieldSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSrcActionPerformed
-        sourcePath = jTextFieldSrc.getText();
+        source = jTextFieldSrc.getText();
     }//GEN-LAST:event_jTextFieldSrcActionPerformed
 
     private void jButtonSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSrcActionPerformed
-        JFileChooser jf = new JFileChooser(sourcePath);
+        JFileChooser jf = new JFileChooser(source);
         jf.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = jf.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            sourcePath = jf.getSelectedFile().getAbsolutePath();
-            jTextFieldSrc.setText(sourcePath);
+            source = jf.getSelectedFile().getAbsolutePath();
+            jTextFieldSrc.setText(source);
         }
     }//GEN-LAST:event_jButtonSrcActionPerformed
 
     private void jTextFieldTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldTrgActionPerformed
-        targetPath = jTextFieldTrg.getText();
+        target = jTextFieldTrg.getText();
     }//GEN-LAST:event_jTextFieldTrgActionPerformed
 
     private void jButtonTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonTrgActionPerformed
-        JFileChooser jf = new JFileChooser(targetPath);
+        JFileChooser jf = new JFileChooser(target);
         jf.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = jf.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            targetPath = jf.getSelectedFile().getAbsolutePath();
-            jTextFieldTrg.setText(targetPath);
+            target = jf.getSelectedFile().getAbsolutePath();
+            jTextFieldTrg.setText(target);
         }
     }//GEN-LAST:event_jButtonTrgActionPerformed
 
     private void jButtonExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExtractActionPerformed
-        doExtract = true;
-        dispose();
+        // check if source path exists
+        Path sourcePath = Paths.get(source);
+        if (Files.isDirectory(sourcePath)) {
+            doExtract = true;
+            dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, String.format("Source path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }//GEN-LAST:event_jButtonExtractActionPerformed
 
     private void jButtonQuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonQuitActionPerformed
@@ -233,10 +241,10 @@ public class FolderFrame extends javax.swing.JFrame {
      * @param trgPath target (Lemmini resource) path for extraction
      */
     public void setParameters(final Path srcPath, final Path trgPath) {
-        sourcePath = srcPath.toString();
-        jTextFieldSrc.setText(sourcePath);
-        targetPath = trgPath.toString();
-        jTextFieldTrg.setText(targetPath);
+        source = srcPath.toString();
+        jTextFieldSrc.setText(source);
+        target = trgPath.toString();
+        jTextFieldTrg.setText(target);
     }
 
     /**
@@ -244,8 +252,8 @@ public class FolderFrame extends javax.swing.JFrame {
      * @return target (Lemmini resource) path for extraction
      */
     public Path getTarget() {
-        if (targetPath != null) {
-            return Paths.get(targetPath);
+        if (target != null) {
+            return Paths.get(target);
         } else {
             return Paths.get(StringUtils.EMPTY);
         }
@@ -256,8 +264,8 @@ public class FolderFrame extends javax.swing.JFrame {
      * @return source (WINLEMM) path for extraction
      */
     public Path getSource() {
-        if (sourcePath != null) {
-            return Paths.get(sourcePath);
+        if (source != null) {
+            return Paths.get(source);
         } else {
             return Paths.get(StringUtils.EMPTY);
         }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Ryan Sakowski.
+ * Copyright 2015 Ryan Sakowski.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package lemmini.game;
 
-package lemmini.sound;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
 
-import lemmini.game.LemmException;
-import lemmini.game.Resource;
-import lemmini.game.ResourceException;
-
-public interface MusicPlayer {
+/**
+ *
+ * @author Ryan
+ */
+public interface Resource {
     
-    /**
-     * Load file, initialize player.
-     * @param res resource
-     * @param loop
-     * @throws ResourceException
-     * @throws LemmException
-     */
-    void load(Resource res, boolean loop) throws ResourceException, LemmException;
+    boolean exists();
     
-    void stop();
-    void play();
-    void close();
-    void setGain(double gain);
+    String getFileName();
+    
+    String getOriginalPath();
+    
+    Resource getSibling(String sibling);
+    
+    InputStream getInputStream() throws IOException;
+    
+    BufferedReader getBufferedReader() throws IOException;
+    
+    byte[] readAllBytes() throws IOException;
 }

@@ -341,7 +341,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             GameController.requestRestartLevel(true);
                             break;
                         case SAVE_REPLAY:
-                            Path replayPath = ToolBox.getFileName(getParent(), Core.resourcePath, Core.REPLAY_EXTENSIONS, false, false);
+                            Path replayPath = ToolBox.getFileName(getParent(), Core.resourcePath, false, false, Core.REPLAY_EXTENSIONS);
                             if (replayPath != null) {
                                 try {
                                     String ext = FilenameUtils.getExtension(replayPath.getFileName().toString());
@@ -912,12 +912,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
         Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
         final LemminiPanel thisPanel = this;
         ScheduledExecutorService repaintScheduler = Executors.newSingleThreadScheduledExecutor();
-        Runnable repaintTask = new Runnable() {
-            @Override
-            public void run() {
-                thisPanel.drawNextFrame();
-            }
-        };
+        Runnable repaintTask = thisPanel::drawNextFrame;
         
         try {
             drawNextFrame = false;
@@ -1047,7 +1042,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     }
     
     void handleLoadReplay() {
-        Path replayPath = ToolBox.getFileName(getParentFrame(), Core.resourcePath, Core.REPLAY_EXTENSIONS, true, false);
+        Path replayPath = ToolBox.getFileName(getParentFrame(), Core.resourcePath, true, false, Core.REPLAY_EXTENSIONS);
         if (replayPath != null) {
             try {
                 if (FilenameUtils.getExtension(replayPath.getFileName().toString()).equalsIgnoreCase("rpl")) {
@@ -1065,27 +1060,27 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             }
                         }
                         if (lp != null && lpn >= 0) {
-                            String[] ratings = lp.getRatings();
+                            java.util.List<String> ratings = lp.getRatings();
                             int rnTemp = rli.getRatingNumber();
-                            if (rnTemp < ratings.length) {
+                            if (rnTemp < ratings.size()) {
                                 rn = rnTemp;
                             }
-                            if (rn < 0 || ToolBox.looselyEquals(ratings[rn], rli.getRatingName())) {
-                                for (int i = 0; i < ratings.length; i++) {
-                                    if (ToolBox.looselyEquals(ratings[i], rli.getRatingName())) {
+                            if (rn < 0 || ToolBox.looselyEquals(ratings.get(rn), rli.getRatingName())) {
+                                for (int i = 0; i < ratings.size(); i++) {
+                                    if (ToolBox.looselyEquals(ratings.get(i), rli.getRatingName())) {
                                         rn = i;
                                     }
                                 }
                             }
                             if (rn >= 0) {
-                                String[] levels = lp.getLevels(rn);
+                                java.util.List<String> levels = lp.getLevels(rn);
                                 int lnTemp = rli.getLvlNumber();
-                                if (lnTemp < levels.length) {
+                                if (lnTemp < levels.size()) {
                                     ln = lnTemp;
                                 }
-                                if (ln < 0 || ToolBox.looselyEquals(levels[ln], rli.getLvlName())) {
-                                    for (int i = 0; i < levels.length; i++) {
-                                        if (ToolBox.looselyEquals(levels[i], rli.getLvlName())) {
+                                if (ln < 0 || ToolBox.looselyEquals(levels.get(ln), rli.getLvlName())) {
+                                    for (int i = 0; i < levels.size(); i++) {
+                                        if (ToolBox.looselyEquals(levels.get(i), rli.getLvlName())) {
                                             ln = i;
                                         }
                                     }
@@ -1146,7 +1141,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                 int rating = l[0];
                 int lvlRel = l[1];
                 if (rating >= 0 && lvlRel >= 0) {
-                    Core.player.setAvailable(lpack.getName(), lpack.getRatings()[rating], lvlRel);
+                    Core.player.setAvailable(lpack.getName(), lpack.getRatings().get(rating), lvlRel);
                     GameController.requestChangeLevel(lvlPack, rating, lvlRel, false);
                     getParentFrame().setRestartEnabled(true);
                     return;
@@ -1188,9 +1183,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                 players.add("default");
             }
             // now copy all players and create properties
-            for (String p : players) {
-                Core.addPlayer(p);
-            }
+            players.stream().forEachOrdered(Core::addPlayer);
 
             // select new default player
             if (!Core.player.getName().equals(player)

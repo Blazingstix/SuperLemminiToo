@@ -2,11 +2,10 @@ package lemmini.sound;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import javax.sound.midi.*;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
+import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 
 
@@ -71,7 +70,7 @@ public class MidiMusic implements MusicPlayer {
     }
     
     @Override
-    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Resource res, final boolean loop) throws ResourceException, LemmException {
 	close();
         try {
             synthesizer = MidiSystem.getSynthesizer();
@@ -80,10 +79,10 @@ public class MidiMusic implements MusicPlayer {
             transmitter.setReceiver(receiver);
             sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
             Sequence mySeq;
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(fn))) {
+            try (InputStream in = new BufferedInputStream(res.getInputStream())) {
                 mySeq = MidiSystem.getSequence(in);
             }
-            Soundbank soundbank = getSoundbank(fn);
+            Soundbank soundbank = getSoundbank(res);
             if (sequencer != null) {
                 sequencer.setSequence(mySeq);
                 if (loop) {
@@ -111,11 +110,11 @@ public class MidiMusic implements MusicPlayer {
                 //});
             }
         } catch (InvalidMidiDataException ex) {
-            throw new LemmException(fn + " (Invalid MIDI data)");
+            throw new LemmException(res.getFileName() + " (Invalid MIDI data)");
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn.toString());
+            throw new ResourceException(res);
         } catch (IOException ex) {
-            throw new LemmException(fn + " (IO exception)");
+            throw new LemmException(res.getFileName() + " (IO exception)");
         } catch (MidiUnavailableException ex) {
             throw new LemmException("MIDI not supported.");
         }
@@ -240,14 +239,14 @@ public class MidiMusic implements MusicPlayer {
         return new long[]{loopStart, loopEnd};
     }
     
-    private static Soundbank getSoundbank(Path fName) {
+    private static Soundbank getSoundbank(Resource res) {
         try {
-            Path fn = Core.findResource(fName, Core.SOUNDBANK_EXTENSIONS);
-            if (fn == null) {
+            Resource res2 = Core.findResource(res.getOriginalPath(), true, Core.SOUNDBANK_EXTENSIONS);
+            if (res2 == null) {
                 return null;
             }
             Soundbank sb;
-            try (InputStream in = new BufferedInputStream(Files.newInputStream(fn))) {
+            try (InputStream in = new BufferedInputStream(res2.getInputStream())) {
                 sb = MidiSystem.getSoundbank(in);
             }
             return sb;

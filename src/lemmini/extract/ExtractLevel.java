@@ -706,11 +706,9 @@ public class ExtractLevel {
             }
         }
         // remap the entrance order
-        for (int entranceIndex : entranceOrder) {
-            if (entranceLookup[entranceIndex] >= 0) {
-                remappedEntranceOrder.add(entranceLookup[entranceIndex]);
-            }
-        }
+        entranceOrder.stream()
+                .filter(entranceIndex -> (entranceLookup[entranceIndex] >= 0))
+                .forEach(entranceIndex -> remappedEntranceOrder.add(entranceLookup[entranceIndex]));
         // read name
         if (format == 0) {
             byte[] bName = new byte[32];

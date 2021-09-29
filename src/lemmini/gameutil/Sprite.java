@@ -1,6 +1,9 @@
 package lemmini.gameutil;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.ListIterator;
 import lemmini.game.GameController;
 import lemmini.game.Lemming;
 import lemmini.graphics.GraphicsOperation;
@@ -65,8 +68,8 @@ public class Sprite {
     private int[] sound;
     /** boolean flag: animation was triggered */
     private boolean triggered;
-    /** array of animation frames */
-    private LemmImage[] frames;
+    /** list of animation frames */
+    private List<LemmImage> frames;
     private int[][] origColors;
     private Lemming lemming;
 
@@ -88,8 +91,9 @@ public class Sprite {
         // animation frames stored one above the other - now separate them into single images
         frames = ToolBox.getAnimation(sourceImg, animFrames);
         origColors = new int[numFrames][];
-        for (int i = 0; i < origColors.length; i++) {
-            origColors[i] = frames[i].getRGB(0, 0, width, height, null, 0, width);
+        for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            origColors[i] = lit.next().getRGB(0, 0, width, height, null, 0, width);
         }
     }
 
@@ -114,9 +118,10 @@ public class Sprite {
         animMode = src.animMode;
         sound = src.sound;
         triggered = false;
-        frames = src.frames.clone();
-        for (int i = 0; i < frames.length; i++) {
-            frames[i] = new LemmImage(frames[i]);
+        frames = new ArrayList<>(src.frames);
+        for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+            LemmImage frame = new LemmImage(lit.next());
+            lit.set(frame);
         }
         origColors = src.origColors.clone();
         for (int i = 0; i < origColors.length; i++) {
@@ -130,7 +135,7 @@ public class Sprite {
      * @return animation frame at position idx.
      */
     public LemmImage getImage(final int idx) {
-        return frames[idx];
+        return frames.get(idx);
     }
 
     /**
@@ -138,7 +143,7 @@ public class Sprite {
      * @return current animation frame.
      */
     public LemmImage getImage() {
-        return frames[frameIdx];
+        return getImage(frameIdx);
     }
 
     /**
@@ -148,7 +153,7 @@ public class Sprite {
      * @param img image to use for this animation frame
      */
     public void setImage(final int idx, final LemmImage img) {
-        frames[idx] = img;
+        frames.set(idx, img);
     }
 
     /**
@@ -199,7 +204,7 @@ public class Sprite {
             default:
                 break;
         }
-        return frames[frameIdx];
+        return getImage(frameIdx);
     }
 
     /**
@@ -210,9 +215,7 @@ public class Sprite {
      */
     public void setPixel(final int x, final int y, final int color) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
-            for (int i = 0; i < numFrames; i++) {
-                frames[i].setRGB(x, y, color);
-            }
+            frames.stream().forEach(frame -> frame.setRGB(x, y, color));
         }
     }
 
@@ -224,12 +227,10 @@ public class Sprite {
      */
     public void setPixelVisibility(final int x, final int y, final boolean visible) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
-            for (int i = 0; i < numFrames; i++) {
-                if (visible) {
-                    frames[i].setRGB(x, y, origColors[i][y * width + x]);
-                } else {
-                    frames[i].setRGB(x, y, 0);
-                }
+            //for (int i = 0; i < numFrames; i++) {
+            for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+                int i = lit.nextIndex();
+                lit.next().setRGB(x, y, visible ? origColors[i][y * width + x] : 0);
             }
         }
     }
@@ -241,15 +242,16 @@ public class Sprite {
         GraphicsOperation go = ToolBox.createGraphicsOperation();
         go.setToScale(horizontal ? -1 : 1, vertical ? -1 : 1);
         go.translate(horizontal ? -width : 0, vertical ? -height : 0);
-        for (int frame = 0; frame < frames.length; frame++) {
+        for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
             LemmImage imgSpr = ToolBox.createTranslucentImage(width, height);
-            go.execute(frames[frame], imgSpr);
-            frames[frame] = imgSpr;
+            go.execute(lit.next(), imgSpr);
+            lit.set(imgSpr);
             
-            int[] buffer = origColors[frame].clone();
+            int[] buffer = origColors[i].clone();
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    origColors[frame][y * width + x] = buffer[(vertical ? (height - y - 1) : y) * width + (horizontal ? (width - x - 1) : x)];
+                    origColors[i][y * width + x] = buffer[(vertical ? (height - y - 1) : y) * width + (horizontal ? (width - x - 1) : x)];
                 }
             }
         }
@@ -260,11 +262,12 @@ public class Sprite {
             return;
         }
         
-        for (int frame = 0; frame < frames.length; frame++) {
-            frames[frame].applyTint(tint);
+        for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            lit.next().applyTint(tint);
             for (int y = 0; y < height; y++) {
                 for (int x = 0; x < width; x++) {
-                    origColors[frame][y * width + x] = LemmImage.applyTint(origColors[frame][y * width + x], tint);
+                    origColors[i][y * width + x] = LemmImage.applyTint(origColors[i][y * width + x], tint);
                 }
             }
         }

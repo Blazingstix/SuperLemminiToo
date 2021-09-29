@@ -2,7 +2,6 @@ package lemmini.game;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -42,9 +41,9 @@ public class LevelInfo {
     /** level author */
     private String author;
     /** name of music for this level */
-    private Path music;
-    /** file name of the INI file containing the level information */
-    private Path fileName;
+    private String music;
+    /** resource object for the INI file containing the level information */
+    private Resource levelRes;
     /** release rate: 0 is slowest, 99 is fastest */
     private int releaseRate;
     /** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
@@ -74,8 +73,8 @@ public class LevelInfo {
     public LevelInfo() {
         name = StringUtils.EMPTY;
         author = StringUtils.EMPTY;
-        music = Paths.get(StringUtils.EMPTY);
-        fileName = Paths.get(StringUtils.EMPTY);
+        music = StringUtils.EMPTY;
+        levelRes = new FileResource(StringUtils.EMPTY, Paths.get(StringUtils.EMPTY));
         releaseRate = 0;
         numLemmings = 1;
         numToRescue = 0;
@@ -91,8 +90,27 @@ public class LevelInfo {
         validLevel = false;
     }
     
-    public LevelInfo(Path fname, Path newMusic) {
-        fileName = fname;
+    public LevelInfo(String fname, boolean absolutePath, String newMusic) {
+        Resource res;
+        if (absolutePath) {
+            System.out.println(fname);
+            res = new FileResource(fname, Paths.get(fname));
+        } else {
+            try {
+                res = Core.findResource(fname, false);
+            } catch (ResourceException ex) {
+                res = null;
+            }
+        }
+        init(res, newMusic);
+    }
+    
+    public LevelInfo(Resource res, String newMusic) {
+        init(res, newMusic);
+    }
+    
+    private void init(Resource res, String newMusic) {
+        levelRes = res;
         music = newMusic;
         name = StringUtils.EMPTY;
         author = StringUtils.EMPTY;
@@ -110,98 +128,87 @@ public class LevelInfo {
         numDiggers = 0;
         validLevel = false;
         
-        try (Reader r = ToolBox.getBufferedReader(fname)) {
-            if (ToolBox.checkFileID(r, "# LVL")) {
-                List<Props> propsList = new ArrayList<>(4);
-                Props props = new Props();
-                props.load(r);
-                propsList.add(props);
-                String mainLevel = props.get("mainLevel", StringUtils.EMPTY);
-                while (!mainLevel.isEmpty()) {
-                    Path fname2 = fname.resolveSibling(mainLevel);
-                    if (!Files.isRegularFile(fname2)) {
-                        return;
-                    }
-                    props = new Props();
-                    try (Reader r2 = ToolBox.getBufferedReader(fname2)) {
-                        if (ToolBox.checkFileID(r2, "# LVL")) {
-                            if (!props.load(fname2)) {
-                                return;
+        if (res != null) {
+            try (Reader r = levelRes.getBufferedReader()) {
+                if (ToolBox.checkFileID(r, "# LVL")) {
+                    List<Props> propsList = new ArrayList<>(4);
+                    Props props = new Props();
+                    props.load(r);
+                    propsList.add(props);
+                    String mainLevel = props.get("mainLevel", StringUtils.EMPTY);
+                    while (!mainLevel.isEmpty()) {
+                        Resource levelRes2 = levelRes.getSibling(mainLevel);
+                        if (!levelRes2.exists()) {
+                            return;
+                        }
+                        props = new Props();
+                        try (Reader r2 = levelRes2.getBufferedReader()) {
+                            if (ToolBox.checkFileID(r2, "# LVL")) {
+                                if (!props.load(levelRes2)) {
+                                    return;
+                                }
                             }
                         }
+                        propsList.add(props);
+                        mainLevel = props.get("mainLevel", StringUtils.EMPTY);
                     }
-                    propsList.add(props);
-                    mainLevel = props.get("mainLevel", StringUtils.EMPTY);
-                }
-                name = Props.get(propsList, "name", StringUtils.EMPTY);
-                author = Props.get(propsList, "author", StringUtils.EMPTY);
-                if (music == null) {
-                    String style = props.get("style", null);
-                    String specialStyle = props.get("specialStyle", null);
-                    music = Music.getRandomTrack(style, specialStyle);
-                }
-                releaseRate = Props.getInt(propsList, "releaseRate", 0);
-                numLemmings = Props.getInt(propsList, "numLemmings", 1);
-                // sanity check: ensure that there are lemmings in the level to avoid division by 0
-                if (numLemmings <= 0) {
-                    numLemmings = 1;
-                    return;
-                }
-                numToRescue = Props.getInt(propsList, "numToRescue", 0);
-                for (Props props2 : propsList) {
-                    timeLimitSeconds = props2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-                    if (timeLimitSeconds != Integer.MIN_VALUE) {
-                        break;
+                    name = Props.get(propsList, "name", StringUtils.EMPTY);
+                    author = Props.get(propsList, "author", StringUtils.EMPTY);
+                    releaseRate = Props.getInt(propsList, "releaseRate", 0);
+                    numLemmings = Props.getInt(propsList, "numLemmings", 1);
+                    // sanity check: ensure that there are lemmings in the level to avoid division by 0
+                    if (numLemmings <= 0) {
+                        numLemmings = 1;
+                        return;
                     }
-                    int timeLimit = props2.getInt("timeLimit", Integer.MIN_VALUE);
-                    if (timeLimit != Integer.MIN_VALUE) {
-                        // prevent integer overflow upon conversion to seconds
-                        if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
-                            timeLimit = 0;
+                    numToRescue = Props.getInt(propsList, "numToRescue", 0);
+                    for (Props props2 : propsList) {
+                        timeLimitSeconds = props2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+                        if (timeLimitSeconds != Integer.MIN_VALUE) {
+                            break;
                         }
-                        timeLimitSeconds = timeLimit * 60;
-                        break;
+                        int timeLimit = props2.getInt("timeLimit", Integer.MIN_VALUE);
+                        if (timeLimit != Integer.MIN_VALUE) {
+                            // prevent integer overflow upon conversion to seconds
+                            if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
+                                timeLimit = 0;
+                            }
+                            timeLimitSeconds = timeLimit * 60;
+                            break;
+                        }
                     }
+                    if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
+                        timeLimitSeconds = 0;
+                    }
+                    numClimbers = Props.getInt(propsList, "numClimbers", 0);
+                    numFloaters = Props.getInt(propsList, "numFloaters", 0);
+                    numBombers = Props.getInt(propsList, "numBombers", 0);
+                    numBlockers = Props.getInt(propsList, "numBlockers", 0);
+                    numBuilders = Props.getInt(propsList, "numBuilders", 0);
+                    numBashers = Props.getInt(propsList, "numBashers", 0);
+                    numMiners = Props.getInt(propsList, "numMiners", 0);
+                    numDiggers = Props.getInt(propsList, "numDiggers", 0);
+                    validLevel = true;
                 }
-                if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
-                    timeLimitSeconds = 0;
-                }
-                numClimbers = Props.getInt(propsList, "numClimbers", 0);
-                numFloaters = Props.getInt(propsList, "numFloaters", 0);
-                numBombers = Props.getInt(propsList, "numBombers", 0);
-                numBlockers = Props.getInt(propsList, "numBlockers", 0);
-                numBuilders = Props.getInt(propsList, "numBuilders", 0);
-                numBashers = Props.getInt(propsList, "numBashers", 0);
-                numMiners = Props.getInt(propsList, "numMiners", 0);
-                numDiggers = Props.getInt(propsList, "numDiggers", 0);
-                validLevel = true;
+            } catch (IOException ex) {
+                validLevel = false;
             }
-        } catch (IOException ex) {
-            validLevel = false;
         }
     }
 
     /**
-     * Set the file name
-     * @param fileName file name
+     * Get the level's resource object.
+     * @return resource object
      */
-    public void setFileName(final Path fileName) {
-        this.fileName = fileName;
-    }
-
-    /**
-     * Get the file name.
-     * @return file name
-     */
-    public Path getFileName() {
-        return fileName;
+    public Resource getLevelResource() {
+        return levelRes;
     }
 
     /**
      * Set name of music.
      * @param music name of music
      */
-    public void setMusic(final Path music) {
+    public void setMusic(final String music) {
         this.music = music;
     }
 
@@ -209,7 +216,7 @@ public class LevelInfo {
      * Get name of music.
      * @return name of music.
      */
-    public Path getMusic() {
+    public String getMusic() {
         return music;
     }
 
@@ -286,6 +293,6 @@ public class LevelInfo {
     }
     
     public boolean isValidLevel() {
-        return validLevel;
+        return validLevel && levelRes != null;
     }
 }

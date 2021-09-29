@@ -5,7 +5,6 @@ import java.math.BigInteger;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.Normalizer;
 import java.util.*;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;

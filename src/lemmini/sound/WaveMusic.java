@@ -26,6 +26,7 @@ import javax.sound.sampled.*;
 import lemmini.game.Core;
 import lemmini.game.GameController;
 import lemmini.game.LemmException;
+import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 
 public class WaveMusic implements Runnable, MusicPlayer {
@@ -34,8 +35,8 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private boolean play;
     private SourceDataLine line;
     private DataLine.Info info;
-    private Path file;
-    private Path introFile;
+    private Resource file;
+    private Resource introFile;
     private AudioInputStream in;
     private AudioInputStream introIn;
     private AudioInputStream din;
@@ -44,15 +45,15 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private Thread waveThread;
 
     @Override
-    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Resource res, final boolean loop) throws ResourceException, LemmException {
         if (waveThread != null) {
             close();
         }
         loopSong = loop;
         try {
-            file = fn;
-            introFile = fn.resolveSibling(Core.appendBeforeExtension(fn.getFileName().toString(), "_intro"));
-            InputStream tempIn = Files.newInputStream(file);
+            file = res;
+            introFile = res.getSibling(Core.appendBeforeExtension(res.getFileName(), "_intro"));
+            InputStream tempIn = file.getInputStream();
             if (tempIn.markSupported()) {
                 in = AudioSystem.getAudioInputStream(tempIn);
             } else {
@@ -60,8 +61,8 @@ public class WaveMusic implements Runnable, MusicPlayer {
             }
             if (in != null) {
                 format = getDecodeFormat(in.getFormat());
-                if (Files.isReadable(introFile)) {
-                    tempIn = Files.newInputStream(introFile);
+                if (introFile.exists()) {
+                    tempIn = introFile.getInputStream();
                     if (tempIn.markSupported()) {
                         introIn = AudioSystem.getAudioInputStream(tempIn);
                     } else {
@@ -84,11 +85,11 @@ public class WaveMusic implements Runnable, MusicPlayer {
                 din.mark(Integer.MAX_VALUE);
             }
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn.toString());
+            throw new ResourceException(res);
         } catch (IOException ex) {
-            throw new LemmException(fn + " (IO exception)");
+            throw new LemmException(res + " (IO exception)");
         } catch (UnsupportedAudioFileException ex) {
-            throw new LemmException(fn + " (Unsupported Audio File)");
+            throw new LemmException(res + " (Unsupported Audio File)");
         }
         waveThread = new Thread(this);
         waveThread.start();
@@ -135,7 +136,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
                             din.reset();
                         } else {
                             din.close();
-                            InputStream tempIn = Files.newInputStream(file);
+                            InputStream tempIn = file.getInputStream();
                             if (tempIn.markSupported()) {
                                 in = AudioSystem.getAudioInputStream(tempIn);
                             } else {

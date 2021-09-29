@@ -23,6 +23,8 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import javax.swing.JOptionPane;
 import javax.swing.tree.*;
@@ -516,20 +518,17 @@ public class LevelDialog extends javax.swing.JDialog {
     }//GEN-LAST:event_jTreeLevelsValueChanged
 
     private void jButtonAddExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalLevelsActionPerformed
-        Path[] externLvls = ToolBox.getFileNames(this, lvlPath, Core.LEVEL_EXTENSIONS, true, true);
+        List<Path> externLvls = ToolBox.getFileNames(this, lvlPath, true, true, Core.LEVEL_EXTENSIONS);
         if (externLvls != null) {
-            if (ArrayUtils.isNotEmpty(externLvls)) {
-                lvlPath = externLvls[0].getParent();
+            if (!externLvls.isEmpty()) {
+                lvlPath = externLvls.get(0).getParent();
             }
             int[] lastLevelPosition = null;
             for (Path externLvl : externLvls) {
                 if (Files.isDirectory(externLvl)) {
-                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, new DirectoryStream.Filter<Path>() {
-                        @Override
-                        public boolean accept(Path entry) throws IOException {
-                            String extension = FilenameUtils.getExtension(entry.toString()).toLowerCase(Locale.ROOT);
-                            return extension.equals("ini") || extension.equals("lvl") || extension.equals("dat");
-                        }
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, entry -> {
+                        String extension = FilenameUtils.getExtension(entry.toString()).toLowerCase(Locale.ROOT);
+                        return extension.equals("ini") || extension.equals("lvl") || extension.equals("dat");
                     })) {
                         for (Path lvl : stream) {
                             int[] levelPosition = GameController.addExternalLevel(lvl, null, false);
@@ -600,20 +599,26 @@ public class LevelDialog extends javax.swing.JDialog {
             LevelPack lp = GameController.getLevelPack(i);
             DefaultMutableTreeNode lpNode = new DefaultMutableTreeNode(lp.getName());
             // read ratings
-            String[] ratings = lp.getRatings();
-            ratingPositionLookup[i] = new int[ratings.length];
-            levelPositionLookup[i] = new int[ratings.length][];
-            for (int j = 0, ja = 0; j < ratings.length; j++) {
-                DefaultMutableTreeNode ratingNode = new DefaultMutableTreeNode(ratings[j]);
+            List<String> ratings = lp.getRatings();
+            ratingPositionLookup[i] = new int[ratings.size()];
+            levelPositionLookup[i] = new int[ratings.size()][];
+            int ja = 0;
+            for (ListIterator<String> lit = ratings.listIterator(); lit.hasNext(); ) {
+                int j = lit.nextIndex();
+                String rating = lit.next();
+                DefaultMutableTreeNode ratingNode = new DefaultMutableTreeNode(rating);
                 // read levels
-                String[] levels = lp.getLevels(j);
-                levelPositionLookup[i][j] = new int[levels.length];
-                for (int k = 0, ka = 0; k < levels.length; k++) {
+                List<String> levels = lp.getLevels(j);
+                levelPositionLookup[i][j] = new int[levels.size()];
+                int ka = 0;
+                for (ListIterator<String> lit2 = levels.listIterator(); lit2.hasNext(); ) {
+                    int k = lit2.nextIndex();
+                    String level = lit2.next();
                     if (lp.getAllLevelsUnlocked()
-                            || Core.player.isAvailable(lp.getName(), ratings[j], k)) {
+                            || Core.player.isAvailable(lp.getName(), rating, k)) {
                         DefaultMutableTreeNode levelNode = new DefaultMutableTreeNode(
-                                new LevelItem(i, j, k, levels[k],
-                                Core.player.getLevelRecord(lp.getName(), ratings[j], k).isCompleted()),
+                                new LevelItem(i, j, k, level,
+                                Core.player.getLevelRecord(lp.getName(), rating, k).isCompleted()),
                                 false);
                         ratingNode.add(levelNode);
                         levelPositionLookup[i][j][k] = ka++;
@@ -673,7 +678,7 @@ public class LevelDialog extends javax.swing.JDialog {
             LevelItem lvlItem = (LevelItem) ((DefaultMutableTreeNode) selPath.getPath()[3]).getUserObject();
             LevelPack lvlPack = GameController.getLevelPack(lvlItem.levelPack);
             LevelInfo lvlInfo = lvlPack.getInfo(lvlItem.rating, lvlItem.levelIndex);
-            LevelRecord lvlRecord = Core.player.getLevelRecord(lvlPack.getName(), lvlPack.getRatings()[lvlItem.rating], lvlItem.levelIndex);
+            LevelRecord lvlRecord = Core.player.getLevelRecord(lvlPack.getName(), lvlPack.getRatings().get(lvlItem.rating), lvlItem.levelIndex);
             jTextFieldAuthor.setText(lvlInfo.getAuthor());
             int numLemmings = lvlInfo.getNumLemmings();
             int numToRescue = lvlInfo.getNumToRescue();

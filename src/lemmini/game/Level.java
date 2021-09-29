@@ -3,12 +3,7 @@ package lemmini.game;
 import java.awt.Color;
 import java.awt.RenderingHints;
 import java.awt.Transparency;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsBuffer;
 import lemmini.graphics.GraphicsContext;
@@ -61,12 +56,12 @@ public class Level {
     /** color used to erase the foreground */
     public static final Color BLANK_COLOR = new Color(0, 0, 0, 0);
 
-    /** array of default styles */
-    private static final String[] STYLES = {"dirt", "fire", "marble", "pillar", "crystal",
-        "brick", "rock", "snow", "bubble", "xmas"};
-    /** array of default special styles */
-    private static final String[] SPECIAL_STYLES = {"awesome", "menace", "beastii", "beasti",
-        "covox", "prima", "apple"};
+    /** list of default styles */
+    private static final List<String> STYLES = Arrays.asList("dirt", "fire", "marble", "pillar", "crystal",
+        "brick", "rock", "snow", "bubble", "xmas");
+    /** list of default special styles */
+    private static final List<String> SPECIAL_STYLES = Arrays.asList("awesome", "menace", "beastii", "beasti",
+        "covox", "prima", "apple");
     private static final int DEFAULT_TOP_BOUNDARY = 8;
     private static final int DEFAULT_BOTTOM_BOUNDARY = 20;
     private static final int DEFAULT_LEFT_BOUNDARY = 0;
@@ -83,14 +78,14 @@ public class Level {
     private LemmImage fgImage;
     /** the background images */
     private LemmImage[] bgImages;
-    /** array of normal sprite objects - no transparency, drawn behind foreground image */
+    /** array of normal sprite objects - drawn behind foreground image */
     private SpriteObject[] sprObjBehind;
-    /** array of special sprite objects - with transparency, drawn in front of foreground image */
+    /** array of special sprite objects - drawn in front of foreground image */
     private SpriteObject[] sprObjFront;
     /** array of all sprite objects (in front and behind) */
     private SpriteObject[] sprObjects;
-    /** array of level entrances */
-    private Entrance[] entrances;
+    /** list of level entrances */
+    private List<Entrance> entrances;
     /** release rate: 0 is slowest, 99 is fastest */
     private final int releaseRate;
     /** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
@@ -134,21 +129,23 @@ public class Level {
     /** this level is a SuperLemming level (runs faster) */
     private final boolean superlemming;
     private final boolean forceNormalTimerSpeed;
+    private final String style;
+    private final String specialStyle;
     /** objects like doors - originally 32 objects where each consists of 8 bytes */
-    private final LvlObject[] objects;
+    private final List<LvlObject> objects;
     /** foreground tiles - every pixel in them is interpreted as brick in the stencil */
-    private final LemmImage[] tiles;
-    private final LemmImage[] tileMasks;
+    private final List<LemmImage> tiles;
+    private final List<LemmImage> tileMasks;
     private final LemmImage special;
     private final LemmImage specialMask;
-    private final Path music;
+    private final String music;
     private final Set<Integer> steelTiles;
-    /** sprite objects of all sprite objects available in this style */
-    private final SpriteObject[] sprObjAvailable;
+    /** all sprite objects available in this style */
+    private final List<SpriteObject> sprObjAvailable;
     /** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
-    private final Terrain[] terrain;
+    private final List<Terrain> terrain;
     /** steel areas which are indestructible - originally 32 objects, 4 bytes each */
-    private final Steel[] steel;
+    private final List<Steel> steel;
     private final Background[] backgrounds;
     private final GraphicsBuffer[][] bgBuffers;
     /** level name - originally 32 bytes ASCII filled with whitespace */
@@ -168,28 +165,28 @@ public class Level {
 
     /**
      * Load a level and all level resources.
-     * @param fname file name
+     * @param res resource object
      * @param level2 level with resources to reuse
      * @throws ResourceException
      * @throws LemmException
      */
-    public Level(final Path fname, final Level level2) throws ResourceException, LemmException {
+    public Level(final Resource res, final Level level2) throws ResourceException, LemmException {
         levelProps = new ArrayList<>(4);
         steelTiles = new HashSet<>(16);
         hints = new ArrayList<>(4);
         // read level properties from file
         Props p = new Props();
-        if (!p.load(fname)) {
-            throw new ResourceException(fname.toString());
+        if (!p.load(res)) {
+            throw new ResourceException(res);
         }
         levelProps.add(p);
         
         String mainLevel = p.get("mainLevel", StringUtils.EMPTY);
         while (!mainLevel.isEmpty()) {
-            Path fname2 = fname.resolveSibling(mainLevel);
+            Resource res2 = res.getSibling(mainLevel);
             p = new Props();
-            if (!p.load(fname2)) {
-                throw new ResourceException(fname2.toString());
+            if (!p.load(res2)) {
+                throw new ResourceException(res2);
             }
             levelProps.add(p);
             mainLevel = p.get("mainLevel", StringUtils.EMPTY);
@@ -299,85 +296,87 @@ public class Level {
         xPosCenter = xPosCenterTemp;
         yPosCenter = Props.getInt(levelProps, "yPosCenter", 0);
         //out("xPosCenter = " + xPosCenter);
-        String strStyle = p.get("style", StringUtils.EMPTY);
-        int style = -1;
-        for (int i = 0; i < STYLES.length; i++) {
-            if (strStyle.equalsIgnoreCase(STYLES[i])) {
-                style = i;
-                break;
-            }
-        }
-        //out("style = " + STYLES[style]);
-        String strSpecialStyle = p.get("specialStyle", StringUtils.EMPTY);
-        int specialStyle = -1;
-        for (int i = 0; i < SPECIAL_STYLES.length; i++) {
-            if (strSpecialStyle.equalsIgnoreCase(SPECIAL_STYLES[i])) {
-                specialStyle = i;
-                break;
-            }
-        }
-        //out("specialStyle = " + strSpecialStyle);
-        String musicStr = Props.get(levelProps, "music", StringUtils.EMPTY);
-        if (!musicStr.isEmpty()) {
-            music = Paths.get(musicStr);
-        } else {
-            music = null;
-        }
+        String styleTemp = p.get("style", StringUtils.EMPTY);
+        int styleIdx = STYLES.indexOf(styleTemp.toLowerCase(Locale.ROOT));
+        //out("style = " + style);
+        String specialStyleTemp = p.get("specialStyle", StringUtils.EMPTY);
+        int specialStyleIdx = SPECIAL_STYLES.indexOf(specialStyleTemp.toLowerCase(Locale.ROOT));
+        //out("specialStyle = " + specialStyle);
+        String musicTemp = Props.get(levelProps, "music", StringUtils.EMPTY);
+        music = musicTemp.isEmpty() ? null : musicTemp;
         superlemming = Props.getBoolean(levelProps, "superlemming", false);
         forceNormalTimerSpeed = Props.getBoolean(levelProps, "forceNormalTimerSpeed", false);
         
         // load objects
         // first load the data from object descriptor file xxx.ini
         props = new Props();
-        try {
-            Path fnames = Paths.get("styles", strStyle, strStyle + ".ini");
-            Path fnames2 = Core.findResource(fnames);
-            if (!props.load(fnames2)) {
-                if (style != -1) {
-                    throw new ResourceException(fnames.toString());
-                } else {
-                    throw new LemmException("Style \"" + strStyle + "\" does not exist.");
-                }
-            }
-        } catch (ResourceException ex) {
-            if (style != -1) {
-                throw ex;
-            } else {
-                throw new LemmException("Style \"" + strStyle + "\" does not exist.");
-            }
-        }
-        if (!strSpecialStyle.isEmpty()) {
+        for (int i = 0; i < 2; i++) {
             try {
-                Path fnames = Paths.get("styles/special", strSpecialStyle, strSpecialStyle + ".ini");
-                Path fnames2 = Core.findResource(fnames);
-                props2 = new Props();
-                if (fnames2 == null || !props2.load(fnames2)) {
-                    if (specialStyle != -1) {
-                        throw new ResourceException(fnames.toString());
+                String fname2 = "styles/" + styleTemp + "/" + styleTemp + ".ini";
+                Resource res2 = Core.findResource(fname2, true);
+                if (!props.load(res2)) {
+                    if (styleIdx != -1) {
+                        throw new ResourceException(fname2);
                     } else {
-                        throw new LemmException("Special style \"" + strSpecialStyle + "\" does not exist.");
+                        throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
                     }
                 }
-            } catch (ResourceException ex) {
-                if (style != -1) {
-                    throw ex;
+            } catch (ResourceException | LemmException ex) {
+                if (i == 0) {
+                    styleTemp = styleTemp.toLowerCase(Locale.ROOT);
+                    continue;
                 } else {
-                    throw new LemmException("Special style \"" + strSpecialStyle + "\" does not exist.");
+                    if (ex instanceof LemmException || styleIdx != -1) {
+                        throw ex;
+                    } else {
+                        throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
+                    }
                 }
+            }
+            break;
+        }
+        style = styleTemp;
+        if (!specialStyleTemp.isEmpty()) {
+            props2 = new Props();
+            for (int i = 0; i < 2; i++) {
+                try {
+                    String fname2 = "styles/special/" + specialStyleTemp + "/" + specialStyleTemp + ".ini";
+                    Resource res2 = Core.findResource(fname2, true);
+                    if (!props2.load(res2)) {
+                        if (specialStyleIdx != -1) {
+                            throw new ResourceException(fname2);
+                        } else {
+                            throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
+                        }
+                    }
+                } catch (ResourceException | LemmException ex) {
+                    if (i == 0) {
+                        styleTemp = styleTemp.toLowerCase(Locale.ROOT);
+                        continue;
+                    } else {
+                        if (ex instanceof LemmException || styleIdx != -1) {
+                            throw ex;
+                        } else {
+                            throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
+                        }
+                    }
+                }
+                break;
             }
         } else {
             props2 = props;
         }
+        specialStyle = specialStyleTemp;
         // load blockset
-        if (!strSpecialStyle.isEmpty()) {
-            special = loadSpecialSet(strSpecialStyle);
-            specialMask = loadSpecialMaskSet(strSpecialStyle);
+        if (!specialStyle.isEmpty()) {
+            special = loadSpecialSet(specialStyle);
+            specialMask = loadSpecialMaskSet(specialStyle);
         } else {
             special = null;
             specialMask = null;
         }
-        tiles = loadTileSet(strStyle);
-        tileMasks = loadTileMaskSet(strStyle);
+        tiles = loadTileSet(style);
+        tileMasks = loadTileMaskSet(style);
         int[] steelTilesArray = props.getIntArray("steelTiles", null);
         if (steelTilesArray != null) {
             for (int steelTile : steelTilesArray) {
@@ -385,58 +384,55 @@ public class Level {
             }
         }
         
-        sprObjAvailable = loadObjects(strStyle);
+        sprObjAvailable = loadObjects(style);
         
         // read objects
         //out("\n[Objects]");
-        List<LvlObject> objectList = new ArrayList<>(64);
+        objects = new ArrayList<>(64);
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("object_" + i, null);
             if (val != null && val.length >= 5) {
                 LvlObject obj = new LvlObject(val);
-                objectList.add(obj);
+                objects.add(obj);
                 //out(obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
             } else {
                 break;
             }
         }
-        objects = objectList.toArray(new LvlObject[objectList.size()]);
         // read terrain
         //out("\n[Terrain]");
-        List<Terrain> terrainList = new ArrayList<>(512);
-        if (!strSpecialStyle.isEmpty()) {
+        terrain = new ArrayList<>(512);
+        if (!specialStyle.isEmpty()) {
             int positionX;
             int positionY;
             positionX = p.getInt("specialStylePositionX", props2.getInt("positionX", 0));
             positionY = p.getInt("specialStylePositionY", props2.getInt("positionY", 0));
             Terrain ter = new Terrain(new int[]{0, positionX, positionY, 0}, true);
-            terrainList.add(ter);
+            terrain.add(ter);
         }
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("terrain_" + i, null);
             if (val != null && val.length >= 4) {
                 Terrain ter = new Terrain(val, false);
-                terrainList.add(ter);
+                terrain.add(ter);
                 //out(ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
             } else {
                 break;
             }
         }
-        terrain = terrainList.toArray(new Terrain[terrainList.size()]);
         // read steel blocks
         //out("\n[Steel]");
-        ArrayList<Steel> steelList = new ArrayList<>(64);
+        steel = new ArrayList<>(64);
         for (int i = 0; i < Integer.MAX_VALUE; i++) {
             int[] val = p.getIntArray("steel_" + i, null);
             if (val != null && val.length >= 4) {
                 Steel stl = new Steel(val);
-                steelList.add(stl);
+                steel.add(stl);
                 //out(stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
             } else {
                 break;
             }
         }
-        steel = steelList.toArray(new Steel[steelList.size()]);
         // read background
         List<Background> backgroundList = new ArrayList<>(4);
         List<GraphicsBuffer[]> bgBufferList = new ArrayList<>(4);
@@ -453,28 +449,26 @@ public class Level {
             double bgScrollSpeedX = p.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
             double bgScrollSpeedY = p.getDouble("bg_" + i + "_scrollSpeedY", 0.0);
             double bgScale = p.getDouble("bg_" + i + "_scale", 1.0);
-            List<LvlObject> bgObjectList = new ArrayList<>(16);
+            List<LvlObject> bgObjects = new ArrayList<>(16);
             for (int j = 0; i < Integer.MAX_VALUE; j++) {
                 int[] val = p.getIntArray("bg_" + i + "_object_" + j, null);
                 if (val != null && val.length >= 5) {
                     LvlObject obj = new LvlObject(val);
-                    bgObjectList.add(obj);
+                    bgObjects.add(obj);
                 } else {
                     break;
                 }
             }
-            LvlObject[] bgObjects = bgObjectList.toArray(new LvlObject[bgObjectList.size()]);
-            List<Terrain> bgTerrainList = new ArrayList<>(256);
+            List<Terrain> bgTerrain = new ArrayList<>(256);
             for (int j = 0; i < Integer.MAX_VALUE; j++) {
                 int[] val = p.getIntArray("bg_" + i + "_terrain_" + j, null);
                 if (val != null && val.length >= 4) {
                     Terrain ter = new Terrain(val, false);
-                    bgTerrainList.add(ter);
+                    bgTerrain.add(ter);
                 } else {
                     break;
                 }
             }
-            Terrain[] bgTerrain = bgTerrainList.toArray(new Terrain[bgTerrainList.size()]);
             backgroundList.add(new Background(bgWidth, bgHeight, bgObjects, bgTerrain, bgTiled, bgTint,
                     bgOffsetX, bgOffsetY, bgScrollSpeedX, bgScrollSpeedY, bgScale));
             GraphicsBuffer[] bgBufferListEntry = new GraphicsBuffer[2];
@@ -543,8 +537,8 @@ public class Level {
                 i = special;
                 mask = specialMask;
             } else {
-                i = tiles[t.id];
-                mask = tileMasks[t.id];
+                i = tiles.get(t.id);
+                mask = tileMasks.get(t.id);
             }
             int width = i.getWidth();
             int height = i.getHeight();
@@ -683,7 +677,7 @@ public class Level {
         }
         
         // paint steel tiles into stencil
-        for (Steel stl : steel) {
+        steel.stream().forEachOrdered(stl -> {
             int sx = stl.xPos;
             int sy = stl.yPos;
             for (int y = 0; y < stl.height; y++) {
@@ -702,20 +696,21 @@ public class Level {
                     }
                 }
             }
-        }
+        });
         
         // now for the animated objects
         List<SpriteObject> oCombined = new ArrayList<>(64);
         List<SpriteObject> oBehind = new ArrayList<>(64);
         List<SpriteObject> oFront = new ArrayList<>(64);
-        List<Entrance> entrance = new ArrayList<>(8);
-        for (int n = 0; n < objects.length && n >= 0; n++) {
-            LvlObject o = objects[n];
+        entrances = new ArrayList<>(8);
+        for (ListIterator<LvlObject> lit = objects.listIterator(); lit.hasNext(); ) {
+            int n = lit.nextIndex();
+            LvlObject o = lit.next();
             if (o.id < 0) {
                 oCombined.add(null);
                 continue;
             }
-            SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
+            SpriteObject spr = new SpriteObject(sprObjAvailable.get(o.id));
             spr.setX(o.xPos);
             spr.setY(o.yPos);
             // flags
@@ -728,7 +723,7 @@ public class Level {
                 Entrance e = new Entrance(o.xPos + spr.getWidth() / 2 + spr.getMaskOffsetX(),
                         o.yPos + spr.getMaskOffsetY(), BooleanUtils.toBoolean(o.objSpecificModifier & LvlObject.OPTION_ENTRANCE_LEFT));
                 e.id = oCombined.size();
-                entrance.add(e);
+                entrances.add(e);
             }
             // animated
             boolean invisible = BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_INVISIBLE);
@@ -839,12 +834,11 @@ public class Level {
                 bgOBehind.clear();
                 bgOFront.clear();
                 
-                for (Terrain t : bg.terrain) {
-                    if (t.id < 0 || BooleanUtils.toBoolean(t.modifier & Terrain.MODE_INVISIBLE)) {
-                        continue;
-                    }
+                bg.terrain.stream()
+                        .filter(t -> (t.id >= 0 && !BooleanUtils.toBoolean(t.modifier & Terrain.MODE_INVISIBLE)))
+                        .forEachOrdered(t -> {
                     LemmImage i;
-                    i = tiles[t.id];
+                    i = tiles.get(t.id);
                     int width = i.getWidth();
                     int height = i.getHeight();
                     
@@ -897,7 +891,7 @@ public class Level {
                             }
                         }
                     }
-                }
+                });
                 unpaddedBg.applyTint(bg.tint);
                 
                 GraphicsContext targetBgGfx = null;
@@ -914,11 +908,8 @@ public class Level {
                     }
                 }
                 
-                for (LvlObject o : bg.objects) {
-                    if (o.id < 0) {
-                        continue;
-                    }
-                    SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
+                bg.objects.stream().filter(o -> (o.id >= 0)).forEachOrdered(o -> {
+                    SpriteObject spr = new SpriteObject(sprObjAvailable.get(o.id));
                     spr.setX(o.xPos);
                     spr.setY(o.yPos);
                     // flags
@@ -962,15 +953,13 @@ public class Level {
                     }
                     
                     spr.applyTint(bg.tint);
-                }
+                });
                 
                 bg.sprObjects = bgOCombined.toArray(new SpriteObject[bgOCombined.size()]);
                 bg.sprObjFront = bgOFront.toArray(new SpriteObject[bgOFront.size()]);
                 bg.sprObjBehind = bgOBehind.toArray(new SpriteObject[bgOBehind.size()]);
             }
         }
-        
-        entrances = entrance.toArray(new Entrance[entrance.size()]);
         
         sprObjects = oCombined.toArray(new SpriteObject[oCombined.size()]);
         sprObjFront = oFront.toArray(new SpriteObject[oFront.size()]);
@@ -1156,44 +1145,44 @@ public class Level {
     /**
      * Load tile set from a styles folder.
      * @param set name of the style
-     * @return array of images where each image contains one tile
+     * @return list of images where each image contains one tile
      * @throws ResourceException
      */
-    private LemmImage[] loadTileSet(final String set) throws ResourceException {
+    private List<LemmImage> loadTileSet(final String set) throws ResourceException {
         List<LemmImage> images = new ArrayList<>(64);
         int tiles = props.getInt("tiles", 0);
         for (int n = 0; n < tiles; n++) {
-            Path fName = Core.findResource(
-                    Paths.get("styles", set, set + "_" + n + ".png"),
-                    Core.IMAGE_EXTENSIONS);
-            images.add(Core.loadTranslucentImage(fName));
+            Resource res = Core.findResource(
+                    "styles/" + set + "/" + set + "_" + n + ".png",
+                    true, Core.IMAGE_EXTENSIONS);
+            images.add(Core.loadTranslucentImage(res));
         }
-        return images.toArray(new LemmImage[images.size()]);
+        return images;
     }
     
     /**
      * Load tile set masks from a styles folder.
      * @param set name of the style
-     * @return array of images where each image contains one tile mask
+     * @return list of images where each image contains one tile mask
      * @throws ResourceException
      */
-    private LemmImage[] loadTileMaskSet(final String set) throws ResourceException {
+    private List<LemmImage> loadTileMaskSet(final String set) throws ResourceException {
         List<LemmImage> images = new ArrayList<>(64);
         int tileMasks = props.getInt("tiles", 0);
         for (int n = 0; n < tileMasks; n++) {
-            Path fName;
+            Resource res;
             try {
-                fName = Core.findResource(
-                        Paths.get("styles", set, set + "m_" + n + ".png"),
-                        Core.IMAGE_EXTENSIONS);
+                res = Core.findResource(
+                        "styles/" + set + "/" + set + "m_" + n + ".png",
+                        true, Core.IMAGE_EXTENSIONS);
             } catch (ResourceException ex) {
-                fName = Core.findResource(
-                        Paths.get("styles", set, set + "_" + n + ".png"),
-                        Core.IMAGE_EXTENSIONS);
+                res = Core.findResource(
+                        "styles/" + set + "/" + set + "_" + n + ".png",
+                        true, Core.IMAGE_EXTENSIONS);
             }
-            images.add(Core.loadBitmaskImage(fName));
+            images.add(Core.loadBitmaskImage(res));
         }
-        return images.toArray(new LemmImage[images.size()]);
+        return images;
     }
     
     /**
@@ -1203,10 +1192,10 @@ public class Level {
      * @throws ResourceException
      */
     private LemmImage loadSpecialSet(final String specialSet) throws ResourceException {
-        Path fName = Core.findResource(
-                Paths.get("styles/special", specialSet, specialSet + ".png"),
-                Core.IMAGE_EXTENSIONS);
-        return Core.loadTranslucentImage(fName);
+        Resource res = Core.findResource(
+                "styles/special/" + specialSet + "/" + specialSet + ".png",
+                true, Core.IMAGE_EXTENSIONS);
+        return Core.loadTranslucentImage(res);
     }
     
     /**
@@ -1216,27 +1205,27 @@ public class Level {
      * @throws ResourceException
      */
     private LemmImage loadSpecialMaskSet(final String specialSet) throws ResourceException {
-        Path fName;
+        Resource res;
         try {
-            fName = Core.findResource(
-                    Paths.get("styles/special", specialSet, specialSet + "m.png"),
-                    Core.IMAGE_EXTENSIONS);
+            res = Core.findResource(
+                    "styles/special/" + specialSet + "/" + specialSet + "m.png",
+                    true, Core.IMAGE_EXTENSIONS);
         } catch (ResourceException ex) {
-            fName = Core.findResource(
-                    Paths.get("styles/special", specialSet, specialSet + ".png"),
-                    Core.IMAGE_EXTENSIONS);
+            res = Core.findResource(
+                    "styles/special/" + specialSet + "/" + specialSet + ".png",
+                    true, Core.IMAGE_EXTENSIONS);
         }
-        return Core.loadBitmaskImage(fName);
+        return Core.loadBitmaskImage(res);
     }
 
 
     /**
      * Load level sprite objects.
      * @param set name of the style
-     * @return array of images where each image contains one tile
+     * @return list of images where each image contains one tile
      * @throws ResourceException
      */
-    private SpriteObject[] loadObjects(final String set) throws ResourceException {
+    private List<SpriteObject> loadObjects(final String set) throws ResourceException {
         // first some global settings
         int bgCol = props2.getInt("bgColor", props.getInt("bgColor", 0x000000)) | 0xff000000;
         bgColor = new Color(bgCol);
@@ -1259,10 +1248,10 @@ public class Level {
             // get animation speed
             int speed = props.getInt("speed_" + sIdx, DEFAULT_ANIMATION_SPEED);
             // load screen buffer
-            Path fName = Core.findResource(
-                    Paths.get("styles", set, set + "o_" + idx + ".png"),
-                    Core.IMAGE_EXTENSIONS);
-            LemmImage img = Core.loadTranslucentImage(fName);
+            Resource res = Core.findResource(
+                    "styles/" + set + "/" + set + "o_" + idx + ".png",
+                    true, Core.IMAGE_EXTENSIONS);
+            LemmImage img = Core.loadTranslucentImage(res);
             // load sprite
             int anim = props.getInt("anim_" + sIdx, -1);
             if (anim < 0) {
@@ -1286,12 +1275,12 @@ public class Level {
                 case TRAP_DROWN:
                 case STEEL:
                     // load mask
-                    fName = Core.findResource(
-                            Paths.get("styles", set, set + "om_" + idx + ".png"),
-                            Core.IMAGE_EXTENSIONS);
+                    res = Core.findResource(
+                            "styles/" + set + "/" + set + "om_" + idx + ".png",
+                            true, Core.IMAGE_EXTENSIONS);
                     int maskOffsetX = props.getInt("maskOffsetX_" + sIdx, 0);
                     int maskOffsetY = props.getInt("maskOffsetY_" + sIdx, 0);
-                    img = Core.loadBitmaskImage(fName);
+                    img = Core.loadBitmaskImage(res);
                     sprite.setMask(img, maskOffsetX, maskOffsetY);
                     break;
                 case ENTRANCE:
@@ -1332,7 +1321,7 @@ public class Level {
 
             sprites.add(sprite);
         }
-        return sprites.toArray(new SpriteObject[sprites.size()]);
+        return sprites;
     }
 
     /**
@@ -1428,7 +1417,7 @@ public class Level {
      * Get number of level sprite objects.
      * @return number of level sprite objects
      */
-    public int getSprObjectNum() {
+    public int getNumSprObjects() {
         if (sprObjects == null) {
             return 0;
         }
@@ -1441,7 +1430,7 @@ public class Level {
      * @return level Entrance
      */
     Entrance getEntrance(final int idx) {
-        return entrances[idx];
+        return entrances.get(idx);
     }
 
     /**
@@ -1452,7 +1441,7 @@ public class Level {
         if (entrances == null) {
             return 0;
         }
-        return entrances.length;
+        return entrances.size();
     }
     
     public int[] getEntranceOrder() {
@@ -1636,7 +1625,7 @@ public class Level {
         return rightBoundary;
     }
     
-    public Path getMusic() {
+    public String getMusic() {
         return music;
     }
 
@@ -1654,6 +1643,14 @@ public class Level {
      */
     public boolean getForceNormalTimerSpeed() {
         return forceNormalTimerSpeed;
+    }
+    
+    public String getStyle() {
+        return style;
+    }
+    
+    public String getSpecialStyle() {
+        return specialStyle;
     }
 
     /**
@@ -1833,8 +1830,8 @@ class Background {
     
     int width;
     int height;
-    LvlObject[] objects;
-    Terrain[] terrain;
+    List<LvlObject> objects;
+    List<Terrain> terrain;
     SpriteObject[] sprObjects;
     SpriteObject[] sprObjFront;
     SpriteObject[] sprObjBehind;
@@ -1846,7 +1843,7 @@ class Background {
     double scrollSpeedY;
     double scale;
     
-    Background(int width, int height, LvlObject[] objects, Terrain[] terrain,
+    Background(int width, int height, List<LvlObject> objects, List<Terrain> terrain,
             boolean tiled, int tint, int offsetX, int offsetY,
             double scrollSpeedX, double scrollSpeedY, double scale) {
         this.width = width;

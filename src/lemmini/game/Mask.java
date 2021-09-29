@@ -1,5 +1,8 @@
 package lemmini.game;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 import org.apache.commons.lang3.BooleanUtils;
@@ -37,8 +40,8 @@ public class Mask {
     /** height of mask in pixels */
     private final int height;
     /** array of images. Note: masks may be animated and thus contain multiple frames. */
-    private final LemmImage[] mask;
-    private final LemmImage[] unpatchedMask;
+    private final List<LemmImage> mask;
+    private final List<LemmImage> unpatchedMask;
 
     /**
      * Constructor.
@@ -49,7 +52,7 @@ public class Mask {
         width = img.getWidth();
         height = img.getHeight() / frames;
         mask = ToolBox.getAnimation(img, frames);
-        unpatchedMask = mask.clone();
+        unpatchedMask = new ArrayList<>(mask);
     }
 
     /**
@@ -64,7 +67,7 @@ public class Mask {
         LemmImage fgImage = GameController.getFgImage();
         LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
-        LemmImage m = mask[maskNum];
+        LemmImage m = mask.get(maskNum);
         double scaleX = (double) fgImageSmall.getWidth() / (double) fgImage.getWidth();
         double scaleY = (double) fgImageSmall.getHeight() / (double) fgImage.getHeight();
         double scaleXHalf = scaleX / 2.0;
@@ -133,7 +136,7 @@ public class Mask {
         LemmImage fgImage = GameController.getFgImage();
         LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
-        LemmImage m = mask[maskNum];
+        LemmImage m = mask.get(maskNum);
         double scaleX = (double) fgImageSmall.getWidth() / (double) fgImage.getWidth();
         double scaleY = (double) fgImageSmall.getHeight() / (double) fgImage.getHeight();
         double scaleXHalf = scaleX / 2.0;
@@ -214,8 +217,12 @@ public class Mask {
             xMax = fgImage.getWidth();
         }
         
-        for (int i = 0; i < 3; i++) {
-            LemmImage m = mask[i];
+        for (ListIterator<LemmImage> lit = mask.listIterator(); lit.hasNext(); ) {
+            int i = lit.nextIndex();
+            if (i >= 3) {
+                break;
+            }
+            LemmImage m = lit.next();
             for (int y = y0; y < yMax; y++) {
                 if (y < 0) {
                     continue;
@@ -255,7 +262,7 @@ public class Mask {
      */
     public boolean checkType(final int x0, final int y0, final int maskNum, final int type) {
         Stencil stencil = GameController.getStencil();
-        LemmImage m = mask[maskNum];
+        LemmImage m = mask.get(maskNum);
         int yMax = y0 + height;
         if (yMax >= stencil.getHeight()) {
             yMax = stencil.getHeight();
@@ -294,7 +301,7 @@ public class Mask {
     public void clearType(final int x0, final int y0, final int maskNum, final int type) {
         LemmImage fgImage = GameController.getFgImage();
         Stencil stencil = GameController.getStencil();
-        LemmImage m = mask[maskNum];
+        LemmImage m = mask.get(maskNum);
         int yMax = y0 + height;
         if (yMax >= fgImage.getHeight()) {
             yMax = fgImage.getHeight();
@@ -322,11 +329,13 @@ public class Mask {
     
     void replaceColors(final int templateCol, final int replaceCol,
             final int templateCol2, final int replaceCol2) {
-        for (int f = 0; f < mask.length; f++) { // go through all frames
-            LemmImage i = new LemmImage(unpatchedMask[f]);
+        for (ListIterator<LemmImage> itf = unpatchedMask.listIterator();
+                itf.hasNext(); ) { // go through all frames
+            int fi = itf.nextIndex();
+            LemmImage i = new LemmImage(itf.next());
             i.replaceColor(templateCol, replaceCol);
             i.replaceColor(templateCol2, replaceCol2);
-            mask[f] = i;
+            mask.set(fi, i);
         }
     }
 
@@ -351,6 +360,6 @@ public class Mask {
      * @return number of mask frames.
      */
     public int getNumFrames() {
-        return mask.length;
+        return mask.size();
     }
 }

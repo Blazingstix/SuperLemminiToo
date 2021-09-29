@@ -6,14 +6,13 @@ import ibxm.Module;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
 import lemmini.game.GameController;
 import lemmini.game.LemmException;
+import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 import lemmini.tools.ToolBox;
 
@@ -56,23 +55,24 @@ public class ModMusic implements Runnable, MusicPlayer {
 
     /**
      * Load MOD file, initialize player.
-     * @param fn file name
+     * @param res resource
+     * @param loop
      * @throws ResourceException
      * @throws LemmException
      */
     @Override
-    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Resource res, final boolean loop) throws ResourceException, LemmException {
         if (modThread != null) {
             close();
         }
         loopSong = loop;
         Module module;
-        try (InputStream songInputStream = Files.newInputStream(fn)) {
+        try (InputStream songInputStream = res.getInputStream()) {
             module = new Module(songInputStream);
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn.toString());
+            throw new ResourceException(res);
         } catch (IOException ex) {
-            throw new LemmException(fn + " (IO exception)");
+            throw new LemmException(res.getFileName() + " (IO exception)");
         }
         int sampleRate = ToolBox.cap(8000, (int) GameController.sound.getSampleRate(), 128000);
         ibxm = new IBXM(module, sampleRate);
