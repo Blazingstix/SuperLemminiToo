@@ -482,7 +482,7 @@
     </Component>
     <Component class="javax.swing.JButton" name="jButtonAddExternal">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Add External Level..."/>
+        <Property name="text" type="java.lang.String" value="Add External Levels..."/>
       </Properties>
       <Events>
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonAddExternalActionPerformed"/>

@@ -886,7 +886,7 @@ public class Lemming {
                                 Stencil.MSK_BRICK | Stencil.MSK_NO_BASH, Stencil.MSK_STEEL);
                     } else if (x >= GameController.getLevel().getLeftBoundary()
                             && x < GameController.getWidth() + GameController.getLevel().getRightBoundary()
-                            && y < Level.DEFAULT_HEIGHT
+                            && y < GameController.getHeight()
                             && (stencil.getMask(x, y) & Stencil.MSK_STEEL) == 0
                             && (stencil.getMask(x, y) & Stencil.MSK_EXIT) == 0 && !drowner) {
                         m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, Stencil.MSK_BRICK, 0);
@@ -1234,7 +1234,7 @@ public class Lemming {
         if (xm >= GameController.getLevel().getLeftBoundary()
                 && xm < GameController.getWidth() + GameController.getLevel().getRightBoundary()
                 && ym >= GameController.getLevel().getTopBoundary()
-                && ym < Level.DEFAULT_HEIGHT) {
+                && ym < GameController.getHeight()) {
             retval = GameController.getStencil().getMask(xm, ym);
         } else {
             retval = Stencil.MSK_EMPTY;
@@ -1253,7 +1253,7 @@ public class Lemming {
         if (xm >= GameController.getLevel().getLeftBoundary()
                 && xm < GameController.getWidth() + GameController.getLevel().getRightBoundary()
                 && ym >= GameController.getLevel().getTopBoundary()
-                && ym < Level.DEFAULT_HEIGHT) {
+                && ym < GameController.getHeight()) {
             retval = GameController.getStencil().getMaskObjectID(xm, ym);
         } else {
             retval = -1;
@@ -1430,7 +1430,7 @@ public class Lemming {
         int yb = y;
         pos = x + yb * GameController.getWidth(); // line below the lemming
         for (int i = 0; i < step; i++) {
-            if (yb + i >= Level.DEFAULT_HEIGHT) {
+            if (yb + i >= GameController.getHeight()) {
                 return FALL_DISTANCE_FORCE_FALL; // convert most skill to faller
             }
             int s = stencil.getMask(pos);
@@ -1524,7 +1524,7 @@ public class Lemming {
      * @return true if Lemming has fallen to/through the bottom of the level, false otherwise
      */
     private boolean crossedLowerBorder() {
-        if (y >= Level.DEFAULT_HEIGHT + GameController.getLevel().getBottomBoundary()) {
+        if (y >= GameController.getHeight() + GameController.getLevel().getBottomBoundary()) {
             hasDied = true;
             GameController.sound.play(Sound.Effect.DIE, getPan());
             return true;
@@ -1539,11 +1539,11 @@ public class Lemming {
     private int aboveGround() {
         if (x < GameController.getLevel().getLeftBoundary()
                 || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
-            return Level.DEFAULT_HEIGHT + 1;
+            return GameController.getHeight() + 1;
         }
 
         int ym = y - 1;
-        if (ym >= Level.DEFAULT_HEIGHT) {
+        if (ym >= GameController.getHeight()) {
             return 0;
         }
         int pos = x;
@@ -1571,7 +1571,7 @@ public class Lemming {
             return false;
         }
         int ym = y - hand;
-        if (ym >= Level.DEFAULT_HEIGHT || ym <= GameController.getLevel().getTopBoundary() - 12) {
+        if (ym >= GameController.getHeight() || ym <= GameController.getLevel().getTopBoundary() - 12) {
             return true;
         } else if (ym < 0) {
             return false;
@@ -2025,8 +2025,8 @@ public class Lemming {
     }
     
     public double getPan() {
-        double panFactor = Lemmini.getPaneWidth();
-        double retPan = (x - (GameController.getXPos() + Lemmini.getPaneWidth() / 2.0)) / panFactor;
+        double panFactor = Core.unscale(Lemmini.getPaneWidth());
+        double retPan = (x - (GameController.getXPos() + Core.unscale(Lemmini.getPaneWidth()) / 2.0)) / panFactor;
         return retPan;
     }
 }

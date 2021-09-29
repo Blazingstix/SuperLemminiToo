@@ -36,7 +36,7 @@ import lemmini.tools.ToolBox;
  *
  * @author Volker Oth
  */
-public class Extract extends Thread {
+public class Extract implements Runnable {
 
     /** file name of extraction configuration */
     private static final String INI_NAME = "extract.ini";
@@ -131,6 +131,9 @@ public class Extract extends Thread {
                 }
                 out(crcbuf[0]);
                 Path sourceFile = sourcePath.resolve(crcbuf[0]);
+                if (!Files.isRegularFile(sourceFile)) {
+                    throw new ExtractException(String.format("File %s not found.", sourceFile));
+                }
                 long srcLen = Files.size(sourceFile);
                 long reqLen = Long.parseLong(crcbuf[1]);
                 if (srcLen != reqLen) {
@@ -243,6 +246,9 @@ public class Extract extends Thread {
                 }
                 Path sourceFile = sourcePath.resolve(copy[0]);
                 Path destinationFile = destinationPath.resolve(copy[1]);
+                if (!Files.isRegularFile(sourceFile)) {
+                    throw new ExtractException(String.format("File %s not found.", sourceFile));
+                }
                 try {
                     copyFile(sourceFile, destinationFile);
                     createdFiles.add(destinationFile);
@@ -388,7 +394,7 @@ public class Extract extends Thread {
      * Get source path (WINLEMM) for extraction.
      * @return source path (WINLEMM) for extraction
      */
-    public static Path getSourcePath() {
+    public Path getSourcePath() {
         return sourcePath;
     }
 
@@ -396,7 +402,7 @@ public class Extract extends Thread {
      * Get destination path (Lemmini resource) for extraction.
      * @return destination path (Lemmini resource) for extraction
      */
-    public static Path getResourcePath() {
+    public Path getResourcePath() {
         return destinationPath;
     }
 
@@ -450,11 +456,9 @@ public class Extract extends Thread {
         thisThread.start();
 
         outputDiag.setVisible(true);
-        while (thisThread.isAlive()) {
-            try  {
-                Thread.sleep(200);
-            } catch (InterruptedException ex) {
-            }
+        try {
+            thisThread.join();
+        } catch (InterruptedException ex) {
         }
         if (threadException != null) {
             throw threadException;
@@ -474,12 +478,7 @@ public class Extract extends Thread {
         } catch (IOException ex) {
         }
 
-        try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, new DirectoryStream.Filter<Path>() {
-            @Override
-            public boolean accept(Path entry) throws IOException {
-                return Files.isRegularFile(entry) && (entry).getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".lvl");
-            }
-        })) {
+        try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, "*.lvl")) {
             for (Path level : levels) {
                 Path fIn = r.resolve(level.getFileName());
                 String fOutStr = level.getFileName().toString().toLowerCase(Locale.ROOT);

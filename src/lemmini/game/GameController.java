@@ -125,6 +125,7 @@ public class GameController {
     private static GraphicsContext fgGfx;
     /** flag: fast forward mode is active */
     private static boolean fastForward;
+    private static boolean verticalLock;
     /** flag: Superlemming mode is active */
     private static boolean superLemming;
     private static boolean forceNormalTimerSpeed;
@@ -194,6 +195,9 @@ public class GameController {
     /** horizontal scrolling offset for level */
     private static int xPos;
     private static int xPosCenter;
+    /** vertical scrolling offset for level */
+    private static int yPos;
+    private static int yPosCenter;
     /** replay stream used for handling replays */
     private static ReplayStream replay;
     /** frame counter used for handling replays */
@@ -204,6 +208,8 @@ public class GameController {
     private static boolean nukeOld;
     /** old value of horizontal scrolling position */
     private static int xPosOld;
+    /** old value of vertical scrolling position */
+    private static int yPosOld;
     /** old value of selected skill */
     private static Lemming.Type lemmSkillOld;
     /** flag: replay mode is active */
@@ -249,6 +255,7 @@ public class GameController {
     /** gain for music 0-2.0 */
     private static double musicGain = 1.0;
     private static int width = Level.DEFAULT_WIDTH;
+    private static int height = Level.DEFAULT_HEIGHT;
     private static int[] bgWidths;
     private static int[] bgHeights;
     private static int timesFailed;
@@ -259,8 +266,9 @@ public class GameController {
      */
     public static void init() throws ResourceException {
         width = Level.DEFAULT_WIDTH;
+        height = Level.DEFAULT_HEIGHT;
         
-        fgImage = ToolBox.createTranslucentImage(width, Level.DEFAULT_HEIGHT);
+        fgImage = ToolBox.createTranslucentImage(width, height);
         fgGfx = fgImage.createGraphicsContext();
         bgImages = new ArrayList<>(4);
         
@@ -277,7 +285,6 @@ public class GameController {
         // read level packs
 
         Path dir = Core.resourcePath.resolve("levels");
-        //File[] files = dir.listFiles();
         // now get the names of the directories
         List<Path> dirs = new ArrayList<>(32);
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, new DirectoryStream.Filter<Path>() {
@@ -428,6 +435,7 @@ public class GameController {
     static synchronized void finishLevel() {
         Music.close();
         setFastForward(false);
+        setVerticalLock(false);
         setSuperLemming(false);
 
         if (!wasLost() && curLevelPack != 0) {
@@ -447,7 +455,7 @@ public class GameController {
      * Restart level.
      * @param doReplay true: replay, false: play
      */
-    private static synchronized void restartLevel(final boolean doReplay) {
+    private static synchronized void restartLevel(final boolean doReplay) throws LemmException {
         if (!replayMode && wasLost() && (gameState == State.LEVEL
                 || gameState == State.LEVEL_END
                 || gameState == State.DEBRIEFING)) {
@@ -467,10 +475,11 @@ public class GameController {
     /**
      * Initialize a level after it was loaded.
      */
-    private static void initLevel() {
+    private static synchronized void initLevel() throws LemmException {
         Music.stop();
         
         setFastForward(false);
+        setVerticalLock(false);
         setPaused(false);
         nuke = false;
         
@@ -486,6 +495,7 @@ public class GameController {
         minus.init();
         
         int oldWidth = width;
+        int oldHeight = height;
         
         numExited = 0;
         releaseRate = StrictMath.min(StrictMath.max(level.getReleaseRate(), 0), MAX_RELEASE_RATE);
@@ -503,7 +513,9 @@ public class GameController {
         numDiggers = level.getNumDiggers();
         numSkillsUsed = 0;
         xPosCenter = level.getXPosCenter();
+        yPosCenter = level.getYPosCenter();
         width = level.getWidth();
+        height = level.getHeight();
         bgWidths = level.getBgWidths();
         bgHeights = level.getBgHeights();
         if (time <= 0) {
@@ -515,9 +527,9 @@ public class GameController {
         timeLimit = time;
         timeElapsedTillLastExited = 0;
         
-        if (width != oldWidth) {
+        if (width != oldWidth || height != oldHeight) {
             fgGfx.dispose();
-            fgImage = ToolBox.createTranslucentImage(width, Level.DEFAULT_HEIGHT);
+            fgImage = ToolBox.createTranslucentImage(width, height);
             fgGfx = fgImage.createGraphicsContext();
             MiscGfx.setMinimapWidth(width / 16);
         }
@@ -537,7 +549,7 @@ public class GameController {
         
         stencil = level.paintLevel(fgImage, bgImages, stencil);
         
-        TrapDoor.reset(level.getNumEntrances());
+        TrapDoor.reset(level.getNumEntrances(), level.getEntranceOrder());
         startSoundPlayed = false;
         startSoundCtr = 0;
         entranceOpened = false;
@@ -556,10 +568,15 @@ public class GameController {
         
         calcReleaseBase();
         
-        int scaleFactor = width / 800;
+        int scaleFactorWidth = width / 800;
         if (width % 800 != 0) {
-            scaleFactor++;
+            scaleFactorWidth++;
         }
+        int scaleFactorHeight = height / 80;
+        if (height % 80 != 0) {
+            scaleFactorHeight++;
+        }
+        int scaleFactor = Math.max(scaleFactorWidth, scaleFactorHeight);
         if (scaleFactor < 4) {
             scaleFactor = 4;
         }
@@ -943,10 +960,11 @@ public class GameController {
                     replay.addNukeEvent(replayFrame);
                     nukeOld = nuke;
                 }
-                // replay: xPos changed?
-                if (getXPos() != xPosOld) {
-                    replay.addPosEvent(replayFrame, getXPos() + Core.unscale(Lemmini.getPaneWidth()) / 2, 0, 0);
+                // replay: position changed?
+                if (getXPos() != xPosOld || getYPos() != yPosOld) {
+                    replay.addPosEvent(replayFrame, getXPos() + Core.unscale(Lemmini.getPaneWidth()) / 2, getYPos() + Lemmini.LEVEL_HEIGHT / 2, 0);
                     xPosOld = getXPos();
+                    yPosOld = getYPos();
                 }
                 // skill changed
                 if (lemmSkill != lemmSkillOld) {
@@ -964,12 +982,10 @@ public class GameController {
                     case ReplayStream.ASSIGN_SKILL: {
                         ReplayAssignSkillEvent rs = (ReplayAssignSkillEvent) r;
                         double pan;
-                        synchronized (lemmings) {
-                            Lemming l = lemmings.get(rs.lemming);
-                            l.setSkill(rs.skill, false);
-                            l.setSelected();
-                            pan = l.getPan();
-                        }
+                        Lemming l = lemmings.get(rs.lemming);
+                        l.setSkill(rs.skill, false);
+                        l.setSelected();
+                        pan = l.getPan();
                         switch (rs.skill) {
                             case CLIMBER:
                                 numClimbers--;
@@ -1025,8 +1041,10 @@ public class GameController {
                     case ReplayStream.MOVE_POS: {
                         ReplayMovePosEvent rx = (ReplayMovePosEvent) r;
                         if (rx.player == 0) {
-                            setXPos(rx.xPos - Lemmini.getPaneWidth() / 2);
+                            setXPos(rx.xPos - Core.unscale(Lemmini.getPaneWidth()) / 2);
+                            setYPos(rx.yPos - Lemmini.LEVEL_HEIGHT / 2);
                             xPosOld = xPos;
+                            yPosOld = yPos;
                         }
                         break;
                     }
@@ -1108,21 +1126,17 @@ public class GameController {
             if (level.getNumEntrances() != 0) {
                 Entrance e = level.getEntrance(TrapDoor.getNext());
                 Lemming l = new Lemming(e.xPos + 2, e.yPos + Lemming.HEIGHT, e.leftEntrance ? Lemming.Direction.LEFT : Lemming.Direction.RIGHT);
-                synchronized (lemmings) {
-                    lemmings.add(l);
-                }
+                lemmings.add(l);
                 numLemmingsOut++;
             }
         }
         // nuking
         if (nukeTemp && ((updateCtr & 1) == 1)) {
-            synchronized (lemmings) {
-                for (Lemming l : lemmings) {
-                    if (!l.nuke() && !l.hasDied() && !l.hasExited()) {
-                        l.setSkill(Lemming.Type.NUKE, false);
-                        //System.out.println("nuked!");
-                        break;
-                    }
+            for (Lemming l : lemmings) {
+                if (!l.nuke() && !l.hasDied() && !l.hasExited()) {
+                    l.setSkill(Lemming.Type.NUKE, false);
+                    //System.out.println("nuked!");
+                    break;
                 }
             }
         }
@@ -1171,26 +1185,22 @@ public class GameController {
             }
         }
 
-        synchronized (lemmings) {
-            Iterator<Lemming> it = lemmings.iterator();
-            while (it.hasNext()) {
-                Lemming l = it.next();
-                l.animate();
-                if (l.hasDied() || l.hasExited()) {
-                    it.remove();
-                }
+        Iterator<Lemming> lit = lemmings.iterator();
+        while (lit.hasNext()) {
+            Lemming l = lit.next();
+            l.animate();
+            if (l.hasDied() || l.hasExited()) {
+                lit.remove();
             }
         }
 
-        synchronized (explosions) {
-            Iterator<Explosion> it = explosions.iterator();
-            while (it.hasNext()) {
-                Explosion e = it.next();
-                if (e.isFinished()) {
-                    it.remove();
-                } else {
-                    e.update();
-                }
+        Iterator<Explosion> eit = explosions.iterator();
+        while (eit.hasNext()) {
+            Explosion e = eit.next();
+            if (e.isFinished()) {
+                eit.remove();
+            } else {
+                e.update();
             }
         }
 
@@ -1362,11 +1372,9 @@ public class GameController {
             }
             // add to replay stream
             if (!wasCheated) {
-                synchronized (lemmings) {
-                    for (int i = 0; i < lemmings.size(); i++) {
-                        if (lemmings.get(i) == lemm) { // if 2nd try (delete == true) assign to next frame
-                            replay.addAssignSkillEvent(replayFrame + ((delete) ? 1 : 0), lemmSkill, i);
-                        }
+                for (Lemming l : lemmings) {
+                    if (l == lemm) { // if 2nd try (delete == true) assign to next frame
+                        replay.addAssignSkillEvent(replayFrame + ((delete) ? 1 : 0), lemmSkill, lemmings.indexOf(l));
                     }
                 }
             }
@@ -1475,6 +1483,10 @@ public class GameController {
                 setFastForward(!isFastForward());
                 ok = true;
                 break;
+            case VLOCK:
+                setVerticalLock(!isVerticalLock());
+                ok = true;
+                break;
             default:
                 break;
         }
@@ -1506,7 +1518,7 @@ public class GameController {
      * Fade in/out.
      * @param g graphics object
      */
-    public static void fade(final GraphicsContext g) {
+    public static void fade() {
         if (Fader.getState() == Fader.State.OFF && transitionState != TransitionState.NONE) {
             switch (transitionState) {
                 case END_LEVEL:
@@ -1524,25 +1536,32 @@ public class GameController {
                     break;
                 case TO_LEVEL:
                     setXPos(xPosCenter - Core.unscale(Lemmini.getPaneWidth()) / 2);
+                    setYPos(yPosCenter - Lemmini.LEVEL_HEIGHT / 2);
                     xPosOld = xPos;
+                    yPosOld = yPos;
                     gameState = State.LEVEL;
                     break;
                 case RESTART_LEVEL:
                 case REPLAY_LEVEL:
-                    restartLevel(transitionState == TransitionState.REPLAY_LEVEL);
+                    try {
+                        restartLevel(transitionState == TransitionState.REPLAY_LEVEL);
+                    } catch (LemmException ex) {
+                        JOptionPane.showMessageDialog(Core.getCmp(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        System.exit(1);
+                    }
                     Lemmini.setCursor(LemmCursor.CursorType.NORMAL);
                     break;
                 case LOAD_LEVEL:
                 case LOAD_REPLAY:
                     try {
                         changeLevel(nextLevelPack, nextRating, nextLevelNumber, transitionState == TransitionState.LOAD_REPLAY);
-                        setTitle();
                     } catch (ResourceException ex) {
                         Core.resourceError(ex.getMessage());
                     } catch (LemmException ex) {
-                        JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(Core.getCmp(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         System.exit(1);
                     }
+                    setTitle();
                     Lemmini.setCursor(LemmCursor.CursorType.NORMAL);
                     break;
                 default:
@@ -1553,10 +1572,10 @@ public class GameController {
             } else {
                 Fader.setStep(Fader.FADE_STEP_FAST);
             }
-            Fader.setState(Fader.State.IN, g);
+            Fader.setState(Fader.State.IN);
             transitionState = TransitionState.NONE;
         } else {
-            Fader.fade(g);
+            Fader.fade();
         }
         if (gameState == State.LEVEL_END
                 || (gameState == State.LEVEL && transitionState != TransitionState.NONE)) {
@@ -1589,11 +1608,10 @@ public class GameController {
      * @param height height of screen in pixels
      * @param xOfs horizontal level offset in pixels
      */
-    public static void drawExplosions(final GraphicsContext g, final int width, final int height, final int xOfs) {
-        synchronized (explosions) {
-            for (Explosion e : explosions) {
-                e.draw(g, width, height, xOfs);
-            }
+    public static synchronized void drawExplosions(final GraphicsContext g,
+            final int width, final int height, final int xOfs, final int yOfs) {
+        for (Explosion e : explosions) {
+            e.draw(g, width, height, xOfs, yOfs);
         }
     }
 
@@ -1602,10 +1620,49 @@ public class GameController {
      * @param x x coordinate in pixels.
      * @param y y coordinate in pixels.
      */
-    public static void addExplosion(final int x, final int y) {
+    public static synchronized void addExplosion(final int x, final int y) {
         // create particle explosion
-        synchronized (GameController.explosions) {
-            GameController.explosions.add(new Explosion(x, y));
+        explosions.add(new Explosion(x, y));
+    }
+    
+    public static synchronized void drawLemmings(final GraphicsContext g) {
+        for (Lemming l : lemmings) {
+            int lx = l.screenX();
+            int ly = l.screenY();
+            int mx = l.midX();
+            if (lx + l.width() > xPos && lx < xPos + Core.unscale(Lemmini.getPaneWidth())
+                    && ly + l.height() > yPos && ly < yPos + Lemmini.LEVEL_HEIGHT) {
+                g.drawImage(l.getImage(), lx - xPos, ly - yPos);
+            }
+            
+            Image cd = l.getCountdown();
+            if (cd != null) {
+                int x = mx - xPos - cd.getWidth() / 2;
+                int y = ly - yPos - cd.getHeight();
+                if (x + cd.getHeight() > 0 && x < Core.unscale(Lemmini.getPaneWidth())
+                        && y + cd.getHeight() > 0 && y < Lemmini.LEVEL_HEIGHT) {
+                    g.drawImage(cd, x, y);
+                }
+            }
+
+            Image sel = l.getSelectImg();
+            if (sel != null) {
+                int x = mx - xPos - sel.getWidth() / 2;
+                int y = ly - yPos - sel.getHeight();
+                if (x + sel.getHeight() > 0 && x < Core.unscale(Lemmini.getPaneWidth())
+                        && y + sel.getHeight() > 0 && y < Lemmini.LEVEL_HEIGHT) {
+                    g.drawImage(sel, x, y);
+                }
+            }
+        }
+    }
+    
+    public static synchronized void drawMinimapLemmings(final GraphicsContext g, final int x, final int y) {
+        for (Lemming l : lemmings) {
+            int lx = l.midX();
+            int ly = l.midY();
+            // draw pixel in minimap
+            Minimap.drawLemming(g, x, y, lx, ly);
         }
     }
 
@@ -1739,6 +1796,22 @@ public class GameController {
             xPos = x;
         }
     }
+    
+    /**
+     * Set vertical scrolling offset.
+     * @param y vertical scrolling offset in pixels
+     */
+    public static void setYPos(final int y) {
+        if (height < Lemmini.LEVEL_HEIGHT) {
+            yPos = (height - Lemmini.LEVEL_HEIGHT) / 2;
+        } else if (y >= height - Lemmini.LEVEL_HEIGHT) {
+            yPos = height - Lemmini.LEVEL_HEIGHT;
+        } else if (y < 0) {
+            yPos = 0;
+        } else {
+            yPos = y;
+        }
+    }
 
     /**
      * Get horizontal scrolling offset.
@@ -1746,6 +1819,14 @@ public class GameController {
      */
     public static int getXPos() {
         return xPos;
+    }
+    
+    /**
+     * Get vertical scrolling offset.
+     * @return vertical scrolling offset in pixels
+     */
+    public static int getYPos() {
+        return yPos;
     }
 
     /**
@@ -1870,6 +1951,14 @@ public class GameController {
     public static boolean isFastForward() {
         return fastForward;
     }
+    
+    public static void setVerticalLock(final boolean vl) {
+        verticalLock = vl;
+    }
+    
+    public static boolean isVerticalLock() {
+        return verticalLock;
+    }
 
     /** get number of lemmings that exited the level
      * @return number of lemmings that exited the level
@@ -1892,6 +1981,14 @@ public class GameController {
      */
     public static Level getLevel() {
         return level;
+    }
+    
+    /**
+     * Get the number of Lemmings currently in this level.
+     * @return number of Lemmings currently in this level
+     */
+    public static int getNumLemmings() {
+        return lemmings.size();
     }
 
     /**
@@ -1962,11 +2059,25 @@ public class GameController {
     }
 
     /**
-     * Get deque of all Lemmings under the mouse cursor.
-     * @return deque of all Lemmings under the mouse cursor
+     * Get the number of Lemmings under the mouse cursor.
+     * @return the number of Lemmings under the mouse cursor
      */
-    public static Deque<Lemming> getLemmsUnderCursor() {
-        return lemmsUnderCursor;
+    public static int getNumLemmsUnderCursor() {
+        return lemmsUnderCursor.size();
+    }
+    
+    public static synchronized void updateLemmsUnderCursor() {
+        lemmsUnderCursor.clear();
+        for (Lemming l : lemmings) {
+            int lx = l.screenX();
+            int ly = l.screenY();
+            if (lx + l.width() >= xPos && lx < xPos + Core.unscale(Lemmini.getPaneWidth())
+                    && ly + l.height() >= yPos && ly < yPos + Lemmini.LEVEL_HEIGHT) {
+                if (LemmCursor.doesCollide(l, xPos, yPos)) {
+                    lemmsUnderCursor.addFirst(l);
+                }
+            }
+        }
     }
 
     /**
@@ -1974,7 +2085,11 @@ public class GameController {
      * @return list of all Lemmings in this level
      */
     public static List<Lemming> getLemmings() {
-        return lemmings;
+        return Collections.unmodifiableList(lemmings);
+    }
+    
+    public static synchronized void addLemming(Lemming l) {
+        lemmings.add(l);
     }
 
     /**
@@ -2195,6 +2310,10 @@ public class GameController {
         return width;
     }
     
+    public static int getHeight() {
+        return height;
+    }
+    
     public static Path[] getModPaths() {
         return modPaths;
     }
@@ -2215,15 +2334,53 @@ class TrapDoor {
 
     /** number of entrances */
     private static int entrances;
+    /** order of entrances */
+    private static int[] entranceOrder;
     /** entrance counter */
     private static int counter;
 
     /**
      * Reset to new number of entrances.
      * @param e number of entrances
+     * @param eOrder order of entrances if not null; otherwise, use default
      */
-    static void reset(final int e) {
+    static void reset(final int e, final int[] eOrder) throws LemmException {
+        if (e == 0) {
+            throw new LemmException("Level does not have any entrances.");
+        }
         entrances = e;
+        if (eOrder == null) {
+            if (e == 3) {
+                // special case: 3 entrances
+                entranceOrder = PATTERN3;
+            } else {
+                entranceOrder = new int[e];
+                for (int i = 0; i < entranceOrder.length; i++) {
+                    entranceOrder[i] = i;
+                }
+            }
+        } else {
+            int newSize = 0;
+            for (int en : eOrder) {
+                if (en >= 0 && en < e) {
+                    newSize++;
+                }
+            }
+            if (newSize == 0) {
+                throw new LemmException("No entrances in this level are used.");
+            }
+            if (newSize == eOrder.length) {
+                entranceOrder = eOrder.clone();
+            } else {
+                entranceOrder = new int[newSize];
+                for (int i = 0, j = 0; i < eOrder.length && j < entranceOrder.length; i++) {
+                    int en = eOrder[i];
+                    if (en >= 0 && en < e) {
+                        entranceOrder[j++] = eOrder[i];
+                    }
+                }
+            }
+        }
         counter = 0;
     }
 
@@ -2232,18 +2389,10 @@ class TrapDoor {
      * @return index of next entrance
      */
     static int getNext() {
-        int retVal = counter;
-        counter++;
-        if (entrances != 3) {
-            if (counter >= entrances) {
-                counter = 0;
-            }
-            return retVal;
-        }
-        // special case: 3
-        if (counter >= 4) {
+        int retVal = entranceOrder[counter++];
+        if (counter >= entranceOrder.length) {
             counter = 0;
         }
-        return PATTERN3[retVal];
+        return retVal;
     }
 }

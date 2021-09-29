@@ -63,6 +63,7 @@ public class Level {
     private static final int DEFAULT_LEFT_BOUNDARY = 0;
     private static final int DEFAULT_RIGHT_BOUNDARY = -16;
 
+    private final List<Props> levelProps;
     /** array of normal sprite objects - no transparency, drawn behind foreground image */
     private SpriteObject[] sprObjBehind;
     /** array of special sprite objects - with transparency, drawn in front of foreground image */
@@ -95,8 +96,11 @@ public class Level {
     private int numMiners;
     /** number of diggers in this level */
     private int numDiggers;
+    private int[] entranceOrder;
     /** start screen x position */
     private int xPosCenter;
+    /** start screen y position */
+    private int yPosCenter;
     /** background color */
     private Color bgColor;
     /** color used for steps and debris */
@@ -134,12 +138,14 @@ public class Level {
     private Props props;
     private Props props2;
     private int levelWidth;
+    private int levelHeight;
     private int topBoundary;
     private int bottomBoundary;
     private int leftBoundary;
     private int rightBoundary;
 
     public Level() {
+        levelProps = new ArrayList<>(4);
         objects = new ArrayList<>(64);
         terrain = new ArrayList<>(512);
         steel = new ArrayList<>(64);
@@ -158,29 +164,30 @@ public class Level {
         special = null;
         specialMask = null;
         // read level properties from file
+        levelProps.clear();
         Props p = new Props();
         if (!p.load(fname)) {
             throw new ResourceException(fname.toString());
         }
+        levelProps.add(p);
+        
         String mainLevel = p.get("mainLevel", "");
-        Props p2;
-        if (!mainLevel.isEmpty()) {
+        while (!mainLevel.isEmpty()) {
             Path fname2 = fname.resolveSibling(mainLevel);
-            p2 = new Props();
-            if (!p2.load(fname2)) {
+            p = new Props();
+            if (!p.load(fname2)) {
                 throw new ResourceException(fname2.toString());
             }
-        } else {
-            p2 = p;
+            levelProps.add(p);
+            mainLevel = p.get("mainLevel", "");
         }
 
         // read name
-        lvlName = p.get("name", p2.get("name", ""));
+        lvlName = Props.get(levelProps, "name", "");
         //out(fname + " - " + lvlName);
-        maxFallDistance = p.getInt("maxFallDistance",
-                p2.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance()));
-        classicSteel = p.getBoolean("classicSteel", p2.getBoolean("classicSteel", false));
-        switch (p2.getInt("autosteelMode", 0)) {
+        maxFallDistance = Props.getInt(levelProps, "maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
+        classicSteel = Props.getBoolean(levelProps, "classicSteel", false);
+        switch (p.getInt("autosteelMode", 0)) {
             case 0:
             default:
                 autosteelMode = AutosteelMode.NONE;
@@ -192,36 +199,37 @@ public class Level {
                 autosteelMode = AutosteelMode.ADVANCED;
                 break;
         }
-        levelWidth = p2.getInt("width", DEFAULT_WIDTH);
-        topBoundary = p2.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
-        bottomBoundary = p2.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
-        leftBoundary = p2.getInt("leftBoundary", DEFAULT_LEFT_BOUNDARY);
-        rightBoundary = p2.getInt("rightBoundary", DEFAULT_RIGHT_BOUNDARY);
-        releaseRate = p.getInt("releaseRate", p2.getInt("releaseRate", 0));
+        levelWidth = p.getInt("width", DEFAULT_WIDTH);
+        levelHeight = p.getInt("height", DEFAULT_HEIGHT);
+        topBoundary = p.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
+        bottomBoundary = p.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
+        leftBoundary = p.getInt("leftBoundary", DEFAULT_LEFT_BOUNDARY);
+        rightBoundary = p.getInt("rightBoundary", DEFAULT_RIGHT_BOUNDARY);
+        releaseRate = Props.getInt(levelProps, "releaseRate", 0);
         //out("releaseRate = " + releaseRate);
-        numLemmings = p.getInt("numLemmings", p2.getInt("numLemmings", 1));
+        numLemmings = Props.getInt(levelProps, "numLemmings", 1);
+        // sanity check: ensure that there are lemmings in the level to avoid division by 0
+        if (numLemmings <= 0) {
+            numLemmings = 1;
+            throw new LemmException("No lemmings in level.");
+        }
         //out("numLemmings = " + numLemmings);
-        numToRescue = p.getInt("numToRescue", p2.getInt("numToRescue", 0));
+        numToRescue = Props.getInt(levelProps, "numToRescue", 0);
         //out("numToRescue = " + numToRescue);
-        timeLimitSeconds = p.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-        if (timeLimitSeconds == Integer.MIN_VALUE) {
-            int timeLimit = p.getInt("timeLimit", Integer.MIN_VALUE);
-            if (p2 != p && timeLimit == Integer.MIN_VALUE) {
-                timeLimitSeconds = p2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-                if (timeLimitSeconds == Integer.MIN_VALUE) {
-                    timeLimit = p2.getInt("timeLimit", Integer.MIN_VALUE);
-                    // prevent integer overflow upon conversion to seconds
-                    if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
-                        timeLimit = 0;
-                    }
-                    timeLimitSeconds = timeLimit * 60;
-                }
-            } else {
+        timeLimitSeconds = Integer.MIN_VALUE;
+        for (Props p2 : levelProps) {
+            timeLimitSeconds = p2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+            if (timeLimitSeconds != Integer.MIN_VALUE) {
+                break;
+            }
+            int timeLimit = p2.getInt("timeLimit", Integer.MIN_VALUE);
+            if (timeLimit != Integer.MIN_VALUE) {
                 // prevent integer overflow upon conversion to seconds
                 if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
                     timeLimit = 0;
                 }
                 timeLimitSeconds = timeLimit * 60;
+                break;
             }
         }
         if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
@@ -229,37 +237,44 @@ public class Level {
         }
 
         //out("timeLimit = " + timeLimit);
-        numClimbers = p.getInt("numClimbers", p2.getInt("numClimbers", 0));
+        numClimbers = Props.getInt(levelProps, "numClimbers", 0);
         //out("numClimbers = " + numClimbers);
-        numFloaters = p.getInt("numFloaters", p2.getInt("numFloaters", 0));
+        numFloaters = Props.getInt(levelProps, "numFloaters", 0);
         //out("numFloaters = " + numFloaters);
-        numBombers = p.getInt("numBombers", p2.getInt("numBombers", 0));
+        numBombers = Props.getInt(levelProps, "numBombers", 0);
         //out("numBombers = " + numBombers);
-        numBlockers = p.getInt("numBlockers", p2.getInt("numBlockers", 0));
+        numBlockers = Props.getInt(levelProps, "numBlockers", 0);
         //out("numBlockers = " + numBlockers);
-        numBuilders = p.getInt("numBuilders", p2.getInt("numBuilders", 0));
+        numBuilders = Props.getInt(levelProps, "numBuilders", 0);
         //out("numBuilders = " + numBuilders);
-        numBashers = p.getInt("numBashers", p2.getInt("numBashers", 0));
+        numBashers = Props.getInt(levelProps, "numBashers", 0);
         //out("numBashers = " + numBashers);
-        numMiners = p.getInt("numMiners", p2.getInt("numMiners", 0));
+        numMiners = Props.getInt(levelProps, "numMiners", 0);
         //out("numMiners = " + numMiners);
-        numDiggers = p.getInt("numDiggers", p2.getInt("numDiggers", 0));
+        numDiggers = Props.getInt(levelProps, "numDiggers", 0);
         //out("numDiggers = " + numDiggers);
-        xPosCenter = p.getInt("xPosCenter", Integer.MIN_VALUE);
-        if (xPosCenter == Integer.MIN_VALUE) {
-            int xPos = p.getInt("xPos", Integer.MIN_VALUE);
-            if (p2 != p && xPos == Integer.MIN_VALUE) {
-                xPosCenter = p2.getInt("xPosCenter", Integer.MIN_VALUE);
-                if (xPosCenter == Integer.MIN_VALUE) {
-                    xPos = p2.getInt("xPos", Integer.MIN_VALUE);
-                    xPosCenter = xPos + 400;
-                }
-            } else {
+        entranceOrder = Props.getIntArray(levelProps, "entranceOrder", null);
+        if (entranceOrder != null && entranceOrder.length == 0) {
+            entranceOrder = null;
+        }
+        xPosCenter = Integer.MIN_VALUE;
+        for (Props p2 : levelProps) {
+            xPosCenter = p2.getInt("xPosCenter", Integer.MIN_VALUE);
+            if (xPosCenter != Integer.MIN_VALUE) {
+                break;
+            }
+            int xPos = p2.getInt("xPos", Integer.MIN_VALUE);
+            if (xPos != Integer.MIN_VALUE) {
                 xPosCenter = xPos + 400;
+                break;
             }
         }
+        if (xPosCenter == Integer.MIN_VALUE) {
+            xPosCenter = 0;
+        }
+        yPosCenter = Props.getInt(levelProps, "yPosCenter", 0);
         //out("xPosCenter = " + xPosCenter);
-        String strStyle = p2.get("style", "");
+        String strStyle = p.get("style", "");
         int style = -1;
         for (int i = 0; i < STYLES.length; i++) {
             if (strStyle.equalsIgnoreCase(STYLES[i])) {
@@ -268,7 +283,7 @@ public class Level {
             }
         }
         //out("style = " + STYLES[style]);
-        String strSpecialStyle = p2.get("specialStyle", "");
+        String strSpecialStyle = p.get("specialStyle", "");
         int specialStyle = -1;
         for (int i = 0; i < SPECIAL_STYLES.length; i++) {
             if (strSpecialStyle.equalsIgnoreCase(SPECIAL_STYLES[i])) {
@@ -277,8 +292,8 @@ public class Level {
             }
         }
         //out("specialStyle = " + strSpecialStyle);
-        superlemming = p.getBoolean("superlemming", p2.getBoolean("superlemming", false));
-        forceNormalTimerSpeed = p.getBoolean("forceNormalTimerSpeed", p2.getBoolean("forceNormalTimerSpeed", false));
+        superlemming = Props.getBoolean(levelProps, "superlemming", false);
+        forceNormalTimerSpeed = Props.getBoolean(levelProps, "forceNormalTimerSpeed", false);
         
         // load objects
         sprObjAvailable = null;
@@ -344,7 +359,7 @@ public class Level {
         //out("\n[Objects]");
         objects.clear();
         for (int i = 0; true; i++) {
-            int[] val = p2.getIntArray("object_" + i, null);
+            int[] val = p.getIntArray("object_" + i, null);
             if (val != null && val.length >= 5) {
                 LvlObject obj = new LvlObject(val);
                 objects.add(obj);
@@ -365,7 +380,7 @@ public class Level {
             terrain.add(ter);
         }
         for (int i = 0; true; i++) {
-            int[] val = p2.getIntArray("terrain_" + i, null);
+            int[] val = p.getIntArray("terrain_" + i, null);
             if (val != null && val.length >= 4) {
                 Terrain ter = new Terrain(val, false);
                 terrain.add(ter);
@@ -378,7 +393,7 @@ public class Level {
         //out("\n[Steel]");
         steel.clear();
         for (int i = 0; true; i++) {
-            int[] val = p2.getIntArray("steel_" + i, null);
+            int[] val = p.getIntArray("steel_" + i, null);
             if (val != null && val.length >= 4) {
                 Steel stl = new Steel(val);
                 steel.add(stl);
@@ -389,18 +404,19 @@ public class Level {
         }
         // read background
         backgrounds.clear();
-        int numBackgrounds = p2.getInt("numBackgrounds", 0);
+        int numBackgrounds = p.getInt("numBackgrounds", 0);
         for (int i = 0; i < numBackgrounds; i++) {
             List<LvlObject> bgObjects = new ArrayList<>(16);
             List<Terrain> bgTerrain = new ArrayList<>(256);
-            boolean bgTiled = p2.getBoolean("bg_" + i + "_tiled", false);
-            int bgWidth = p2.getInt("bg_" + i + "_width", 0);
-            int bgHeight = p2.getInt("bg_" + i + "_height", 0);
-            int bgOffsetX = p2.getInt("bg_" + i + "_offsetX", 0);
-            int bgOffsetY = p2.getInt("bg_" + i + "_offsetY", 0);
-            double bgScrollSpeedX = p2.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
+            boolean bgTiled = p.getBoolean("bg_" + i + "_tiled", false);
+            int bgWidth = p.getInt("bg_" + i + "_width", 0);
+            int bgHeight = p.getInt("bg_" + i + "_height", 0);
+            int bgOffsetX = p.getInt("bg_" + i + "_offsetX", 0);
+            int bgOffsetY = p.getInt("bg_" + i + "_offsetY", 0);
+            double bgScrollSpeedX = p.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
+            double bgScrollSpeedY = p.getDouble("bg_" + i + "_scrollSpeedY", 0.0);
             for (int j = 0; true; j++) {
-                int[] val = p2.getIntArray("bg_" + i + "_object_" + j, null);
+                int[] val = p.getIntArray("bg_" + i + "_object_" + j, null);
                 if (val != null && val.length >= 5) {
                     LvlObject obj = new LvlObject(val);
                     bgObjects.add(obj);
@@ -409,7 +425,7 @@ public class Level {
                 }
             }
             for (int j = 0; true; j++) {
-                int[] val = p2.getIntArray("bg_" + i + "_terrain_" + j, null);
+                int[] val = p.getIntArray("bg_" + i + "_terrain_" + j, null);
                 if (val != null && val.length >= 4) {
                     Terrain ter = new Terrain(val, false);
                     bgTerrain.add(ter);
@@ -417,7 +433,7 @@ public class Level {
                     break;
                 }
             }
-            backgrounds.add(new Background(bgObjects, bgTerrain, bgTiled, bgWidth, bgHeight, bgOffsetX, bgOffsetY, bgScrollSpeedX));
+            backgrounds.add(new Background(bgObjects, bgTerrain, bgTiled, bgWidth, bgHeight, bgOffsetX, bgOffsetY, bgScrollSpeedX, bgScrollSpeedY));
         }
         ready = true;
     }
@@ -846,16 +862,20 @@ public class Level {
      * Draw opaque objects behind foreground image.
      * @param g graphics object to draw on
      * @param width width of screen
-     * @param xOfs level offset position
+     * @param height height of screen
+     * @param xOfs level offset x position
+     * @param xOfs level offset y position
      */
-    public void drawBehindObjects(final GraphicsContext g, final int width, final int xOfs) {
+    public void drawBehindObjects(final GraphicsContext g, final int width, final int height,
+            final int xOfs, final int yOfs) {
         // draw "behind" objects
         if (sprObjBehind != null) {
             for (int n = sprObjBehind.length - 1; n >= 0; n--) {
                 SpriteObject spr = sprObjBehind[n];
                 Image img = spr.getImage();
-                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width) {
-                    g.drawImage(img, spr.getX() - xOfs, spr.getY());
+                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width
+                        && spr.getY() + spr.getHeight() > yOfs && spr.getY() < yOfs + height) {
+                    g.drawImage(img, spr.getX() - xOfs, spr.getY() - yOfs);
                 }
             }
         }
@@ -865,22 +885,26 @@ public class Level {
      * Draw transparent objects in front of foreground image.
      * @param g graphics object to draw on
      * @param width width of screen
-     * @param xOfs level offset position
+     * @param height height of screen
+     * @param xOfs level offset x position
+     * @param yOfs level offset y position
      */
-    public void drawInFrontObjects(final GraphicsContext g, final int width, final int xOfs) {
+    public void drawInFrontObjects(final GraphicsContext g, final int width, final int height,
+            final int xOfs, final int yOfs) {
         // draw "in front" objects
         if (sprObjFront != null) {
             for (SpriteObject spr : sprObjFront) {
                 Image img = spr.getImage();
-                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width) {
-                    g.drawImage(img, spr.getX() - xOfs, spr.getY());
+                if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width
+                        && spr.getY() + spr.getHeight() > yOfs && spr.getY() < yOfs + height) {
+                    g.drawImage(img, spr.getX() - xOfs, spr.getY() - yOfs);
                 }
             }
         }
     }
     
-    public void drawBackground(final GraphicsContext g, final int width,
-            final int xOfs, final int scaleX, final int scaleY) {
+    public void drawBackground(final GraphicsContext g, final int width, final int height,
+            final int xOfs, final int yOfs, final int scaleX, final int scaleY) {
         List<Image> bgImages = GameController.getBgImages();
         if (bgImages == null || scaleX == 0 || scaleY == 0) {
             return;
@@ -896,7 +920,7 @@ public class Level {
             int bgImageHeight = bgImage.getHeight();
             
             int xOfsNew = (int) (-xOfs * bg.scrollSpeedX) + bg.offsetX;
-            int yOfsNew = bg.offsetY;
+            int yOfsNew = (int) (-yOfs * bg.scrollSpeedY) + bg.offsetY;
             if (bg.tiled) {
                 xOfsNew %= bgImageWidth;
                 xOfsNew -= (xOfsNew > 0) ? bgImageWidth : 0;
@@ -904,7 +928,7 @@ public class Level {
                 yOfsNew -= (yOfsNew > 0) ? bgImageHeight : 0;
             }
             
-            for (int y = yOfsNew; y < DEFAULT_HEIGHT; y += bgImageHeight) {
+            for (int y = yOfsNew; y < height; y += bgImageHeight) {
                 for (int x = xOfsNew; x < width; x += bgImageWidth) {
                     // draw "behind" objects
                     if (bg.sprObjBehind != null) {
@@ -1193,7 +1217,7 @@ public class Level {
         gx.clearRect(0, 0, width, height);
         // draw background image
         if (drawBackground) {
-            drawBackground(gx, fgImage.getWidth(), 0, scaleX, scaleY);
+            drawBackground(gx, fgImage.getWidth(), fgImage.getHeight(), 0, 0, scaleX, scaleY);
         }
         // draw "behind" objects
         if (level != null && level.sprObjBehind != null) {
@@ -1271,6 +1295,10 @@ public class Level {
         }
         return entrances.length;
     }
+    
+    public int[] getEntranceOrder() {
+        return entranceOrder;
+    }
 
     /**
      * Get background color.
@@ -1314,6 +1342,14 @@ public class Level {
      */
     public int getXPosCenter() {
         return xPosCenter;
+    }
+    
+    /**
+     * Get start screen y position.
+     * @return start screen y position
+     */
+    public int getYPosCenter() {
+        return yPosCenter;
     }
 
     /**
@@ -1427,6 +1463,10 @@ public class Level {
     
     public int getWidth() {
         return levelWidth;
+    }
+    
+    public int getHeight() {
+        return levelHeight;
     }
     
     public int getTopBoundary() {
@@ -1642,9 +1682,10 @@ class Background {
     int offsetX;
     int offsetY;
     double scrollSpeedX;
+    double scrollSpeedY;
     
     Background(final List<LvlObject> o, final List<Terrain> t, final boolean ti,
-            final int w, final int h, final int ofsX, final int ofsY, final double ssx) {
+            final int w, final int h, final int ofsX, final int ofsY, final double ssx, final double ssy) {
         objects = o;
         terrain = t;
         tiled = ti;
@@ -1653,5 +1694,6 @@ class Background {
         offsetX = ofsX;
         offsetY = ofsY;
         scrollSpeedX = ssx;
+        scrollSpeedY = ssy;
     }
 }

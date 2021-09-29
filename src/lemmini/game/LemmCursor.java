@@ -234,12 +234,13 @@ public class LemmCursor  {
      * Check if a Lemming is under the cursor.
      * @param l Lemming to check
      * @param xOfs screen x offset
+     * @param yOfs screen y offset
      * @return true if the Lemming is under the Cursor, else false.
      */
-    public static boolean doesCollide(final Lemming l, final int xOfs) {
+    public static boolean doesCollide(final Lemming l, final int xOfs, final int yOfs) {
         // get center of lemming
         int lx = l.midX() - xOfs;
-        int ly = l.midY();
+        int ly = l.midY() - yOfs;
 
         // calculate center of cursor
         int cx = getX();

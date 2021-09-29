@@ -49,6 +49,7 @@ public class Explosion {
     private static final double GRAVITY = 0.1;
     /** Remove the explosion bitmaps after REMOVE_IMAGE_CTR animation steps */
     private static final int REMOVE_IMAGE_CTR = 2;
+    private static final int PARTICLE_SIZE = 2;
 
     /** array of particles */
     private final Particle[] particles;
@@ -130,16 +131,18 @@ public class Explosion {
      * @param width
      * @param height
      * @param xOfs
+     * @param yOfs
      */
-    public void draw(final GraphicsContext g, final int width, final int height, final int xOfs) {
+    public void draw(final GraphicsContext g, final int width, final int height, final int xOfs, final int yOfs) {
         if (!finished) {
             int maxY = height - 1;
             int maxX = width - 1;
             // draw explosion bitmap
             if (counter <= REMOVE_IMAGE_CTR) {
                 int x = xExp - xOfs;
-                if (x > 0 && x < maxX) {
-                    g.drawImage(expImg, xExp - xOfs, yExp);
+                int y = yExp - yOfs;
+                if (x + expImg.getWidth() > 0 && x <= maxX && y + expImg.getHeight() > 0 && y <= maxY) {
+                    g.drawImage(expImg, x, y);
                 }
             } else {
                 // draw particles
@@ -148,8 +151,8 @@ public class Explosion {
                     if (p != null) {
                         // draw
                         int x = (int) p.x - xOfs;
-                        int y = (int) p.y;
-                        if (x > 0 && x < maxX - 1 && y > 0 && y < maxY - 1) {
+                        int y = (int) p.y - yOfs;
+                        if (x + PARTICLE_SIZE > 0 && x <= maxX && y + PARTICLE_SIZE > 0 && y <= maxY) {
                             g.setColor(p.color);
                             g.fillRect(x, y, 2, 2);
                         }

@@ -147,17 +147,6 @@ public class Fader {
                 break;
         }
     }
-    
-    /**
-     * Set fader state.
-     * @param s state
-     * @param g graphics to fade
-     */
-    public static synchronized void setState(final State s, final GraphicsContext g) {
-        setState(s);
-        setAlpha(fadeValue);
-        apply(g);
-    }
 
     /**
      * Get fader state.
@@ -183,7 +172,7 @@ public class Fader {
      * Fade.
      * @param g graphics to fade
      */
-    public static synchronized void fade(final GraphicsContext g) {
+    public static synchronized void fade() {
         switch (fadeState) {
             case IN:
                 if (fadeValue >= fadeStep) {
@@ -193,7 +182,6 @@ public class Fader {
                     fadeState = State.OFF;
                 }
                 Fader.setAlpha(fadeValue);
-                Fader.apply(g);
                 // System.out.println(fadeValue);
                 break;
             case OUT:
@@ -204,7 +192,6 @@ public class Fader {
                     fadeState = State.OFF;
                 }
                 Fader.setAlpha(fadeValue);
-                Fader.apply(g);
                 // System.out.println(fadeValue);
                 break;
             default:

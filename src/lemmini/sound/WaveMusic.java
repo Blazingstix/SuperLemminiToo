@@ -133,11 +133,16 @@ public class WaveMusic implements Runnable, MusicPlayer {
                         line.drain();
                     }
                 } else {
-                    try {
-                        line.flush();
-                        Thread.sleep(40);
-                    } catch (InterruptedException ex) {
+                    line.stop();
+                    synchronized (this) {
+                        while (!play && Thread.currentThread() == waveThread) {
+                            try {
+                                wait();
+                            } catch (InterruptedException ex) {
+                            }
+                        }
                     }
+                    line.start();
                 }
             }
         } catch (Exception e) {
@@ -151,19 +156,14 @@ public class WaveMusic implements Runnable, MusicPlayer {
     }
 
     @Override
-    public void stop() {
-        if (waveThread != null) {
-            waveThread.interrupt();
-        }
+    public synchronized void stop() {
         play = false;
     }
 
     @Override
-    public void play() {
-        if (waveThread != null) {
-            waveThread.interrupt();
-        }
+    public synchronized void play() {
         play = true;
+        notifyAll();
     }
 
     @Override
@@ -171,7 +171,14 @@ public class WaveMusic implements Runnable, MusicPlayer {
         if (waveThread == null) {
             return;
         }
-        play = false;
+        Thread moribund = waveThread;
+        waveThread = null;
+        try {
+            moribund.interrupt();
+            moribund.join();
+        } catch (InterruptedException ex) {
+        }
+        
         try {
             if (introIn != null) {
                 introIn.close();
@@ -185,13 +192,6 @@ public class WaveMusic implements Runnable, MusicPlayer {
         try {
             din.close();
         } catch (IOException ex) {
-        }
-        Thread moribund = waveThread;
-        waveThread = null;
-        try {
-            moribund.interrupt();
-            moribund.join();
-        } catch (InterruptedException ex) {
         }
     }
 

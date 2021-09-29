@@ -72,7 +72,7 @@ public class Minimap {
      * @param y y position in pixels
      */
     public static void draw(final GraphicsContext g, final int x, final int y) {
-        g.drawImage(img, x, y);
+        g.drawImage(img, x, y - GameController.getYPos() / scaleY);
     }
 
     /**
@@ -83,21 +83,11 @@ public class Minimap {
      */
     public static void drawLemming(final GraphicsContext g, final int x, final int y, final int lx, final int ly) {
         int sx = x + lx / scaleX;
-        int sy = y + ly / scaleY;
-        if (sx > x + width - LEMM_DOT_SCALE) {
-            sx = x + width - LEMM_DOT_SCALE;
-        } 
-        if (sx < x) {
-            sx = x;
+        int sy = y + (ly - GameController.getYPos()) / scaleY;
+        if (sx + LEMM_DOT_SCALE > x && sx < x + width && sy + LEMM_DOT_SCALE > y && sy < y + Lemmini.LEVEL_HEIGHT) {
+            g.setColor(LEMM_COLOR);
+            g.fillRect(sx, sy, LEMM_DOT_SCALE, LEMM_DOT_SCALE);
         }
-        if (sy > y + height - LEMM_DOT_SCALE) {
-            sy = y + height - LEMM_DOT_SCALE;
-        }
-        if (sy < y) {
-            sy = y;
-        }
-        g.setColor(LEMM_COLOR);
-        g.fillRect(sx, sy, LEMM_DOT_SCALE, LEMM_DOT_SCALE);
     }
     
     /**
@@ -111,9 +101,9 @@ public class Minimap {
         int wWidth = Core.unscale(Lemmini.getPaneWidth());
         g.setColor(FRAME_COLOR);
         if (GameController.getWidth() < Core.unscale(Lemmini.getPaneWidth())) {
-            g.drawRect(x, y, GameController.getWidth() / scaleX, img.getHeight() - 1);
+            g.drawRect(x, y, GameController.getWidth() / scaleX, Lemmini.LEVEL_HEIGHT / scaleY - 1);
         } else {
-            g.drawRect(x + xOfs / scaleX, y, wWidth / scaleX, img.getHeight() - 1);
+            g.drawRect(x + xOfs / scaleX, y, wWidth / scaleX, Lemmini.LEVEL_HEIGHT / scaleY - 1);
         }
     }
 
@@ -124,6 +114,22 @@ public class Minimap {
     public static Image getImage() {
         return img;
     }
+    
+    public static int getWidth() {
+        return width;
+    }
+    
+    public static int getHeight() {
+        return height;
+    }
+    
+    public static int getScaleX() {
+        return scaleX;
+    }
+    
+    public static int getScaleY() {
+        return scaleY;
+    }
 
     /**
      * Move screen frame via minimap.
@@ -133,9 +139,6 @@ public class Minimap {
      * @return new horizontal screen offset
      */
     public static int move(final int x, final int y, final int swidth) {
-        if (y < 0 || y >= height || x < 0 || x >= width) {
-            return -1; // cursor outside the minimap
-        }
         int xOfs;
         if (swidth > GameController.getWidth()) {
             xOfs = (GameController.getWidth() - swidth) / 2;

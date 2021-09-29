@@ -82,7 +82,7 @@ public class Sound {
     
     public enum PitchedEffect {
         RELEASE_RATE (Effect.CHANGE_RR, 2.0, -50.0, 48.0, 100),
-        SKILL (Effect.SELECT_SKILL, 2.0, -4.0, 12.0, 18);
+        SKILL (Effect.SELECT_SKILL, 2.0, -4.0, 12.0, 20);
         
         private final Effect effect;
         private final double base;
@@ -395,7 +395,7 @@ public class Sound {
      * @param pan panning
      */
     public synchronized void play(final int idx, final double pan) {
-        if (idx < 0 || !GameController.isSoundOn() /*|| simulSounds >= MAX_SIMUL_SOUNDS*/) {
+        if (idx < 0 || !GameController.isSoundOn()) {
             return;
         }
         
@@ -404,18 +404,6 @@ public class Sound {
             availableLineHandlers.add(lh);
             lh.play(soundBuffers[idx], pan);
         }
-        
-        /*try {
-            Clip c = (Clip) mixers[mixerIdx].getLine(info);
-            // Add a listener for line events
-            c.addLineListener(defaultListener);
-            c.open(format, soundBuffers[idx], 0, soundBuffers[idx].length);
-            setLineGain(c, gain);
-            setLinePan(c, pan);
-            c.start();
-            simulSounds++;
-        } catch (LineUnavailableException ex) {
-        }*/
     }
 
     /**
@@ -460,19 +448,6 @@ public class Sound {
             availableLineHandlers.add(lh);
             lh.play(pitchBuffers[pe.ordinal()][pitch], 0.0);
         }
-        
-        /*try {
-            int peOrdinal = pe.ordinal();
-            Clip c = (Clip) mixers[mixerIdx].getLine(info);
-            // Add a listener for line events
-            c.addLineListener(defaultListener);
-            c.open(format, pitchBuffers[peOrdinal][pitch], 0, pitchBuffers[peOrdinal][pitch].length);
-            setLineGain(c, gain);
-            setLinePan(c, 0.0);
-            c.start();
-            simulSounds++;
-        } catch (LineUnavailableException ex) {
-        }*/
     }
 
     /**
@@ -754,51 +729,51 @@ public class Sound {
             nextBuffer = null;
             open = false;
             
-            lineThread = new Thread(this);
+            lineThread = new Thread(null, this, "LineHandler");
         }
 
         @Override
         public void run() {
             try {
                 line.open();
+                line.start();
                 setLineGain(line, gain);
                 open = true;
-                while (open) {
-                    byte[] currentBuffer = null;
-                    float currentPan = 0.0f;
-                    int bufferIndex = 0;
-                    
-                    synchronized (this) {
-                        try {
-                            wait();
-                        } catch (InterruptedException ex) {
-                            if (!open) {
-                                break;
+                top:
+                    while (open) {
+                        byte[] currentBuffer = null;
+                        float currentPan = 0.0f;
+                        int bufferIndex = 0;
+
+                        synchronized (this) {
+                            while (nextBuffer == null && open) {
+                                try {
+                                    wait();
+                                } catch (InterruptedException ex) {
+                                }
+                            }
+                            if (nextBuffer != null && open) {
+                                currentBuffer = nextBuffer;
+                                nextBuffer = null;
+                                currentPan = pan;
                             }
                         }
-                        if (nextBuffer != null) {
-                            currentBuffer = nextBuffer;
-                            nextBuffer = null;
-                            currentPan = pan;
-                        }
-                    }
-                    
-                    if (currentBuffer != null) {
-                        origQueue.remove(this);
-                        setPan(currentPan);
-                        line.start();
-                        while (open && bufferIndex < currentBuffer.length) {
-                            bufferIndex += line.write(currentBuffer, bufferIndex,
-                                    Math.min(lineBufferSize, currentBuffer.length - bufferIndex));
-                            if (Thread.interrupted() && !open) {
-                                break;
+
+                        if (currentBuffer != null && open) {
+                            origQueue.remove(this);
+                            setPan(currentPan);
+                            while (open && bufferIndex < currentBuffer.length) {
+                                bufferIndex += line.write(currentBuffer, bufferIndex,
+                                        Math.min(lineBufferSize, currentBuffer.length - bufferIndex));
+                                if (Thread.interrupted() && !open) {
+                                    origQueue.add(this);
+                                    break top;
+                                }
                             }
+                            line.drain();
+                            origQueue.add(this);
                         }
-                        line.drain();
-                        line.stop();
-                        origQueue.add(this);
                     }
-                }
             } catch (LineUnavailableException ex) {
                 ex.printStackTrace();
             } finally {
@@ -813,9 +788,9 @@ public class Sound {
                 return;
             }
             
-            nextBuffer = newBuffer;
-            pan = (float) Math.max(Math.min(newPan, 1.0), -1.0);
             synchronized (this) {
+                nextBuffer = newBuffer;
+                pan = (float) Math.max(Math.min(newPan, 1.0), -1.0);
                 notifyAll();
             }
         }

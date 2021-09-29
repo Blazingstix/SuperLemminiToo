@@ -17,8 +17,12 @@
 package lemmini.gui;
 
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import javax.swing.JOptionPane;
 import javax.swing.tree.*;
 import lemmini.Lemmini;
 import lemmini.game.*;
@@ -214,7 +218,7 @@ public class LevelDialog extends javax.swing.JDialog {
 
         jTextFieldScore.setEditable(false);
 
-        jButtonAddExternal.setText("Add External Level...");
+        jButtonAddExternal.setText("Add External Levels...");
         jButtonAddExternal.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButtonAddExternalActionPerformed(evt);
@@ -497,32 +501,60 @@ public class LevelDialog extends javax.swing.JDialog {
     }//GEN-LAST:event_jTreeLevelsMousePressed
 
     private void jButtonAddExternalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalActionPerformed
-        Path extLvl = ToolBox.getFileName(this, lvlPath, Core.LEVEL_EXTENSIONS, true);
-        if (extLvl != null) {
-            lvlPath = extLvl.getParent();
-            String lvlExt = Lemmini.addExternalLevel(extLvl);
-            if (lvlExt != null) {
+        Path[] externLvls = ToolBox.getFileNames(this, lvlPath, Core.LEVEL_EXTENSIONS, true, true);
+        if (externLvls != null) {
+            if (externLvls.length > 0) {
+                lvlPath = externLvls[0].getParent();
+            }
+            String lastLvlExt = null;
+            for (Path externLvl : externLvls) {
+                if (Files.isDirectory(externLvl)) {
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, "*.{ini,lvl,dat}")) {
+                        for (Path lvl : stream) {
+                            String lvlExt = Lemmini.addExternalLevel(lvl, false);
+                            if (lvlExt != null) {
+                                lastLvlExt = lvlExt;
+                            }
+                        }
+                    } catch (IOException ex) {
+                    }
+                } else {
+                    String lvlExt = Lemmini.addExternalLevel(externLvl, false);
+                    if (lvlExt != null) {
+                        lastLvlExt = lvlExt;
+                    }
+                }
+            }
+            if (lastLvlExt != null) {
                 refreshLevels();
                 Object[] selPathArray = new Object[4];
-                if (lvlExt.equals("dat")) {
-                    TreeNode lp = topNode.getFirstChild();
-                    TreeNode rating = lp.getChildAt(lp.getChildCount() - 1);
-                    TreeNode level = rating.getChildAt(0);
-                    selPathArray[0] = topNode;
-                    selPathArray[1] = lp;
-                    selPathArray[2] = rating;
-                    selPathArray[3] = level;
-                } else {
-                    TreeNode lp = topNode.getFirstChild();
-                    TreeNode rating = lp.getChildAt(0);
-                    TreeNode level = rating.getChildAt(rating.getChildCount() - 1);
-                    selPathArray[0] = topNode;
-                    selPathArray[1] = lp;
-                    selPathArray[2] = rating;
-                    selPathArray[3] = level;
+                switch (lastLvlExt) {
+                    case "ini":
+                    case "lvl":
+                        TreeNode lp = topNode.getFirstChild();
+                        TreeNode rating = lp.getChildAt(0);
+                        TreeNode level = rating.getChildAt(rating.getChildCount() - 1);
+                        selPathArray[0] = topNode;
+                        selPathArray[1] = lp;
+                        selPathArray[2] = rating;
+                        selPathArray[3] = level;
+                        break;
+                    case "dat":
+                        lp = topNode.getFirstChild();
+                        rating = lp.getChildAt(lp.getChildCount() - 1);
+                        level = rating.getChildAt(0);
+                        selPathArray[0] = topNode;
+                        selPathArray[1] = lp;
+                        selPathArray[2] = rating;
+                        selPathArray[3] = level;
+                        break;
+                    default:
+                        break;
                 }
                 levelModel.reload();
                 jTreeLevels.setSelectionPath(new TreePath(selPathArray));
+            } else {
+                JOptionPane.showMessageDialog(this, "No valid level files were loaded.", "Load Level", JOptionPane.ERROR_MESSAGE);
             }
         }
     }//GEN-LAST:event_jButtonAddExternalActionPerformed

@@ -61,7 +61,7 @@ public class GainDialog extends javax.swing.JDialog {
         jSliderMusic.setMajorTickSpacing(10);
         jSliderMusic.setMaximum(200);
         jSliderMusic.setPaintTicks(true);
-        jSliderMusic.setValue((int) (100 * GameController.getSoundGain()));
+        jSliderMusic.setValue((int) (100 * GameController.getMusicGain()));
 
         jLabelSoundGain.setLabelFor(jSliderSound);
         jLabelSoundGain.setText("Sound Volume");
@@ -69,7 +69,7 @@ public class GainDialog extends javax.swing.JDialog {
         jSliderSound.setMajorTickSpacing(10);
         jSliderSound.setMaximum(200);
         jSliderSound.setPaintTicks(true);
-        jSliderSound.setValue((int) (100 * GameController.getMusicGain()));
+        jSliderSound.setValue((int) (100 * GameController.getSoundGain()));
 
         jButtonOK.setText("OK");
         jButtonOK.addActionListener(new java.awt.event.ActionListener() {

@@ -7,7 +7,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.DataLine;
 import javax.sound.sampled.LineUnavailableException;
@@ -140,13 +139,17 @@ public class ModMusic implements Runnable, MusicPlayer {
                             line.drain();
                         }
                     }
-                    Thread.yield();
                 } else {
-                    try {
-                        line.flush();
-                        Thread.sleep(40);
-                    } catch (InterruptedException ex) {
+                    line.stop();
+                    synchronized (this) {
+                        while (!play && Thread.currentThread() == modThread) {
+                            try {
+                                wait();
+                            } catch (InterruptedException ex) {
+                            }
+                        }
                     }
+                    line.start();
                 }
             }
         } catch (LineUnavailableException e) {
@@ -159,25 +162,20 @@ public class ModMusic implements Runnable, MusicPlayer {
     }
 
     /**
-     * Instruct the run() method to finish playing and return.
+     * Instruct the run() method to pause playback.
      */
     @Override
-    public void stop() {
-        if (modThread != null) {
-            modThread.interrupt();
-        }
+    public synchronized void stop() {
         play = false;
     }
 
     /**
-     * Instruct the run() method to resume playing.
+     * Instruct the run() method to resume playback.
      */
     @Override
-    public void play() {
-        if (modThread != null) {
-            modThread.interrupt();
-        }
+    public synchronized void play() {
         play = true;
+        notifyAll();
     }
 
     /**
@@ -188,6 +186,7 @@ public class ModMusic implements Runnable, MusicPlayer {
         if (modThread == null) {
             return;
         }
+        stop();
         Thread moribund = modThread;
         modThread = null;
         try {

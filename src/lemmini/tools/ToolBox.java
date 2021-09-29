@@ -208,9 +208,11 @@ public class ToolBox {
      * @param path default file name
      * @param ext array of allowed extensions
      * @param load true: load, false: save
+     * @param allowDirectories allow directories to be selected if true
      * @return absolute file name of selected file or null
      */
-    public static Path getFileName(final Component parent, final Path path, final String[] ext, final boolean load) {
+    public static Path getFileName(final Component parent, final Path path, final String[] ext,
+            final boolean load, final boolean allowDirectories) {
         JFileChooser jf = new JFileChooser(path.toFile());
         if (ext != null) {
             StringBuilder sb = new StringBuilder(32);
@@ -223,7 +225,7 @@ public class ToolBox {
             FileNameExtensionFilter filter = new FileNameExtensionFilter(sb.toString(), ext);
             jf.setFileFilter(filter);
         }
-        jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        jf.setFileSelectionMode(allowDirectories ? JFileChooser.FILES_AND_DIRECTORIES : JFileChooser.FILES_ONLY);
         if (!load) {
             jf.setDialogType(JFileChooser.SAVE_DIALOG);
         }
@@ -233,6 +235,46 @@ public class ToolBox {
             if (f != null) {
                 return f.toPath().toAbsolutePath();
             }
+        }
+        return null;
+    }
+    
+    /**
+     * Open file dialog.
+     * @param parent parent frame
+     * @param path default file name
+     * @param ext array of allowed extensions
+     * @param load true: load, false: save
+     * @param allowDirectories allow directories to be selected if true
+     * @return absolute file names of selected files or null
+     */
+    public static Path[] getFileNames(final Component parent, final Path path, final String[] ext,
+            final boolean load, final boolean allowDirectories) {
+        JFileChooser jf = new JFileChooser(path.toFile());
+        if (ext != null) {
+            StringBuilder sb = new StringBuilder(32);
+            for (int i = 0; i < ext.length; i++) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+                sb.append("*.").append(ext[i]);
+            }
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(sb.toString(), ext);
+            jf.setFileFilter(filter);
+        }
+        jf.setFileSelectionMode(allowDirectories ? JFileChooser.FILES_AND_DIRECTORIES : JFileChooser.FILES_ONLY);
+        jf.setMultiSelectionEnabled(true);
+        if (!load) {
+            jf.setDialogType(JFileChooser.SAVE_DIALOG);
+        }
+        int returnVal = jf.showDialog(parent, null);
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+            File[] f = jf.getSelectedFiles();
+            Path[] ret = new Path[f.length];
+            for (int i = 0; i < f.length; i++) {
+                ret[i] = f[i].toPath().toAbsolutePath();
+            }
+            return ret;
         }
         return null;
     }
@@ -276,7 +318,9 @@ public class ToolBox {
     public static boolean checkFileID(final Reader r, final String header) {
         try {
             char[] buf = new char[header.length()];
+            r.mark(header.length());
             int charsRead = r.read(buf);
+            r.reset();
             String s = new String(buf, 0, charsRead);
             return s.equals(header);
         } catch (IOException ex) {

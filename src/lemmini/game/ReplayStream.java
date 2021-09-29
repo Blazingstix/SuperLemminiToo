@@ -443,6 +443,7 @@ class ReplayMovePosEvent extends ReplayEvent {
     public ReplayMovePosEvent(final int ctr, final int x, final int y, final int plr) {
         super(ctr, ReplayStream.MOVE_POS);
         xPos = x;
+        yPos = y;
         player = plr;
     }
 

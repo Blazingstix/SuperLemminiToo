@@ -5,6 +5,8 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import lemmini.sound.Music;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
@@ -71,7 +73,7 @@ public class LevelInfo {
         music = Paths.get("");
         fileName = Paths.get("");
         releaseRate = 0;
-        numLemmings = 0;
+        numLemmings = 1;
         numToRescue = 0;
         timeLimitSeconds = 0;
         numClimbers = 0;
@@ -90,7 +92,7 @@ public class LevelInfo {
         music = newMusic;
         name = "";
         releaseRate = 0;
-        numLemmings = 0;
+        numLemmings = 1;
         numToRescue = 0;
         timeLimitSeconds = 0;
         numClimbers = 0;
@@ -104,72 +106,68 @@ public class LevelInfo {
         validLevel = false;
         
         try (Reader r = ToolBox.getBufferedReader(fname)) {
-            r.mark(5);
             if (ToolBox.checkFileID(r, "# LVL")) {
-                r.reset();
+                List<Props> propsList = new ArrayList<>(4);
                 Props props = new Props();
                 props.load(r);
+                propsList.add(props);
                 String mainLevel = props.get("mainLevel", "");
-                Props props2;
-                if (!mainLevel.isEmpty()) {
-                    props2 = new Props();
+                while (!mainLevel.isEmpty()) {
                     Path fname2 = fname.resolveSibling(mainLevel);
                     if (!Files.isRegularFile(fname2)) {
                         return;
                     }
+                    props = new Props();
                     try (Reader r2 = ToolBox.getBufferedReader(fname2)) {
-                        r2.mark(5);
                         if (ToolBox.checkFileID(r2, "# LVL")) {
-                            r2.reset();
-                            if (!props2.load(fname2)) {
+                            if (!props.load(fname2)) {
                                 return;
                             }
                         }
                     }
-                } else {
-                    props2 = props;
+                    propsList.add(props);
+                    mainLevel = props.get("mainLevel", "");
                 }
-                name = props.get("name", props2.get("name", ""));
+                name = Props.get(propsList, "name", "");
                 if (music == null) {
-                    String style = props2.get("style", null);
-                    String specialStyle = props2.get("specialStyle", null);
+                    String style = props.get("style", null);
+                    String specialStyle = props.get("specialStyle", null);
                     music = Music.getRandomTrack(style, specialStyle);
                 }
-                releaseRate = props.getInt("releaseRate", props2.getInt("releaseRate", 0));
-                numLemmings = props.getInt("numLemmings", props2.getInt("numLemmings", 1));
-                numToRescue = props.getInt("numToRescue", props2.getInt("numToRescue", 0));
-                timeLimitSeconds = props.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-                if (timeLimitSeconds == Integer.MIN_VALUE) {
-                    int timeLimit = props.getInt("timeLimit", Integer.MIN_VALUE);
-                    if (props2 != props && timeLimit == Integer.MIN_VALUE) {
-                        timeLimitSeconds = props2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
-                        if (timeLimitSeconds == Integer.MIN_VALUE) {
-                            timeLimit = props2.getInt("timeLimit", Integer.MIN_VALUE);
-                            // prevent integer overflow upon conversion to seconds
-                            if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
-                                timeLimit = 0;
-                            }
-                            timeLimitSeconds = timeLimit * 60;
-                        }
-                    } else {
+                releaseRate = Props.getInt(propsList, "releaseRate", 0);
+                numLemmings = Props.getInt(propsList, "numLemmings", 1);
+                // sanity check: ensure that there are lemmings in the level to avoid division by 0
+                if (numLemmings <= 0) {
+                    numLemmings = 1;
+                    return;
+                }
+                numToRescue = Props.getInt(propsList, "numToRescue", 0);
+                for (Props props2 : propsList) {
+                    timeLimitSeconds = props2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+                    if (timeLimitSeconds != Integer.MIN_VALUE) {
+                        break;
+                    }
+                    int timeLimit = props2.getInt("timeLimit", Integer.MIN_VALUE);
+                    if (timeLimit != Integer.MIN_VALUE) {
                         // prevent integer overflow upon conversion to seconds
                         if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
                             timeLimit = 0;
                         }
                         timeLimitSeconds = timeLimit * 60;
+                        break;
                     }
                 }
                 if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
                     timeLimitSeconds = 0;
                 }
-                numClimbers = props.getInt("numClimbers", props2.getInt("numClimbers", 0));
-                numFloaters = props.getInt("numFloaters", props2.getInt("numFloaters", 0));
-                numBombers = props.getInt("numBombers", props2.getInt("numBombers", 0));
-                numBlockers = props.getInt("numBlockers", props2.getInt("numBlockers", 0));
-                numBuilders = props.getInt("numBuilders", props2.getInt("numBuilders", 0));
-                numBashers = props.getInt("numBashers", props2.getInt("numBashers", 0));
-                numMiners = props.getInt("numMiners", props2.getInt("numMiners", 0));
-                numDiggers = props.getInt("numDiggers", props2.getInt("numDiggers", 0));
+                numClimbers = Props.getInt(propsList, "numClimbers", 0);
+                numFloaters = Props.getInt(propsList, "numFloaters", 0);
+                numBombers = Props.getInt(propsList, "numBombers", 0);
+                numBlockers = Props.getInt(propsList, "numBlockers", 0);
+                numBuilders = Props.getInt(propsList, "numBuilders", 0);
+                numBashers = Props.getInt(propsList, "numBashers", 0);
+                numMiners = Props.getInt(propsList, "numMiners", 0);
+                numDiggers = Props.getInt(propsList, "numDiggers", 0);
                 validLevel = true;
             }
         } catch (IOException ex) {

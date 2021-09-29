@@ -71,6 +71,8 @@ public class Icons {
         NUKE (16),
         /** fast forward icon */
         FFWD (17),
+        /** vertical scroll lock icon */
+        VLOCK (19),
         /** an empty icon (not used) */
         EMPTY (DEFAULT_PITCH);
 
@@ -107,7 +109,7 @@ public class Icons {
     /** last radio button */
     private static final int LAST_RADIO = Type.DIG.ordinal();
     /** last icon to be drawn */
-    private static final int LAST_DRAWN = Type.FFWD.ordinal();
+    private static final int LAST_DRAWN = Type.VLOCK.ordinal();
 
     /** array of Sprites that contains the icons */
     private static Sprite[] icons;
@@ -180,6 +182,7 @@ public class Icons {
         switch (type) {
             case PAUSE:
             case FFWD:
+            case VLOCK:
                 icons[idx].setFrameIdx((icons[idx].getFrameIdx() == 0) ? 1 : 0); // toggle
                 if (idx <= LAST_DRAWN) {
                     iconGfx.drawImage(icons[idx].getImage(), WIDTH * idx, 0);

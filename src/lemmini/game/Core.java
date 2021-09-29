@@ -57,7 +57,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.94";
+    private static final String REVISION = "0.95";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
 
@@ -164,9 +164,10 @@ public class Core {
         GameController.setFasterFastForward(programProps.getBoolean("fasterFastForward", false));
         if (resourcePathStr.isEmpty() || !REVISION.equalsIgnoreCase(rev) || createPatches) {
             // extract resources
+            Extract e = new Extract();
             try {
-                Extract.extract(null, sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
-                resourcePath = Extract.getResourcePath();
+                e.extract(null, sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
+                resourcePath = e.getResourcePath();
                 programProps.set("revision", REVISION);
             } catch (ExtractException ex) {
                 if (ex.isCanceledByUser()) {
@@ -175,8 +176,8 @@ public class Core {
                     throw new LemmException(String.format("Resource extraction failed.%n%s", ex.getMessage()));
                 }
             } finally {
-                programProps.set("resourcePath", Extract.getResourcePath().toString());
-                programProps.set("sourcePath", Extract.getSourcePath().toString());
+                programProps.set("resourcePath", e.getResourcePath().toString());
+                programProps.set("sourcePath", e.getSourcePath().toString());
                 programProps.save(programPropsFilePath);
             }
         }

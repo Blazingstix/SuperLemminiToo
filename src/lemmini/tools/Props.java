@@ -5,6 +5,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Properties;
 
 /*
@@ -116,6 +117,22 @@ public class Props {
     }
 
     /**
+     * Get string property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as String
+     */
+    public static String get(final List<? extends Props> pList, final String key, final String def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.get(key, def);
+            }
+        }
+        return def;
+    }
+
+    /**
      * Get string array property
      * @param key Name of the key to get value for
      * @param def Default value in case key is not found
@@ -134,6 +151,22 @@ public class Props {
 
         return members;
     }
+    
+    /**
+     * Get string array property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as array of strings
+     */
+    public static String[] getArray(final List<? extends Props> pList, final String key, final String[] def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getArray(key, def);
+            }
+        }
+        return def;
+    }
 
     /**
      * Get integer property
@@ -147,6 +180,22 @@ public class Props {
             return def;
         }
         return ToolBox.parseInt(s.trim());
+    }
+
+    /**
+     * Get integer property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as int
+     */
+    public static int getInt(final List<? extends Props> pList, final String key, final int def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getInt(key, def);
+            }
+        }
+        return def;
     }
 
     /**
@@ -172,6 +221,22 @@ public class Props {
     }
 
     /**
+     * Get integer array property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as array of ints
+     */
+    public static int[] getIntArray(final List<? extends Props> pList, final String key, final int[] def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getIntArray(key, def);
+            }
+        }
+        return def;
+    }
+
+    /**
      * Get double property
      * @param key Name of the key to get value for
      * @param def Default value in case key is not found
@@ -183,6 +248,22 @@ public class Props {
             return def;
         }
         return Double.parseDouble(s);
+    }
+
+    /**
+     * Get double property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return value of key as double
+     */
+    public static double getDouble(final List<? extends Props> pList, final String key, final double def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getDouble(key, def);
+            }
+        }
+        return def;
     }
 
     /**
@@ -208,6 +289,22 @@ public class Props {
     }
 
     /**
+     * Get double array property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as array of doubles
+     */
+    public static double[] getDoubleArray(final List<? extends Props> pList, final String key, final double[] def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getDoubleArray(key, def);
+            }
+        }
+        return def;
+    }
+
+    /**
      * Get boolean property
      * @param key Name of the key to get value for
      * @param def Default value in case key is not found
@@ -219,6 +316,22 @@ public class Props {
             return def;
         }
         return Boolean.parseBoolean(s.trim());
+    }
+
+    /**
+     * Get boolean property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as boolean
+     */
+    public static boolean getBoolean(final List<? extends Props> pList, final String key, final boolean def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getBoolean(key, def);
+            }
+        }
+        return def;
     }
     
     /**
@@ -241,6 +354,26 @@ public class Props {
         }
 
         return ret;
+    }
+    
+    /**
+     * Get boolean array property from the first Props object that contains it
+     * @param pList List of Props objects to search
+     * @param key Name of the key to get value for
+     * @param def Default value in case key is not found in any Props objects
+     * @return Value of key as array of booleans
+     */
+    public static boolean[] getBooleanArray(final List<? extends Props> pList, final String key, final boolean[] def) {
+        for (Props p : pList) {
+            if (p.containsKey(key)) {
+                return p.getBooleanArray(key, def);
+            }
+        }
+        return def;
+    }
+    
+    public boolean containsKey(final String key) {
+        return hash.containsKey(key);
     }
 
     /**

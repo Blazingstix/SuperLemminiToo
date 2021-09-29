@@ -40,6 +40,10 @@ public class MiscGfx {
         MINIMAP_LEFT,
         MINIMAP_CENTER,
         MINIMAP_RIGHT,
+        MINIMAP_ARROW_LEFT,
+        MINIMAP_ARROW_UP,
+        MINIMAP_ARROW_RIGHT,
+        MINIMAP_ARROW_DOWN,
         /** Lemmini logo */
         LEMMINI,
         /** green background tile */
@@ -78,24 +82,34 @@ public class MiscGfx {
         fn = Core.findResource(Paths.get("gfx/misc/minimap_right.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadTranslucentImage(fn);
         images.add(img);
-        /* 3: LEMMINI */
+        /* 3: MINIMAP_ARROW_LEFT */
+        fn = Core.findResource(Paths.get("gfx/misc/minimap_arrows.png"), Core.IMAGE_EXTENSIONS);
+        Image[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 4);
+        images.add(anim[0]);
+        /* 4: MINIMAP_ARROW_UP */
+        images.add(anim[1]);
+        /* 5: MINIMAP_ARROW_RIGHT */
+        images.add(anim[2]);
+        /* 6: MINIMAP_ARROW_DOWN */
+        images.add(anim[3]);
+        /* 7: LEMMINI */
         img = Core.loadTranslucentImageJar("lemmini.png");
         images.add(img);
-        /* 4: TILE_GREEN */
+        /* 8: TILE_GREEN */
         fn = Core.findResource(Paths.get("gfx/misc/background_level.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadOpaqueImage(fn);
         images.add(img);
-        /* 5: TILE_BROWN */
+        /* 9: TILE_BROWN */
         fn = Core.findResource(Paths.get("gfx/misc/background_main.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadOpaqueImage(fn);
         images.add(img);
-        /* 6: REPLAY_1 */
+        /* 10: REPLAY_1 */
         fn = Core.findResource(Paths.get("gfx/misc/replay.png"), Core.IMAGE_EXTENSIONS);
-        Image[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 2);
+        anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 2);
         images.add(anim[0]);
-        /* 7: REPLAY_2 */
+        /* 11: REPLAY_2 */
         images.add(anim[1]);
-        /* 8: SELECT */
+        /* 12: SELECT */
         fn = Core.findResource(Paths.get("gfx/misc/select.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadTranslucentImage(fn);
         images.add(img);
