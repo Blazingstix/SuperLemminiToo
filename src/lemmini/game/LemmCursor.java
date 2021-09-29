@@ -43,7 +43,9 @@ public class LemmCursor  {
         RIGHT,
         /** select walkers cursor */
         WALKER,
+        /** select left walkers cursor */
         WALKER_LEFT,
+        /** select right walkers cursor */
         WALKER_RIGHT
     }
     
@@ -57,7 +59,9 @@ public class LemmCursor  {
         RIGHT,
         /** select walkers cursor with selection box */
         WALKER,
+        /** select left walkers cursor with selection box */
         WALKER_LEFT,
+        /** select right walkers cursor with selection box */
         WALKER_RIGHT
     }
 

@@ -257,7 +257,7 @@ public abstract class AbstractGameEngine implements Runnable {
                 if (mouseEvent.getButton() == MouseEvent.BUTTON1) {
                     if (y >= ICONS_Y && y < ICONS_Y + Icons.HEIGHT) {
                         Icons.Type type = GameController.getIconType(x);
-                        if (type != Icons.Type.INVALID) {
+                        if (type != null) {
                             GameController.handleIconButton(type);
                         }
                     } else {
@@ -335,7 +335,7 @@ public abstract class AbstractGameEngine implements Runnable {
                 if (mouseEvent.getButton() == MouseEvent.BUTTON1) {
                     if (y > AbstractGameEngine.ICONS_Y && y < AbstractGameEngine.ICONS_Y + Icons.HEIGHT) {
                         Icons.Type type = GameController.getIconType(x);
-                        if (type != Icons.Type.INVALID) {
+                        if (type != null) {
                             GameController.releaseIcon(type);
                         }
                     }

@@ -308,6 +308,9 @@ public class Props {
             if (s.length() <= index) {
                 return 0;
             }
+            if (s.charAt(0) == '-') {
+                throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
+            }
             int radix;
             switch (s.charAt(index)) {
                 case 'X':
@@ -329,7 +332,7 @@ public class Props {
             }
             
             if (isSign(s.charAt(index))) {
-                throw new NumberFormatException("Sign character in wrong position");
+                throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
             }
             
             long retval = Long.parseLong((hasSign ? s.substring(0, 1) : "") + s.substring(index), radix);

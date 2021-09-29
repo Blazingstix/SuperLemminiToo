@@ -18,6 +18,7 @@ package lemmini.sound;
 
 import java.io.*;
 import javax.sound.sampled.*;
+import lemmini.game.Core;
 import lemmini.game.GameController;
 import lemmini.game.LemmException;
 import lemmini.game.ResourceException;
@@ -29,7 +30,11 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private SourceDataLine line;
     private DataLine.Info info;
     private File file;
+    private File introFile;
     private AudioInputStream in;
+    private AudioInputStream introIn;
+    private AudioInputStream din;
+    private boolean playIntro;
     private AudioFormat format;
     private Thread waveThread;
 
@@ -41,24 +46,28 @@ public class WaveMusic implements Runnable, MusicPlayer {
         loopSong = loop;
         try {
             file = new File(fn);
+            introFile = new File(Core.appendBeforeExtension(fn, "_intro"));
             in = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
             if (in != null) {
-                AudioFormat baseFormat = in.getFormat();
-                if (baseFormat.getEncoding() == AudioFormat.Encoding.PCM_SIGNED
-                        || baseFormat.getEncoding() == AudioFormat.Encoding.PCM_UNSIGNED) {
-                    format = baseFormat;
+                format = getDecodeFormat(in.getFormat());
+                if (introFile.canRead()) {
+                    introIn = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(introFile)));
+                    AudioFormat introFormat = getDecodeFormat(introIn.getFormat());
+                    if (introFormat.matches(format)) {
+                        playIntro = true;
+                    } else {
+                        playIntro = false;
+                        introIn.close();
+                    }
                 } else {
-                    format = new AudioFormat(
-                            baseFormat.getSampleRate(),
-                            16,
-                            baseFormat.getChannels(),
-                            true,
-                            false);
+                    playIntro = false;
                 }
                 info = new DataLine.Info(SourceDataLine.class, format, GameController.sound.getBufferSize());
             }
-            in = AudioSystem.getAudioInputStream(format, in);
-            in.mark(Integer.MAX_VALUE);
+            din = AudioSystem.getAudioInputStream(format, playIntro ? introIn : in);
+            if (loopSong && !playIntro) {
+                din.mark(Integer.MAX_VALUE);
+            }
         } catch (FileNotFoundException ex) {
             throw new ResourceException(fn);
         } catch (IOException ex) {
@@ -68,6 +77,20 @@ public class WaveMusic implements Runnable, MusicPlayer {
         }
         waveThread = new Thread(this);
         waveThread.start();
+    }
+    
+    private static AudioFormat getDecodeFormat(AudioFormat baseFormat) {
+        if (baseFormat.getEncoding() == AudioFormat.Encoding.PCM_SIGNED
+                || baseFormat.getEncoding() == AudioFormat.Encoding.PCM_UNSIGNED) {
+            return baseFormat;
+        } else {
+            return new AudioFormat(
+                    baseFormat.getSampleRate(),
+                    16,
+                    baseFormat.getChannels(),
+                    true,
+                    false);
+        }
     }
 
     @Override
@@ -81,17 +104,25 @@ public class WaveMusic implements Runnable, MusicPlayer {
             int bytesRead = 0;
             while (bytesRead != -1 && Thread.currentThread() == waveThread) {
                 if (play) {
-                    bytesRead = in.read(data);
+                    bytesRead = din.read(data);
                     if (bytesRead != -1) {
                         line.write(data, 0, bytesRead);
+                    } else if (playIntro) {
+                        din.close();
+                        din = AudioSystem.getAudioInputStream(format, in);
+                        if (loopSong) {
+                            din.mark(Integer.MAX_VALUE);
+                        }
+                        playIntro = false;
+                        bytesRead = 0;
                     } else if (loopSong) {
-                        if (in.markSupported()) {
-                            in.reset();
+                        if (din.markSupported()) {
+                            din.reset();
                         } else {
-                            in.close();
+                            din.close();
                             in = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
-                            in = AudioSystem.getAudioInputStream(format, in);
-                            in.mark(Integer.MAX_VALUE);
+                            din = AudioSystem.getAudioInputStream(format, in);
+                            din.mark(Integer.MAX_VALUE);
                         }
                         bytesRead = 0;
                     } else {
@@ -111,6 +142,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
             line.stop();
             line.flush();
             line.close();
+            close();
         }
     }
 
@@ -137,7 +169,17 @@ public class WaveMusic implements Runnable, MusicPlayer {
         }
         play = false;
         try {
+            if (introIn != null) {
+                introIn.close();
+            }
+        } catch (IOException ex) {
+        }
+        try {
             in.close();
+        } catch (IOException ex) {
+        }
+        try {
+            din.close();
         } catch (IOException ex) {
         }
         Thread moribund = waveThread;

@@ -70,9 +70,7 @@ public class Icons {
         /** fast forward icon */
         FFWD (17),
         /** an empty icon (not used) */
-        EMPTY (DEFAULT_PITCH),
-        /** invalid (no such icon) */
-        INVALID (DEFAULT_PITCH);
+        EMPTY (DEFAULT_PITCH);
 
         private static final Map<Integer, Type> LOOKUP = new HashMap<>();
         
@@ -124,8 +122,8 @@ public class Icons {
     public static void init() throws ResourceException {
         iconImg = ToolBox.createTranslucentImage(WIDTH * (1 + LAST_DRAWN), HEIGHT);
         iconGfx = iconImg.createGraphicsContext();
-        icons = new Sprite[15];
         Type[] iconTypes = Type.values();
+        icons = new Sprite[iconTypes.length];
         for (int i = 0; i <= LAST_DRAWN; i++) {
             String fn = Core.findResource("gfx/icons/icon_" + iconTypes[i].name().toLowerCase() + ".png", Core.IMAGE_EXTENSIONS);
             if (fn == null) {
@@ -144,7 +142,7 @@ public class Icons {
      */
     public static Type getType(final int x) {
         if (x >= (LAST_DRAWN + 1) * WIDTH) {
-            return Type.INVALID; // invalid
+            return null; // invalid
         }
         return Type.get(x / WIDTH);
     }

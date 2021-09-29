@@ -83,9 +83,7 @@ public class Lemming {
         /** a blocker that is told to explode */
         FLAPPER_BLOCKER ("FLAPPER", 0, false, false, 0, 0),
         /** a floater before the parachute opened completely */
-        FLOATER_START ("FLOATER", 0, false, false, 0, 0),
-        /** undefined */
-        UNDEFINED ("", 0, false, false, 0, 0);
+        FLOATER_START ("FLOATER", 0, false, false, 0, 0);
         
         private final String name;
         private final int frames;
@@ -108,8 +106,7 @@ public class Lemming {
     /** Lemming heading */
     public static enum Direction {
         RIGHT,
-        LEFT,
-        NONE;
+        LEFT;
 
         private static final Map<Integer, Direction> lookup = new HashMap<>();
 
@@ -521,7 +518,6 @@ public class Lemming {
                         case 13:
                         case 14:
                         case 15:
-                            y -= CLIMBER_STEP;
                             if (!freeAboveClimber()) {
                                 flipDir();
                                 if (dir == Direction.LEFT) {
@@ -531,6 +527,8 @@ public class Lemming {
                                 }
                                 newType = Type.FALLER;
                                 counter = 0;
+                            } else {
+                                y -= CLIMBER_STEP;
                             }
                             break;
                         default:
@@ -565,40 +563,44 @@ public class Lemming {
                         case 2 * TIME_SCALE:
                         case 3 * TIME_SCALE:
                         case 4 * TIME_SCALE:
-                        case 5 * TIME_SCALE: {
-                            //    bash mask should have the same height as the lemming
-                            m = lemRes.getMask(dir);
-                            checkMask = 0;
-                            if (!GameController.getLevel().getClassicSteel()) {
-                                checkMask |= Stencil.MSK_STEEL;
-                                checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
-                            }
-                            if (y >= BASHER_CHECK_STEP) {
-                                m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 2, checkMask);
-                            }
-                            if (idx == 5 * TIME_SCALE) {
-                                // check for conversion to walker because there are no bricks left
-                                if (!canBash()) {
-                                    // no bricks any more
-                                    newType = Type.WALKER;
+                        case 5 * TIME_SCALE:
+                            {
+                                // bash mask should have the same height as the lemming
+                                m = lemRes.getMask(dir);
+                                checkMask = 0;
+                                if (!GameController.getLevel().getClassicSteel()) {
+                                    checkMask |= Stencil.MSK_STEEL;
+                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
                                 }
+                                if (y >= BASHER_CHECK_STEP) {
+                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 2, checkMask);
+                                }
+                                if (idx == 5 * TIME_SCALE) {
+                                    // check for conversion to walker because there are no bricks left
+                                    if (!canBash()) {
+                                        // no bricks any more
+                                        newType = Type.WALKER;
+                                    }
+                                }
+                                break;
                             }
-                            break;}
                         case 18 * TIME_SCALE:
                         case 19 * TIME_SCALE:
                         case 20 * TIME_SCALE:
-                        case 21 * TIME_SCALE: {
-                            //    bash mask should have the same height as the lemming
-                            m = lemRes.getMask(dir);
-                            checkMask = 0;
-                            if (!GameController.getLevel().getClassicSteel()) {
-                                checkMask |= Stencil.MSK_STEEL;
-                                checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
+                        case 21 * TIME_SCALE:
+                            {
+                                // bash mask should have the same height as the lemming
+                                m = lemRes.getMask(dir);
+                                checkMask = 0;
+                                if (!GameController.getLevel().getClassicSteel()) {
+                                    checkMask |= Stencil.MSK_STEEL;
+                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
+                                }
+                                if (y >= BASHER_CHECK_STEP) {
+                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 18, checkMask);
+                                }
+                                break;
                             }
-                            if (y >= BASHER_CHECK_STEP) {
-                                m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 18, checkMask);
-                            }
-                            break; }
                         case 11 * TIME_SCALE:
                         case 12 * TIME_SCALE:
                         case 13 * TIME_SCALE:
@@ -898,21 +900,19 @@ public class Lemming {
                     if (type != Type.DROWNER) {
                         SpriteObject spr = GameController.getLevel().getSprObject(object);
                         if (spr != null) {
-                            if (spr.canBeTriggered()) {
-                                if (spr.trigger(this)) {
-                                    GameController.sound.play(spr.getSound(), getPan());
-                                    drowner = true;
-                                    newType = Type.DROWNER;
+                            boolean triggered = true;
+                            if (spr.canBeTriggered() && !spr.trigger(this)) {
+                                triggered = false;
+                            }
+                            if (triggered) {
+                                if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
+                                    // erase blocker mask
+                                    eraseBlockerMask();
                                 }
-                            } else {
                                 GameController.sound.play(spr.getSound(), getPan());
                                 drowner = true;
                                 newType = Type.DROWNER;
                             }
-                        }
-                        if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
-                            // erase blocker mask
-                            eraseBlockerMask();
                         }
                     }
                     break;
@@ -920,19 +920,18 @@ public class Lemming {
                     if (type != Type.FRIER) {
                         SpriteObject spr = GameController.getLevel().getSprObject(object);
                         if (spr != null) {
-                            if (spr.canBeTriggered()) {
-                                if (spr.trigger(this)) {
-                                    GameController.sound.play(spr.getSound(), getPan());
-                                    newType = Type.FRIER;
+                            boolean triggered = true;
+                            if (spr.canBeTriggered() && !spr.trigger(this)) {
+                                triggered = false;
+                            }
+                            if (triggered) {
+                                if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
+                                    // erase blocker mask
+                                    eraseBlockerMask();
                                 }
-                            } else {
                                 GameController.sound.play(spr.getSound(), getPan());
                                 newType = Type.FRIER;
                             }
-                        }
-                        if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
-                            // erase blocker mask
-                            eraseBlockerMask();
                         }
                     }
                     break;
@@ -940,19 +939,18 @@ public class Lemming {
                     {
                         SpriteObject spr = GameController.getLevel().getSprObject(object);
                         if (spr != null) {
-                            if (spr.canBeTriggered()) {
-                                if (spr.trigger(this)) {
-                                    GameController.sound.play(spr.getSound(), getPan());
-                                    hasDied = true;
+                            boolean triggered = true;
+                            if (spr.canBeTriggered() && !spr.trigger(this)) {
+                                triggered = false;
+                            }
+                            if (triggered) {
+                                if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
+                                    // erase blocker mask
+                                    eraseBlockerMask();
                                 }
-                            } else {
                                 GameController.sound.play(spr.getSound(), getPan());
                                 hasDied = true;
                             }
-                        }
-                        if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
-                            // erase blocker mask
-                            eraseBlockerMask();
                         }
                         break;
                     }
@@ -979,21 +977,19 @@ public class Lemming {
                         case DROWNER:
                             SpriteObject spr = GameController.getLevel().getSprObject(object);
                             if (spr != null) {
-                                if (spr.canBeTriggered()) {
-                                    if (spr.trigger(this)) {
-                                        GameController.sound.play(spr.getSound(), getPan());
-                                        homer = true;
-                                        newType = Type.HOMER;
+                                boolean triggered = true;
+                                if (spr.canBeTriggered() && !spr.trigger(this)) {
+                                    triggered = false;
+                                }
+                                if (triggered) {
+                                    if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
+                                        // erase blocker mask
+                                        eraseBlockerMask();
                                     }
-                                } else {
                                     GameController.sound.play(spr.getSound(), getPan());
                                     homer = true;
                                     newType = Type.HOMER;
                                 }
-                            }
-                            if (type == Type.BLOCKER || type == Type.FLAPPER_BLOCKER) {
-                                // erase blocker mask
-                                eraseBlockerMask();
                             }
                             break;
                         default:
@@ -1260,14 +1256,7 @@ public class Lemming {
             } else {
                 xb = xm - i + 1;
             }
-            int sval = GameController.getStencil().getMask(xb, ypos);
-            if ((sval & Stencil.MSK_NO_BASH_LEFT) != 0 && dir == Direction.LEFT) {
-                return false;
-            }
-            if ((sval & Stencil.MSK_NO_BASH_RIGHT) != 0 && dir == Direction.RIGHT) {
-                return false;
-            }
-            if ((sval & Stencil.MSK_BRICK) != 0) {
+            if ((GameController.getStencil().getMask(xb, ypos) & Stencil.MSK_BRICK) != 0) {
                 bricks++;
             }
         }

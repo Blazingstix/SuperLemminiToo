@@ -528,7 +528,7 @@ public class GameController {
         entranceOpenCtr = 0;
         secondCtr = 0;
         releaseCtr = 0;
-        lemmSkill = Lemming.Type.UNDEFINED;
+        lemmSkill = null;
         
         entranceSounds.clear();
         for (int i = 0; i < level.getNumEntrances(); i++) {
@@ -693,8 +693,8 @@ public class GameController {
      * @return fitting Lemming or null if none found
      */
     public static synchronized Lemming lemmUnderCursor(final LemmCursor.CursorType type) {
-        // search for level without the skill
-        if (type != LemmCursor.CursorType.WALKER
+        if (lemmSkill != null
+                && type != LemmCursor.CursorType.WALKER
                 && type != LemmCursor.CursorType.WALKER_LEFT
                 && type != LemmCursor.CursorType.WALKER_RIGHT) {
             for (Lemming l : lemmsUnderCursor) {
@@ -706,7 +706,7 @@ public class GameController {
                 }
                 switch (l.getSkill()) {
                     case BLOCKER:
-                        if (/*l.canChangeSkill() && */l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
+                        if (l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
                             switch (lemmSkill) {
                                 case FLAPPER:
                                     if (!l.hasTimer()) {
@@ -723,7 +723,7 @@ public class GameController {
                     case BASHER:
                     case MINER:
                     case DIGGER:
-                        if (/*l.canChangeSkill() && */l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
+                        if (l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
                             switch (lemmSkill) {
                                 case CLIMBER:
                                     if (!l.canClimb()) {
@@ -767,25 +767,29 @@ public class GameController {
             }
             switch (l.getSkill()) {
                 case WALKER:
-                    if (/*l.canChangeSkill() && */l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
-                        switch (lemmSkill) {
-                            case CLIMBER:
-                                if (!l.canClimb()) {
+                    if (l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
+                        if (lemmSkill == null) {
+                            return l;
+                        } else {
+                            switch (lemmSkill) {
+                                case CLIMBER:
+                                    if (!l.canClimb()) {
+                                        return l;
+                                    }
+                                    break;
+                                case FLOATER:
+                                    if (!l.canFloat()) {
+                                        return l;
+                                    }
+                                    break;
+                                case FLAPPER:
+                                    if (!l.hasTimer()) {
+                                        return l;
+                                    }
+                                    break;
+                                default:
                                     return l;
-                                }
-                                break;
-                            case FLOATER:
-                                if (!l.canFloat()) {
-                                    return l;
-                                }
-                                break;
-                            case FLAPPER:
-                                if (!l.hasTimer()) {
-                                    return l;
-                                }
-                                break;
-                            default:
-                                return l;
+                            }
                         }
                     }
                     break;
@@ -794,27 +798,29 @@ public class GameController {
                 case FLIPPER:
                 case FLOATER:
                 case JUMPER:
-                    if (/*l.canChangeSkill() && */l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
-                        switch (lemmSkill) {
-                            case CLIMBER:
-                                if (!l.canClimb()) {
-                                    return l;
-                                }
-                                break;
-                            case FLOATER:
-                                if (!l.canFloat()) {
-                                    return l;
-                                }
-                                break;
-                            case FLAPPER:
-                                if (!l.hasTimer()) {
-                                    return l;
-                                }
-                                break;
-                            case UNDEFINED:
-                                return l;
-                            default:
-                                break;
+                    if (lemmSkill != null && l.getSkill() != lemmSkill && !l.getName().isEmpty()) {
+                        if (lemmSkill == null) {
+                            return l;
+                        } else {
+                            switch (lemmSkill) {
+                                case CLIMBER:
+                                    if (!l.canClimb()) {
+                                        return l;
+                                    }
+                                    break;
+                                case FLOATER:
+                                    if (!l.canFloat()) {
+                                        return l;
+                                    }
+                                    break;
+                                case FLAPPER:
+                                    if (!l.hasTimer()) {
+                                        return l;
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
                         }
                     }
                     break;
@@ -1193,7 +1199,7 @@ public class GameController {
      * @param lemm Lemming
      */
     public static synchronized void requestSkill(final Lemming lemm) {
-        if (lemmSkill != Lemming.Type.UNDEFINED) {
+        if (lemmSkill != null) {
             lemmSkillRequest = lemm;
         }
         stopReplayMode();
@@ -1204,7 +1210,7 @@ public class GameController {
      * @param delete flag: reset the current skill request
      */
     private static synchronized void assignSkill(final boolean delete) {
-        if (lemmSkillRequest == null || lemmSkill == Lemming.Type.UNDEFINED) {
+        if (lemmSkillRequest == null || lemmSkill == null) {
             return;
         }
 

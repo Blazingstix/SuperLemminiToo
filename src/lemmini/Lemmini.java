@@ -63,7 +63,7 @@ public class Lemmini extends JFrame implements KeyListener {
     
     /** height of menu and icon bar in pixels */
     private static final int WIN_OFS = 120;
-    public static final String REVISION = "0.91b";
+    public static final String REVISION = "0.92";
     
     private static final long serialVersionUID = 0x01;
     

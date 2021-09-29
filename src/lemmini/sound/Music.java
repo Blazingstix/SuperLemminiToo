@@ -131,7 +131,8 @@ public class Music {
                     return false;
                 }
                 for (String ext : Core.MUSIC_EXTENSIONS) {
-                    if (f.getName().toLowerCase(Locale.ROOT).endsWith("." + ext)) {
+                    String lowercaseName = f.getName().toLowerCase(Locale.ROOT);
+                    if (lowercaseName.endsWith("." + ext) && !lowercaseName.endsWith("_intro." + ext)) {
                         return true;
                     }
                 }
@@ -229,4 +230,3 @@ public class Music {
         return type;
     }
 }
-

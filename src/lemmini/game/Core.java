@@ -59,7 +59,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.91a";
+    private static final String REVISION = "0.92";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
 
@@ -232,6 +232,16 @@ public class Core {
             return fname.substring(0, dotIndex);
         } else {
             return fname;
+        }
+    }
+    
+    public static String appendBeforeExtension(String fname, String suffix) {
+        int slashIndex = Math.max(fname.lastIndexOf("/"), fname.lastIndexOf("\\"));
+        int dotIndex = fname.lastIndexOf(".");
+        if (slashIndex < dotIndex) {
+            return fname.substring(0, dotIndex) + suffix + fname.substring(dotIndex);
+        } else {
+            return fname + suffix;
         }
     }
     

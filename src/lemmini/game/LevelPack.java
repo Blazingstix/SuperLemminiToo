@@ -188,7 +188,7 @@ public class LevelPack {
         for (int r = 0; r < ratingList.size(); r++) {
             idx = 0;
             levels.clear();
-            rating = ratingList.get(r);
+            rating = ratingList.get(r).trim();
             if (!Normalizer.isNormalized(rating, Normalizer.Form.NFKC)) {
                 rating = Normalizer.normalize(rating, Normalizer.Form.NFKC);
             }
