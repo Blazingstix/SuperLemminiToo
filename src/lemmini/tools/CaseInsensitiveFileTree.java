@@ -21,6 +21,7 @@ import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -58,14 +59,46 @@ public class CaseInsensitiveFileTree {
     public final void refresh(int maxDepth) throws IOException {
         files.clear();
         Map<String, List<Path>> filesTemp = new TreeMap<>(FILE_NAME_COMPARATOR);
+        
+        FileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+                addPath(dir);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                addPath(file);
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                // skip files that can't be read due to an AccessDeniedException
+                if (exc instanceof AccessDeniedException) {
+                    return FileVisitResult.CONTINUE;
+                } else {
+                    throw exc;
+                }
+            }
+            
+            private void addPath(Path path) {
+                String relativePathStr = pathToString(root.relativize(path));
+                List<Path> pathVariants = filesTemp.computeIfAbsent(relativePathStr,  s -> new ArrayList<>(1));
+                pathVariants.add(path);
+            }
+        };
+        
         if (Files.exists(root)) {
-            try (Stream<Path> fileStream = Files.walk(root, maxDepth)) {
+            /*try (Stream<Path> fileStream = Files.walk(root, maxDepth)) {
                 fileStream.forEach(path -> {
                     String relativePathStr = pathToString(root.relativize(path));
                     List<Path> pathVariants = filesTemp.computeIfAbsent(relativePathStr,  s -> new ArrayList<>(1));
                     pathVariants.add(path);
                 });
-            }
+            }*/
+            Files.walkFileTree(root, Collections.emptySet(), maxDepth, visitor);
         }
         files.putAll(filesTemp);
     }

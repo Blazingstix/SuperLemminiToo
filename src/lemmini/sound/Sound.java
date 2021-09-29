@@ -203,6 +203,7 @@ public class Sound {
                 }
             }
         }
+        mixerIdx = Math.max(0, mixerIdx);
         
         availableLineHandlers = new LinkedList<>();
         for (int i = 0; i < MAX_SIMUL_SOUNDS; i++) {

@@ -78,7 +78,7 @@ public class FileResource implements Resource {
     public FileResource getSibling(String sibling) {
         String newOrigPath = ToolBox.getParent(origPath) + sibling;
         String newRealPath = ToolBox.getParent(realPath) + sibling;
-        Path newFile = file.resolveSibling(sibling);
+        Path newFile = tree.getPath(sibling);
         return new FileResource(newOrigPath, newRealPath, tree, newFile);
     }
 
