@@ -12,7 +12,6 @@ import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
-import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI

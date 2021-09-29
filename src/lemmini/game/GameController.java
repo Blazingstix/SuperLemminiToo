@@ -887,8 +887,13 @@ public class GameController {
      * Stop replay.
      */
     public static void stopReplayMode() {
-        if (replayMode) {
+        /*if (replayMode) {
             stopReplayMode = true;
+        }*/
+        if (replayMode) {
+            replay.clearFrom(replayFrame);
+            replayMode = false;
+            stopReplayMode = false;
         }
     }
 
@@ -954,9 +959,10 @@ public class GameController {
 
         // test for end of replay mode
         if (replayMode && stopReplayMode) {
-            replay.clearFrom(replayFrame);
-            replayMode = false;
-            stopReplayMode = false;
+            //replay.clearFrom(replayFrame);
+            //replayMode = false;
+            //stopReplayMode = false;
+            stopReplayMode();
         }
 
         if (!replayMode) {

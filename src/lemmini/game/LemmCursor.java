@@ -1,7 +1,6 @@
 package lemmini.game;
 
 import java.awt.Cursor;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

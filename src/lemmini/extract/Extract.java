@@ -272,6 +272,8 @@ public class Extract implements Runnable {
                 checkCancel();
             }
             
+            Files.createDirectories(destinationPath);
+            
             if (doCreatePatches) {
                 Path patchINIPath = destinationPath.resolve(Core.PATCH_INI_NAME);
                 // this is not needed by Lemmini, but to create the DIF files (and CRCs)
@@ -571,7 +573,7 @@ public class Extract implements Runnable {
             throw new ExtractException("Extraction canceled by user.", true);
         }
         sourcePath = fFrame.getSource();
-        destinationPath = fFrame.getTarget();
+        destinationPath = fFrame.getDestination();
         
         // open output dialog
         outputFrame = new OutputFrame();

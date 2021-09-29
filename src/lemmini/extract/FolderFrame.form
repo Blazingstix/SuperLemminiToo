@@ -43,14 +43,14 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Component id="jLabelHeader" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="jLabelSrc" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabelTrg" alignment="0" min="-2" max="-2" attributes="0"/>
+                          <Component id="jLabelDest" alignment="0" min="-2" max="-2" attributes="0"/>
                       </Group>
                       <EmptySpace min="0" pref="195" max="32767" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
-                      <Component id="jTextFieldTrg" max="32767" attributes="0"/>
+                      <Component id="jTextFieldDest" max="32767" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jButtonTrg" min="-2" max="-2" attributes="0"/>
+                      <Component id="jButtonDest" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
@@ -76,11 +76,11 @@
                   <Component id="jButtonSrc" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace type="separate" max="-2" attributes="0"/>
-              <Component id="jLabelTrg" min="-2" max="-2" attributes="0"/>
+              <Component id="jLabelDest" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
-                  <Component id="jTextFieldTrg" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jButtonTrg" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jTextFieldDest" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jButtonDest" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace pref="18" max="32767" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -103,7 +103,7 @@
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
           <ComponentRef name="jTextFieldSrc"/>
         </Property>
-        <Property name="text" type="java.lang.String" value="Source Path (&quot;WINLEMM&quot; directory)"/>
+        <Property name="text" type="java.lang.String" value="Lemmings for Windows (WINLEMM) Path"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JTextField" name="jTextFieldSrc">
@@ -119,25 +119,25 @@
         <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonSrcActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JLabel" name="jLabelTrg">
+    <Component class="javax.swing.JLabel" name="jLabelDest">
       <Properties>
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-          <ComponentRef name="jTextFieldTrg"/>
+          <ComponentRef name="jTextFieldDest"/>
         </Property>
-        <Property name="text" type="java.lang.String" value="Target Path"/>
+        <Property name="text" type="java.lang.String" value="Destination Path"/>
       </Properties>
     </Component>
-    <Component class="javax.swing.JTextField" name="jTextFieldTrg">
+    <Component class="javax.swing.JTextField" name="jTextFieldDest">
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jTextFieldTrgActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jTextFieldDestActionPerformed"/>
       </Events>
     </Component>
-    <Component class="javax.swing.JButton" name="jButtonTrg">
+    <Component class="javax.swing.JButton" name="jButtonDest">
       <Properties>
         <Property name="text" type="java.lang.String" value="Browse..."/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonTrgActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonDestActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JButton" name="jButtonExtract">

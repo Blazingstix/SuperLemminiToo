@@ -28,7 +28,7 @@ import lemmini.LemminiFrame;
 import org.apache.commons.lang3.StringUtils;
 
 /**
- * Frame to enter source and target paths for resource extraction.
+ * Frame to enter source and destination paths for resource extraction.
  *
  * @author Volker Oth
  */
@@ -36,8 +36,8 @@ public class FolderFrame extends javax.swing.JFrame {
     
     private static final long serialVersionUID = 0x01L;
 
-    /** target (Lemmini resource) path for extraction */
-    private String target;
+    /** destination (Lemmini resource) path for extraction */
+    private String destination;
     /** source (WINLEMM) path for extraction */
     private String source;
     /** flag that tells whether to extract or not */
@@ -63,9 +63,9 @@ public class FolderFrame extends javax.swing.JFrame {
         jLabelSrc = new javax.swing.JLabel();
         jTextFieldSrc = new javax.swing.JTextField();
         jButtonSrc = new javax.swing.JButton();
-        jLabelTrg = new javax.swing.JLabel();
-        jTextFieldTrg = new javax.swing.JTextField();
-        jButtonTrg = new javax.swing.JButton();
+        jLabelDest = new javax.swing.JLabel();
+        jTextFieldDest = new javax.swing.JTextField();
+        jButtonDest = new javax.swing.JButton();
         jButtonExtract = new javax.swing.JButton();
         jButtonQuit = new javax.swing.JButton();
 
@@ -82,7 +82,7 @@ public class FolderFrame extends javax.swing.JFrame {
         jLabelHeader.setText("Extract the resources from Lemmings for Windows.");
 
         jLabelSrc.setLabelFor(jTextFieldSrc);
-        jLabelSrc.setText("Source Path (\"WINLEMM\" directory)");
+        jLabelSrc.setText("Lemmings for Windows (WINLEMM) Path");
 
         jTextFieldSrc.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -97,19 +97,19 @@ public class FolderFrame extends javax.swing.JFrame {
             }
         });
 
-        jLabelTrg.setLabelFor(jTextFieldTrg);
-        jLabelTrg.setText("Target Path");
+        jLabelDest.setLabelFor(jTextFieldDest);
+        jLabelDest.setText("Destination Path");
 
-        jTextFieldTrg.addActionListener(new java.awt.event.ActionListener() {
+        jTextFieldDest.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldTrgActionPerformed(evt);
+                jTextFieldDestActionPerformed(evt);
             }
         });
 
-        jButtonTrg.setText("Browse...");
-        jButtonTrg.addActionListener(new java.awt.event.ActionListener() {
+        jButtonDest.setText("Browse...");
+        jButtonDest.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonTrgActionPerformed(evt);
+                jButtonDestActionPerformed(evt);
             }
         });
 
@@ -142,12 +142,12 @@ public class FolderFrame extends javax.swing.JFrame {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabelHeader)
                             .addComponent(jLabelSrc)
-                            .addComponent(jLabelTrg))
+                            .addComponent(jLabelDest))
                         .addGap(0, 195, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jTextFieldTrg)
+                        .addComponent(jTextFieldDest)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonTrg))
+                        .addComponent(jButtonDest))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(jButtonExtract)
@@ -167,11 +167,11 @@ public class FolderFrame extends javax.swing.JFrame {
                     .addComponent(jTextFieldSrc, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButtonSrc))
                 .addGap(18, 18, 18)
-                .addComponent(jLabelTrg)
+                .addComponent(jLabelDest)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jTextFieldTrg, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jButtonTrg))
+                    .addComponent(jTextFieldDest, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jButtonDest))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonExtract)
@@ -185,7 +185,7 @@ public class FolderFrame extends javax.swing.JFrame {
 
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         source = jTextFieldSrc.getText();
-        target = jTextFieldTrg.getText();
+        destination = jTextFieldDest.getText();
         synchronized (this) {
             notifyAll();
         }
@@ -205,19 +205,19 @@ public class FolderFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jButtonSrcActionPerformed
 
-    private void jTextFieldTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldTrgActionPerformed
-        target = jTextFieldTrg.getText();
-    }//GEN-LAST:event_jTextFieldTrgActionPerformed
+    private void jTextFieldDestActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldDestActionPerformed
+        destination = jTextFieldDest.getText();
+    }//GEN-LAST:event_jTextFieldDestActionPerformed
 
-    private void jButtonTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonTrgActionPerformed
-        JFileChooser jf = new JFileChooser(target);
+    private void jButtonDestActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonDestActionPerformed
+        JFileChooser jf = new JFileChooser(destination);
         jf.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         int returnVal = jf.showOpenDialog(this);
         if (returnVal == JFileChooser.APPROVE_OPTION) {
-            target = jf.getSelectedFile().getAbsolutePath();
-            jTextFieldTrg.setText(target);
+            destination = jf.getSelectedFile().getAbsolutePath();
+            jTextFieldDest.setText(destination);
         }
-    }//GEN-LAST:event_jButtonTrgActionPerformed
+    }//GEN-LAST:event_jButtonDestActionPerformed
 
     private void jButtonExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExtractActionPerformed
         // check if source path exists
@@ -238,22 +238,22 @@ public class FolderFrame extends javax.swing.JFrame {
     /**
      * Set parameters for text edit boxes.
      * @param srcPath source (WINLEMM) path for extraction
-     * @param trgPath target (Lemmini resource) path for extraction
+     * @param destPath destination (Lemmini resource) path for extraction
      */
-    public void setParameters(final Path srcPath, final Path trgPath) {
+    public void setParameters(final Path srcPath, final Path destPath) {
         source = srcPath.toString();
         jTextFieldSrc.setText(source);
-        target = trgPath.toString();
-        jTextFieldTrg.setText(target);
+        destination = destPath.toString();
+        jTextFieldDest.setText(destination);
     }
 
     /**
-     * Get target (Lemmini resource) path for extraction.
-     * @return target (Lemmini resource) path for extraction
+     * Get destination (Lemmini resource) path for extraction.
+     * @return destination (Lemmini resource) path for extraction
      */
-    public Path getTarget() {
-        if (target != null) {
-            return Paths.get(target);
+    public Path getDestination() {
+        if (destination != null) {
+            return Paths.get(destination);
         } else {
             return Paths.get(StringUtils.EMPTY);
         }
@@ -293,14 +293,14 @@ public class FolderFrame extends javax.swing.JFrame {
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton jButtonDest;
     private javax.swing.JButton jButtonExtract;
     private javax.swing.JButton jButtonQuit;
     private javax.swing.JButton jButtonSrc;
-    private javax.swing.JButton jButtonTrg;
+    private javax.swing.JLabel jLabelDest;
     private javax.swing.JLabel jLabelHeader;
     private javax.swing.JLabel jLabelSrc;
-    private javax.swing.JLabel jLabelTrg;
+    private javax.swing.JTextField jTextFieldDest;
     private javax.swing.JTextField jTextFieldSrc;
-    private javax.swing.JTextField jTextFieldTrg;
     // End of variables declaration//GEN-END:variables
 }

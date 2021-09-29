@@ -8,7 +8,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.FileVisitResult;
-import java.nio.file.FileVisitor;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
@@ -16,7 +15,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import javax.swing.JFileChooser;
@@ -58,7 +56,7 @@ public class ToolBox {
     private static final ByteOrderMark[] BYTE_ORDER_MARKS = {
         ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_8,
         ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE};
-    private static final GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+    //private static final GraphicsConfiguration GC = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
     
     /**
      * Creates a graphics operation
@@ -87,7 +85,8 @@ public class ToolBox {
      * @return compatible buffered image
      */
     public static BufferedImage createImage(final int width, final int height, final int transparency) {
-        return gc.createCompatibleImage(width, height, transparency);
+        //return GC.createCompatibleImage(width, height, transparency);
+        return new BufferedImage(width, height, transparency == Transparency.OPAQUE ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
     }
 
     /**
@@ -480,14 +479,10 @@ public class ToolBox {
      * @return Long value of string
      */
     public static long parseLong(final String s) {
-        switch (s) {
-            case "Infinity":
-            case "+Infinity":
-                return Long.MAX_VALUE;
-            case "-Infinity":
-                return Long.MIN_VALUE;
-            default:
-                break;
+        if (s.equalsIgnoreCase("Infinity") || s.equalsIgnoreCase("+Infinity")) {
+            return Long.MAX_VALUE;
+        } else if (s.equalsIgnoreCase("-Infinity")) {
+            return Long.MIN_VALUE;
         }
         
         int index = 0;

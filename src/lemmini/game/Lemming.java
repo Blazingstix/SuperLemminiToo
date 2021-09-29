@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import java.nio.file.Paths;
 import java.util.*;
 import lemmini.graphics.LemmImage;
 import lemmini.sound.Sound;
