@@ -1,6 +1,7 @@
 package lemmini.game;
 
 import java.awt.Color;
+import java.awt.RenderingHints;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -12,6 +13,9 @@ import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -62,6 +66,7 @@ public class Level {
     private static final int DEFAULT_BOTTOM_BOUNDARY = 20;
     private static final int DEFAULT_LEFT_BOUNDARY = 0;
     private static final int DEFAULT_RIGHT_BOUNDARY = -16;
+    private static final int DEFAULT_ANIMATION_SPEED = 2;
 
     private final List<Props> levelProps;
     /** array of normal sprite objects - no transparency, drawn behind foreground image */
@@ -124,6 +129,7 @@ public class Level {
     private LemmImage[] tileMasks;
     private LemmImage special;
     private LemmImage specialMask;
+    private Path music;
     private final Set<Integer> steelTiles;
     /** sprite objects of all sprite objects available in this style */
     private SpriteObject[] sprObjAvailable;
@@ -134,6 +140,7 @@ public class Level {
     private final List<Background> backgrounds;
     /** level name - originally 32 bytes ASCII filled with whitespace */
     private String lvlName;
+    private String author;
     /** used to read in the configuration file */
     private Props props;
     private Props props2;
@@ -171,7 +178,7 @@ public class Level {
         }
         levelProps.add(p);
         
-        String mainLevel = p.get("mainLevel", "");
+        String mainLevel = p.get("mainLevel", StringUtils.EMPTY);
         while (!mainLevel.isEmpty()) {
             Path fname2 = fname.resolveSibling(mainLevel);
             p = new Props();
@@ -179,11 +186,12 @@ public class Level {
                 throw new ResourceException(fname2.toString());
             }
             levelProps.add(p);
-            mainLevel = p.get("mainLevel", "");
+            mainLevel = p.get("mainLevel", StringUtils.EMPTY);
         }
 
-        // read name
-        lvlName = Props.get(levelProps, "name", "");
+        // read name and author
+        lvlName = Props.get(levelProps, "name", StringUtils.EMPTY);
+        author = Props.get(levelProps, "author", StringUtils.EMPTY);
         //out(fname + " - " + lvlName);
         maxFallDistance = Props.getInt(levelProps, "maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
         classicSteel = Props.getBoolean(levelProps, "classicSteel", false);
@@ -254,7 +262,7 @@ public class Level {
         numDiggers = Props.getInt(levelProps, "numDiggers", 0);
         //out("numDiggers = " + numDiggers);
         entranceOrder = Props.getIntArray(levelProps, "entranceOrder", null);
-        if (entranceOrder != null && entranceOrder.length == 0) {
+        if (ArrayUtils.isEmpty(entranceOrder)) {
             entranceOrder = null;
         }
         xPosCenter = Integer.MIN_VALUE;
@@ -274,7 +282,7 @@ public class Level {
         }
         yPosCenter = Props.getInt(levelProps, "yPosCenter", 0);
         //out("xPosCenter = " + xPosCenter);
-        String strStyle = p.get("style", "");
+        String strStyle = p.get("style", StringUtils.EMPTY);
         int style = -1;
         for (int i = 0; i < STYLES.length; i++) {
             if (strStyle.equalsIgnoreCase(STYLES[i])) {
@@ -283,7 +291,7 @@ public class Level {
             }
         }
         //out("style = " + STYLES[style]);
-        String strSpecialStyle = p.get("specialStyle", "");
+        String strSpecialStyle = p.get("specialStyle", StringUtils.EMPTY);
         int specialStyle = -1;
         for (int i = 0; i < SPECIAL_STYLES.length; i++) {
             if (strSpecialStyle.equalsIgnoreCase(SPECIAL_STYLES[i])) {
@@ -292,6 +300,12 @@ public class Level {
             }
         }
         //out("specialStyle = " + strSpecialStyle);
+        String musicStr = Props.get(levelProps, "music", StringUtils.EMPTY);
+        if (!musicStr.isEmpty()) {
+            music = Paths.get(musicStr);
+        } else {
+            music = null;
+        }
         superlemming = Props.getBoolean(levelProps, "superlemming", false);
         forceNormalTimerSpeed = Props.getBoolean(levelProps, "forceNormalTimerSpeed", false);
         
@@ -363,7 +377,7 @@ public class Level {
             if (val != null && val.length >= 5) {
                 LvlObject obj = new LvlObject(val);
                 objects.add(obj);
-                //out("" + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
+                //out(obj.id + ", " + obj.xPos + ", " + obj.yPos + ", "+ obj.paintMode + ", " + obj.upsideDown);
             } else {
                 break;
             }
@@ -384,7 +398,7 @@ public class Level {
             if (val != null && val.length >= 4) {
                 Terrain ter = new Terrain(val, false);
                 terrain.add(ter);
-                //out("" + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
+                //out(ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier);
             } else {
                 break;
             }
@@ -397,7 +411,7 @@ public class Level {
             if (val != null && val.length >= 4) {
                 Steel stl = new Steel(val);
                 steel.add(stl);
-                //out("" + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
+                //out(stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
             } else {
                 break;
             }
@@ -503,12 +517,13 @@ public class Level {
             }
             int tx = t.xPos;
             int ty = t.yPos;
-            boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
-            boolean fake = (t.modifier & Terrain.MODE_FAKE) != 0;
-            boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
-            boolean noOverwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) != 0;
-            boolean remove = !noOverwrite && (t.modifier & Terrain.MODE_REMOVE) != 0;
-            boolean invisible = (t.modifier & Terrain.MODE_INVISIBLE) != 0;
+            boolean noOneWay = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_NO_ONE_WAY);
+            boolean horizontallyFlipped = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED);
+            boolean fake = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_FAKE);
+            boolean upsideDown = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_UPSIDE_DOWN);
+            boolean noOverwrite = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_NO_OVERWRITE);
+            boolean remove = !noOverwrite && BooleanUtils.toBoolean(t.modifier & Terrain.MODE_REMOVE);
+            boolean invisible = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_INVISIBLE);
             for (int y = 0; y < height; y++) {
                 if (y + ty < 0 || y + ty >= fgHeight) {
                     continue;
@@ -530,24 +545,42 @@ public class Level {
                         xSrc = x;
                     }
                     int col = source[yLine + xSrc];
+                    int alpha = (col >>> 24) & 0xff;
+                    boolean isPixelOpaque = alpha >= 0x80;
                     int maskCol = sourceMask[yLine + xSrc];
                     // ignore transparent pixels
                     if (!invisible && (col & 0xff000000) != 0) {
                         //col = (col & 0xffffff) | 0x80000000;
                         if (noOverwrite) {
+                            if (noOneWay && isPixelOpaque && !fgImage.isPixelOpaque(x + tx, y + ty)) {
+                                stencil.orMask(x + tx, y + ty, Stencil.MSK_NO_ONE_WAY_DRAW);
+                            }
                             fgImage.addRGBBehind(x + tx, y + ty, col);
                         } else if (remove) {
-                            fgImage.removeAlpha(x + tx, y + ty, (col >>> 24) & 0xff);
+                            if (noOneWay && isPixelOpaque) {
+                                stencil.andMask(x + tx, y + ty, ~Stencil.MSK_NO_ONE_WAY_DRAW);
+                            }
+                            fgImage.removeAlpha(x + tx, y + ty, alpha);
                         } else {
+                            if (isPixelOpaque) {
+                                if (noOneWay) {
+                                    stencil.orMask(x + tx, y + ty, Stencil.MSK_NO_ONE_WAY_DRAW);
+                                } else {
+                                    stencil.andMask(x + tx, y + ty, ~Stencil.MSK_NO_ONE_WAY_DRAW);
+                                }
+                            }
                             fgImage.addRGB(x + tx, y + ty, col);
                         }
                     }
                     if (!fake && (maskCol & 0xff000000) != 0) {
                         int newMask;
                         if (remove) {
-                            newMask = Stencil.MSK_EMPTY;
+                            newMask = stencil.getMask(x + tx, y + ty) & Stencil.MSK_NO_ONE_WAY_DRAW;
                         } else if (noOverwrite) {
                             newMask = stencil.getMask(x + tx, y + ty) | Stencil.MSK_BRICK;
+                            if (noOneWay) {
+                                newMask |= Stencil.MSK_NO_ONE_WAY;
+                            }
                             switch (autosteelMode) {
                                 case NONE:
                                 default:
@@ -558,13 +591,18 @@ public class Level {
                                     }
                                     break;
                                 case ADVANCED:
-                                    if (isSteel && (stencil.getMask(x + tx, y + ty) & Stencil.MSK_BRICK) == 0) {
+                                    if (isSteel && !BooleanUtils.toBoolean(stencil.getMask(x + tx, y + ty) & Stencil.MSK_BRICK)) {
                                         newMask |= Stencil.MSK_STEEL;
                                     }
                                     break;
                             }
                         } else {
                             newMask = stencil.getMask(x + tx, y + ty) | Stencil.MSK_BRICK;
+                            if (noOneWay) {
+                                newMask |= Stencil.MSK_NO_ONE_WAY;
+                            } else {
+                                newMask &= ~Stencil.MSK_NO_ONE_WAY;
+                            }
                             switch (autosteelMode) {
                                 case NONE:
                                 default:
@@ -598,7 +636,7 @@ public class Level {
                     continue;
                 }
                 for (int x = 0; x < stl.width; x++) {
-                    if ((!classicSteel && (stencil.getMask(x + sx, y + sy) & Stencil.MSK_BRICK) == 0)
+                    if ((!classicSteel && !BooleanUtils.toBoolean(stencil.getMask(x + sx, y + sy) & Stencil.MSK_BRICK))
                             || x + sx < 0 || x + sx >= fgWidth) {
                         continue;
                     }
@@ -626,21 +664,21 @@ public class Level {
             spr.setX(o.xPos);
             spr.setY(o.yPos);
             // flags
-            boolean upsideDown = (o.flags & LvlObject.FLAG_UPSIDE_DOWN) != 0;
-            boolean fake = (o.flags & LvlObject.FLAG_FAKE) != 0;
-            boolean upsideDownMask = (o.flags & LvlObject.FLAG_UPSIDE_DOWN_MASK) != 0;
-            boolean horizontallyFlipped = (o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED) != 0;
+            boolean upsideDown = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_UPSIDE_DOWN);
+            boolean fake = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_FAKE);
+            boolean upsideDownMask = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_UPSIDE_DOWN_MASK);
+            boolean horizontallyFlipped = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED);
             // check for entrances
             if (spr.getType() == SpriteObject.Type.ENTRANCE && !fake) {
                 Entrance e = new Entrance(o.xPos + spr.getWidth() / 2 + spr.getMaskOffsetX(),
-                        o.yPos + spr.getMaskOffsetY(), (o.objSpecificModifier & LvlObject.OPTION_ENTRANCE_LEFT) != 0);
+                        o.yPos + spr.getMaskOffsetY(), BooleanUtils.toBoolean(o.objSpecificModifier & LvlObject.OPTION_ENTRANCE_LEFT));
                 e.id = oCombined.size();
                 entrance.add(e);
             }
             // animated
-            boolean invisible = (o.paintMode & LvlObject.MODE_INVISIBLE) != 0;
-            boolean drawOnVis = !invisible && (o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN) != 0;
-            boolean noOverwrite = !drawOnVis && (o.paintMode & LvlObject.MODE_NO_OVERWRITE) != 0;
+            boolean invisible = BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_INVISIBLE);
+            boolean drawOnVis = !invisible && BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN);
+            boolean noOverwrite = !drawOnVis && BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_NO_OVERWRITE);
             boolean inFront = !invisible && !noOverwrite;
             boolean drawFull = inFront && !drawOnVis;
             
@@ -689,9 +727,11 @@ public class Level {
                         } else {
                             xDest = x;
                         }
+                        int stencilMask = stencil.getMask(xDest + spr.getX(), yDest + spr.getY());
                         if ((!classicSteel
-                                && (!spr.getType().isTriggeredByFoot())
-                                && (stencil.getMask(xDest + spr.getX(), yDest + spr.getY()) & Stencil.MSK_BRICK) == 0)
+                                        && !spr.getType().isTriggeredByFoot()
+                                        && !BooleanUtils.toBoolean(stencilMask & Stencil.MSK_BRICK))
+                                || (spr.getType().isSometimesIndestructible() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY))
                                 || xDest + spr.getX() < 0 || xDest + spr.getX() >= fgWidth) {
                             continue;
                         }
@@ -705,7 +745,6 @@ public class Level {
                     }
                 }
             }
-            // remove invisible pixels from all object frames that are "in front"
             if (!invisible) {
                 // get flipped or normal version
                 spr.flipSprite(horizontallyFlipped, upsideDown);
@@ -717,8 +756,10 @@ public class Level {
                             paint = false;
                         } else if (inFront) {
                             // now read terrain image
-                            int terrainVal = fgImage.getRGB(x + spr.getX(), y + spr.getY());
-                            paint = drawFull || ((terrainVal & 0xff000000) >>> 24) >= 0x80 && drawOnVis;
+                            boolean opaque = fgImage.isPixelOpaque(x + spr.getX(), y + spr.getY());
+                            int stencilMask = stencil.getMask(x + spr.getX(), y + spr.getY());
+                            paint = (drawFull || (opaque && drawOnVis))
+                                    && !(spr.getType().isSometimesIndestructible() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY_DRAW));
                         }
                         if (!paint) {
                             spr.setPixelVisibility(x, y, false); // set transparent
@@ -742,7 +783,7 @@ public class Level {
                 bgOFront.clear();
                 
                 for (Terrain t : bg.terrain) {
-                    if (t.id < 0 || (t.modifier & Terrain.MODE_INVISIBLE) != 0) {
+                    if (t.id < 0 || BooleanUtils.toBoolean(t.modifier & Terrain.MODE_INVISIBLE)) {
                         continue;
                     }
                     LemmImage i;
@@ -762,10 +803,10 @@ public class Level {
                     }
                     int tx = t.xPos;
                     int ty = t.yPos;
-                    boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
-                    boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
-                    boolean overwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) == 0;
-                    boolean remove = (t.modifier & Terrain.MODE_REMOVE) != 0;
+                    boolean horizontallyFlipped = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED);
+                    boolean upsideDown = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_UPSIDE_DOWN);
+                    boolean overwrite = !BooleanUtils.toBoolean(t.modifier & Terrain.MODE_NO_OVERWRITE);
+                    boolean remove = BooleanUtils.toBoolean(t.modifier & Terrain.MODE_REMOVE);
                     for (int y = 0; y < height; y++) {
                         if (y + ty < 0 || y + ty >= targetBg.getHeight()) {
                             continue;
@@ -809,12 +850,12 @@ public class Level {
                     spr.setX(o.xPos);
                     spr.setY(o.yPos);
                     // flags
-                    boolean upsideDown = (o.flags & LvlObject.FLAG_UPSIDE_DOWN) != 0;
-                    boolean horizontallyFlipped = (o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED) != 0;
+                    boolean upsideDown = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_UPSIDE_DOWN);
+                    boolean horizontallyFlipped = BooleanUtils.toBoolean(o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED);
                     // animated
-                    boolean invisible = (o.paintMode & LvlObject.MODE_INVISIBLE) != 0;
-                    boolean drawOnVis = !invisible && (o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN) != 0;
-                    boolean noOverwrite = !drawOnVis && (o.paintMode & LvlObject.MODE_NO_OVERWRITE) != 0;
+                    boolean invisible = BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_INVISIBLE);
+                    boolean drawOnVis = !invisible && BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN);
+                    boolean noOverwrite = !drawOnVis && BooleanUtils.toBoolean(o.paintMode & LvlObject.MODE_NO_OVERWRITE);
                     boolean inFront = !invisible && !noOverwrite;
                     boolean drawFull = inFront && !drawOnVis;
 
@@ -827,7 +868,6 @@ public class Level {
                     }
                     bgOCombined.add(spr);
 
-                    // remove invisible pixels from all object frames that are "in front"
                     if (!invisible) {
                         // get flipped or normal version
                         spr.flipSprite(horizontallyFlipped, upsideDown);
@@ -839,8 +879,8 @@ public class Level {
                                     paint = false;
                                 } else if (inFront) {
                                     // now read terrain image
-                                    int terrainVal = targetBg.getRGB(x + spr.getX(), y + spr.getY());
-                                    paint = drawFull || ((terrainVal & 0xff000000) >>> 24) >= 0x80 && drawOnVis;
+                                    boolean opaque = targetBg.isPixelOpaque(x + spr.getX(), y + spr.getY());
+                                    paint = drawFull || (opaque && drawOnVis);
                                 }
                                 if (!paint) {
                                     spr.setPixelVisibility(x, y, false); // set transparent
@@ -879,7 +919,7 @@ public class Level {
      * @param width width of screen
      * @param height height of screen
      * @param xOfs level offset x position
-     * @param xOfs level offset y position
+     * @param yOfs level offset y position
      */
     public void drawBehindObjects(final GraphicsContext g, final int width, final int height,
             final int xOfs, final int yOfs) {
@@ -918,10 +958,18 @@ public class Level {
         }
     }
     
+    /**
+     * Draw the background layers behind the foreground image.
+     * @param g graphics object to draw on
+     * @param width width of screen
+     * @param height height of screen
+     * @param xOfs level offset x position
+     * @param yOfs level offset y position
+     */
     public void drawBackground(final GraphicsContext g, final int width, final int height,
-            final int xOfs, final int yOfs, final int scaleX, final int scaleY) {
+            final int xOfs, final int yOfs) {
         List<LemmImage> bgImages = GameController.getBgImages();
-        if (bgImages == null || scaleX == 0 || scaleY == 0) {
+        if (bgImages == null) {
             return;
         }
         
@@ -950,20 +998,17 @@ public class Level {
                         for (int n = bg.sprObjBehind.length - 1; n >= 0; n--) {
                             SpriteObject spr = bg.sprObjBehind[n];
                             LemmImage img = spr.getImage();
-                            g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
-                                    img.getWidth() / scaleX, img.getHeight() / scaleY);
+                            g.drawImage(img, x + spr.getX(), y + spr.getY());
                         }
                     }
                     
-                    g.drawImage(bgImage, x / scaleX, y / scaleY,
-                            bgImageWidth / scaleX, bgImageHeight / scaleY);
+                    g.drawImage(bgImage, x, y);
                     
                     // draw "in front" objects
                     if (bg.sprObjFront != null) {
                         for (SpriteObject spr : bg.sprObjFront) {
                             LemmImage img = spr.getImage();
-                            g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
-                                    img.getWidth() / scaleX, img.getHeight() / scaleY);
+                            g.drawImage(img, x + spr.getX(), y + spr.getY());
                         }
                     }
                     
@@ -1100,21 +1145,22 @@ public class Level {
         bgColor = new Color(bgCol);
         debrisCol = props2.getInt("debrisColor", props.getInt("debrisColor", 0xffffff)) | 0xff000000;
         debrisCol2 = props2.getInt("debrisColor2", props.getInt("debrisColor2", debrisCol)) | 0xff000000;
-        Lemming.patchColors(debrisCol, debrisCol2);
+        Lemming.replaceColors(debrisCol, debrisCol2);
         particleCol = props2.getIntArray("particleColor", props.getIntArray("particleColor", DEFAULT_PARTICLE_COLORS));
         for (int i = 0; i < particleCol.length; i++) {
             particleCol[i] |= 0xff000000;
         }
         // go through all the entrances
         List<SpriteObject> sprites = new ArrayList<>(64);
-        int idx;
-        for (idx = 0; true; idx++) {
-            // get number of animations
+        for (int idx = 0; true; idx++) {
+            // get number of animation frames
             String sIdx = Integer.toString(idx);
             int frames = props.getInt("frames_" + sIdx, -1);
             if (frames < 0) {
                 break;
             }
+            // get animation speed
+            int speed = props.getInt("speed_" + sIdx, DEFAULT_ANIMATION_SPEED);
             // load screen buffer
             Path fName = Core.findResource(
                     Paths.get("styles", set, set + "o_" + idx + ".png"),
@@ -1125,7 +1171,7 @@ public class Level {
             if (anim < 0) {
                 break;
             }
-            SpriteObject sprite = new SpriteObject(img, frames);
+            SpriteObject sprite = new SpriteObject(img, frames, speed);
             // get object type
             int type = props.getInt("type_" + sIdx, -1);
             if (type < 0) {
@@ -1136,8 +1182,8 @@ public class Level {
                 case EXIT:
                 case TURN_LEFT:
                 case TURN_RIGHT:
-                case NO_BASH_LEFT:
-                case NO_BASH_RIGHT:
+                case ONE_WAY_RIGHT:
+                case ONE_WAY_LEFT:
                 case TRAP_DIE:
                 case TRAP_REPLACE:
                 case TRAP_DROWN:
@@ -1196,26 +1242,19 @@ public class Level {
 
     /**
      * Create a minimap for this level.
-     * @param image image to re-use (if null or wrong size, it will be recreated)
      * @param fgImage foreground image used as source for the minimap
-     * @param scaleX integer X scaling factor (2 -> half width)
-     * @param scaleY integer Y scaling factor (2 -> half height)
+     * @param scaleX integer X scaling factor
+     * @param scaleY integer Y scaling factor
      * @param tint apply a greenish color tint
      * @param drawBackground
+     * @param highQuality
      * @return image with minimap
      */
-    public LemmImage createMinimap(final LemmImage image, final LemmImage fgImage, final int scaleX, final int scaleY,
-            final boolean tint, final boolean drawBackground) {
+    public LemmImage createMinimap(final LemmImage fgImage, final double scaleX, final double scaleY,
+            final boolean highQuality, final boolean tint, final boolean drawBackground) {
         Level level = GameController.getLevel();
-        int width = fgImage.getWidth() / scaleX;
-        int height = fgImage.getHeight() / scaleY;
-        LemmImage img;
+        LemmImage img = ToolBox.createTranslucentImage(fgImage.getWidth(), fgImage.getHeight());
 
-        if (image == null || image.getWidth() != width || image.getHeight() != height) {
-            img = ToolBox.createTranslucentImage(width, height);
-        } else {
-            img = image;
-        }
         GraphicsContext gx = null;
         try {
             gx = img.createGraphicsContext();
@@ -1225,28 +1264,26 @@ public class Level {
             } else {
                 gx.setBackground(bgColor);
             }
-            gx.clearRect(0, 0, width, height);
+            gx.clearRect(0, 0, img.getWidth(), img.getHeight());
             // draw background image
             if (drawBackground) {
-                drawBackground(gx, fgImage.getWidth(), fgImage.getHeight(), 0, 0, scaleX, scaleY);
+                drawBackground(gx, fgImage.getWidth(), fgImage.getHeight(), 0, 0);
             }
             // draw "behind" objects
             if (level != null && level.sprObjBehind != null) {
                 for (int n = level.sprObjBehind.length - 1; n >= 0; n--) {
                     SpriteObject spr = level.sprObjBehind[n];
                     LemmImage sprImg = spr.getImage();
-                    gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
-                            spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+                    gx.drawImage(sprImg, spr.getX(), spr.getY());
                 }
             }
 
-            gx.drawImage(fgImage, 0, 0, width, height);
+            gx.drawImage(fgImage, 0, 0);
             // draw "in front" objects
             if (level != null && level.sprObjFront != null) {
                 for (SpriteObject spr : level.sprObjFront) {
                     LemmImage sprImg = spr.getImage();
-                    gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
-                            spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+                    gx.drawImage(sprImg, spr.getX(), spr.getY());
                 }
             }
         } finally {
@@ -1254,7 +1291,18 @@ public class Level {
                 gx.dispose();
             }
         }
-        // now tint in green
+        
+        // scale the image if necessary
+        if (scaleX != 1.0 || scaleY != 1.0) {
+            int width = ToolBox.scale(fgImage.getWidth(), scaleX);
+            int height = ToolBox.scale(fgImage.getHeight(), scaleY);
+            Object interpolationHint = highQuality
+                    ? RenderingHints.VALUE_INTERPOLATION_BILINEAR
+                    : RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR;
+            img = img.getScaledInstance(width, height, interpolationHint, highQuality);
+        }
+        
+        // now tint green
         if (tint) {
             for (int y = 0; y < img.getHeight(); y++) {
                 for (int x = 0; x < img.getWidth(); x++) {
@@ -1264,6 +1312,7 @@ public class Level {
                 }
             }
         }
+        
         return img;
     }
 
@@ -1517,6 +1566,10 @@ public class Level {
         
         return ret;
     }
+    
+    public Path getMusic() {
+        return music;
+    }
 
     /**
      * Check if this is a SuperLemming level (runs faster).
@@ -1541,6 +1594,14 @@ public class Level {
     public String getLevelName() {
         return lvlName;
     }
+
+    /**
+     * Get level author.
+     * @return level author
+     */
+    public String getAuthor() {
+        return author;
+    }
 }
 
 /**
@@ -1548,6 +1609,7 @@ public class Level {
  * @author Volker Oth
  */
 class LvlObject {
+    
     /** paint mode: only visible on terrain pixels */
     static final int MODE_VIS_ON_TERRAIN = 8;
     /** paint mode: don't overwrite terrain pixels in the original foreground image */
@@ -1593,6 +1655,8 @@ class LvlObject {
  * @author Volker Oth
  */
 class Terrain {
+    
+    static final int MODE_NO_ONE_WAY = 64;
     static final int MODE_HORIZONTALLY_FLIPPED = 32;
     static final int MODE_FAKE = 16;
     /** paint mode: don't overwrite existing terrain pixels */
@@ -1653,7 +1717,7 @@ class Steel {
         yPos = val[1];
         width = val[2];
         height = val[3];
-        negative = (val.length >= 5) ? ((val[4] & 0x01) != 0) : false;
+        negative = (val.length >= 5) ? BooleanUtils.toBoolean(val[4] & 0x01) : false;
     }
 }
 

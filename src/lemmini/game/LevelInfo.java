@@ -10,6 +10,7 @@ import java.util.List;
 import lemmini.sound.Music;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -38,6 +39,8 @@ import lemmini.tools.ToolBox;
 public class LevelInfo {
     /** level name */
     private String name;
+    /** level author */
+    private String author;
     /** name of music for this level */
     private Path music;
     /** file name of the INI file containing the level information */
@@ -69,9 +72,10 @@ public class LevelInfo {
     private boolean validLevel;
     
     public LevelInfo() {
-        name = "";
-        music = Paths.get("");
-        fileName = Paths.get("");
+        name = StringUtils.EMPTY;
+        author = StringUtils.EMPTY;
+        music = Paths.get(StringUtils.EMPTY);
+        fileName = Paths.get(StringUtils.EMPTY);
         releaseRate = 0;
         numLemmings = 1;
         numToRescue = 0;
@@ -90,7 +94,8 @@ public class LevelInfo {
     public LevelInfo(Path fname, Path newMusic) {
         fileName = fname;
         music = newMusic;
-        name = "";
+        name = StringUtils.EMPTY;
+        author = StringUtils.EMPTY;
         releaseRate = 0;
         numLemmings = 1;
         numToRescue = 0;
@@ -111,7 +116,7 @@ public class LevelInfo {
                 Props props = new Props();
                 props.load(r);
                 propsList.add(props);
-                String mainLevel = props.get("mainLevel", "");
+                String mainLevel = props.get("mainLevel", StringUtils.EMPTY);
                 while (!mainLevel.isEmpty()) {
                     Path fname2 = fname.resolveSibling(mainLevel);
                     if (!Files.isRegularFile(fname2)) {
@@ -126,9 +131,10 @@ public class LevelInfo {
                         }
                     }
                     propsList.add(props);
-                    mainLevel = props.get("mainLevel", "");
+                    mainLevel = props.get("mainLevel", StringUtils.EMPTY);
                 }
-                name = Props.get(propsList, "name", "");
+                name = Props.get(propsList, "name", StringUtils.EMPTY);
+                author = Props.get(propsList, "author", StringUtils.EMPTY);
                 if (music == null) {
                     String style = props.get("style", null);
                     String specialStyle = props.get("specialStyle", null);
@@ -221,6 +227,14 @@ public class LevelInfo {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Get level author.
+     * @return level author
+     */
+    public String getAuthor() {
+        return author;
     }
     
     public int getReleaseRate() {

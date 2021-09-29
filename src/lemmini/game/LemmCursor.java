@@ -178,7 +178,7 @@ public class LemmCursor  {
     
     /**
      * Returns whether the box version of the cursor is in use.
-     * @param b true if the box version of the cursor is in use, false otherwise
+     * @return true if the box version of the cursor is in use, false otherwise
      */
     public static boolean isBox() {
         return box;

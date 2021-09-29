@@ -35,6 +35,8 @@ public class LevelCodeDialog extends javax.swing.JDialog {
 
     /**
      * Creates new form LevelCodeDialog
+     * @param parent
+     * @param modal
      */
     public LevelCodeDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -148,6 +150,11 @@ public class LevelCodeDialog extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        code = null;
+        levelPackIndex = -1;
+    }//GEN-LAST:event_formWindowClosing
+
     private void jTextFieldCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldCodeActionPerformed
         code = jTextFieldCode.getText();
         levelPackIndex = jComboBoxLvlPack.getSelectedIndex() + 1;
@@ -165,11 +172,6 @@ public class LevelCodeDialog extends javax.swing.JDialog {
         levelPackIndex = -1;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
-
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        code = null;
-        levelPackIndex = -1;
-    }//GEN-LAST:event_formWindowClosing
 
     /**
      * Get entered level code.

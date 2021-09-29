@@ -10,6 +10,8 @@ import lemmini.graphics.LemmImage;
 import lemmini.sound.Sound;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -83,7 +85,7 @@ public class Lemming {
         EXPLODER ("EXPLODER", 0, false, false, 1, 0),
         /* types without a separate animation */
         /** a Lemming that is nuked */
-        NUKE ("", 0, false, false, 0, 0),
+        NUKE (StringUtils.EMPTY, 0, false, false, 0, 0),
         /** a blocker that is told to explode */
         FLAPPER_BLOCKER ("FLAPPER", 0, false, false, 0, 0),
         /** a floater before the parachute opened completely */
@@ -574,9 +576,10 @@ public class Lemming {
                                 eraseMask = Stencil.MSK_BRICK;
                                 checkMask = 0;
                                 if (!GameController.getLevel().getClassicSteel()) {
-                                    eraseMask |= Stencil.MSK_NO_BASH;
+                                    eraseMask |= Stencil.MSK_NO_ONE_WAY;
+                                    eraseMask |= Stencil.MSK_ONE_WAY;
                                     checkMask |= Stencil.MSK_STEEL;
-                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
+                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_ONE_WAY_RIGHT : Stencil.MSK_ONE_WAY_LEFT;
                                 }
                                 if (y >= BASHER_CHECK_STEP) {
                                     m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 2, eraseMask, checkMask);
@@ -600,9 +603,9 @@ public class Lemming {
                                 eraseMask = Stencil.MSK_BRICK;
                                 checkMask = 0;
                                 if (!GameController.getLevel().getClassicSteel()) {
-                                    eraseMask |= Stencil.MSK_NO_BASH;
+                                    eraseMask |= Stencil.MSK_ONE_WAY;
                                     checkMask |= Stencil.MSK_STEEL;
-                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
+                                    checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_ONE_WAY_RIGHT : Stencil.MSK_ONE_WAY_LEFT;
                                 }
                                 if (y >= BASHER_CHECK_STEP) {
                                     m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 18, eraseMask, checkMask);
@@ -674,9 +677,9 @@ public class Lemming {
                             int eraseMask = Stencil.MSK_BRICK;
                             int checkMask = 0;
                             if (!GameController.getLevel().getClassicSteel()) {
-                                eraseMask |= Stencil.MSK_NO_BASH;
+                                eraseMask |= Stencil.MSK_ONE_WAY;
                                 checkMask |= Stencil.MSK_STEEL;
-                                checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
+                                checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_ONE_WAY_RIGHT : Stencil.MSK_ONE_WAY_LEFT;
                             }
                             if (y >= GameController.getLevel().getTopBoundary() + 10) {
                                 m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 1, eraseMask, checkMask);
@@ -763,7 +766,7 @@ public class Lemming {
                         // stair mask is the same height as a lemming
                         Mask m;
                         m = lemRes.getMask(dir);
-                        m.paintStep(screenMaskX(), screenMaskY(), 0, GameController.getLevel().getDebrisColor());
+                        m.paintStep(screenMaskX(), screenMaskY(), 0);
                     } else if (idx == 10 * TIME_SCALE) {
                         if (counter >= STEPS_WARNING) {
                             GameController.sound.play(Sound.Effect.STEP_WARNING, getPan());
@@ -843,12 +846,12 @@ public class Lemming {
                 if (!flapper) {
                     if (dir == Direction.RIGHT) {
                         if (x < GameController.getWidth() + GameController.getLevel().getRightBoundary() - 16
-                                && (GameController.getStencil().getMask(x + 16, y) & Stencil.MSK_BRICK) == 0) {
+                                && !BooleanUtils.toBoolean(GameController.getStencil().getMask(x + 16, y) & Stencil.MSK_BRICK)) {
                             x += WALKER_STEP;
                         }
                     } else if (dir == Direction.LEFT) {
-                        if (x >= GameController.getLevel().getLeftBoundary() + 16 &&
-                                (GameController.getStencil().getMask(x - 16, y) & Stencil.MSK_BRICK) == 0) {
+                        if (x >= GameController.getLevel().getLeftBoundary() + 16
+                                && !BooleanUtils.toBoolean(GameController.getStencil().getMask(x - 16, y) & Stencil.MSK_BRICK)) {
                             x -= WALKER_STEP;
                         }
                     }
@@ -882,12 +885,12 @@ public class Lemming {
                     GameController.sound.play(Sound.Effect.EXPLODE, getPan());
                     if (!GameController.getLevel().getClassicSteel()) {
                         m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0,
-                                Stencil.MSK_BRICK | Stencil.MSK_NO_BASH, Stencil.MSK_STEEL);
+                                Stencil.MSK_BRICK | Stencil.MSK_ONE_WAY, Stencil.MSK_STEEL);
                     } else if (x >= GameController.getLevel().getLeftBoundary()
                             && x < GameController.getWidth() + GameController.getLevel().getRightBoundary()
                             && y < GameController.getHeight()
-                            && (stencil.getMask(x, y) & Stencil.MSK_STEEL) == 0
-                            && (stencil.getMask(x, y) & Stencil.MSK_EXIT) == 0 && !drowner) {
+                            && !BooleanUtils.toBoolean(stencil.getMask(x, y) & Stencil.MSK_STEEL)
+                            && !BooleanUtils.toBoolean(stencil.getMask(x, y) & Stencil.MSK_EXIT) && !drowner) {
                         m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, Stencil.MSK_BRICK, 0);
                     }
                 } else if (counter >= EXPLODER_LIFE) {
@@ -1105,7 +1108,7 @@ public class Lemming {
                         int eraseMask = Stencil.MSK_BRICK;
                         int checkMask = 0;
                         if (!GameController.getLevel().getClassicSteel()) {
-                            eraseMask |= Stencil.MSK_NO_BASH;
+                            eraseMask |= Stencil.MSK_ONE_WAY;
                             checkMask |= Stencil.MSK_STEEL;
                         }
                         m.eraseMask(screenMaskX(), screenMaskY(), 0, eraseMask, checkMask);
@@ -1134,18 +1137,18 @@ public class Lemming {
     private boolean turnedByBlocker() {
         int s = stencilFoot();
 
-        if ((s & Stencil.MSK_BLOCKER_LEFT) != 0 && dir == Direction.RIGHT) {
+        if (BooleanUtils.toBoolean(s & Stencil.MSK_BLOCKER_LEFT) && dir == Direction.RIGHT) {
             dir = Direction.LEFT;
             return true;
         }
-        if ((s & Stencil.MSK_BLOCKER_RIGHT) != 0 && dir == Direction.LEFT) {
+        if (BooleanUtils.toBoolean(s & Stencil.MSK_BLOCKER_RIGHT) && dir == Direction.LEFT) {
             dir = Direction.RIGHT;
             return true;
         }
-        if ((s & Stencil.MSK_BLOCKER_CENTER) != 0) {
+        if (BooleanUtils.toBoolean(s & Stencil.MSK_BLOCKER_CENTER)) {
             return false;
         }
-        if ((s & Stencil.MSK_TURN_LEFT) != 0 && dir == Direction.RIGHT) {
+        if (BooleanUtils.toBoolean(s & Stencil.MSK_TURN_LEFT) && dir == Direction.RIGHT) {
             int id = objectFoot();
             if (id >= 0) {
                 GameController.sound.play(GameController.getLevel().getSprObject(id).getSound(), getPan());
@@ -1153,7 +1156,7 @@ public class Lemming {
             dir = Direction.LEFT;
             return true;
         }
-        if ((s & Stencil.MSK_TURN_RIGHT) != 0 && dir == Direction.LEFT) {
+        if (BooleanUtils.toBoolean(s & Stencil.MSK_TURN_RIGHT) && dir == Direction.LEFT) {
             int id = objectFoot();
             if (id >= 0) {
                 GameController.sound.play(GameController.getLevel().getSprObject(id).getSound(), getPan());
@@ -1275,7 +1278,7 @@ public class Lemming {
             } else {
                 xb = xm - i + 1;
             }
-            if ((GameController.getStencil().getMask(xb, ypos) & Stencil.MSK_BRICK) != 0) {
+            if (BooleanUtils.toBoolean(GameController.getStencil().getMask(xb, ypos) & Stencil.MSK_BRICK)) {
                 bricks++;
             }
         }
@@ -1302,9 +1305,9 @@ public class Lemming {
         for (int yb = yMin; yb <= yMax; yb++) {
             for (int xb = xMin; xb <= xMax; xb++) {
                 int sval = GameController.getStencil().getMask(xb, yb);
-                if (((sval & Stencil.MSK_NO_BASH_LEFT) != 0 && dir == Direction.LEFT)
-                        || ((sval & Stencil.MSK_NO_BASH_RIGHT) != 0 && dir == Direction.RIGHT)
-                        || ((sval & Stencil.MSK_STEEL) != 0)) {
+                if ((BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_LEFT) && dir == Direction.RIGHT)
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_RIGHT) && dir == Direction.LEFT)
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL))) {
                     if (playSound) {
                         int id = GameController.getStencil().getMaskObjectID(xb, yb);
                         if (id >= 0) {
@@ -1331,7 +1334,7 @@ public class Lemming {
                 int ym = y + i;
                 int xm = x + j;
                 int sval = GameController.getStencil().getMask(xm, ym);
-                if ((sval & Stencil.MSK_BRICK) != 0 && (sval & Stencil.MSK_STEEL) != 0) {
+                if (BooleanUtils.toBoolean(sval & Stencil.MSK_BRICK) && BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL)) {
                     if (playSound) {
                         int id = GameController.getStencil().getMaskObjectID(xm, ym);
                         if (id >= 0) {
@@ -1374,9 +1377,9 @@ public class Lemming {
         for (int yb = yMin; yb <= yMax; yb++) {
             for (int xb = xMin; xb <= xMax; xb++) {
                 int sval = GameController.getStencil().getMask(xb, yb);
-                if (((sval & Stencil.MSK_NO_BASH_LEFT) != 0 && dir == Direction.LEFT)
-                        || ((sval & Stencil.MSK_NO_BASH_RIGHT) != 0 && dir == Direction.RIGHT)
-                        || ((sval & Stencil.MSK_STEEL) != 0)) {
+                if ((BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_LEFT) && dir == Direction.RIGHT)
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_RIGHT) && dir == Direction.LEFT)
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL))) {
                     if (playSound) {
                         int id = GameController.getStencil().getMaskObjectID(xb, yb);
                         if (id >= 0) {
@@ -1396,9 +1399,9 @@ public class Lemming {
         for (int yb = yMin; yb <= yMax; yb++) {
             for (int xb = xMin; xb <= xMax; xb++) {
                 int sval = GameController.getStencil().getMask(xb, yb);
-                if ((!start && (((sval & Stencil.MSK_NO_BASH_LEFT) != 0 && dir == Direction.LEFT)
-                        || ((sval & Stencil.MSK_NO_BASH_RIGHT) != 0 && dir == Direction.RIGHT)))
-                        || ((sval & Stencil.MSK_STEEL) != 0)) {
+                if ((!start && ((BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_LEFT) && dir == Direction.RIGHT)
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_ONE_WAY_RIGHT) && dir == Direction.LEFT)))
+                        || (BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL))) {
                     if (playSound) {
                         int id = GameController.getStencil().getMaskObjectID(xb, yb);
                         if (id >= 0) {
@@ -1433,7 +1436,7 @@ public class Lemming {
                 return FALL_DISTANCE_FORCE_FALL; // convert most skill to faller
             }
             int s = stencil.getMask(pos);
-            if ((s & Stencil.MSK_BRICK) == 0) {
+            if (!BooleanUtils.toBoolean(s & Stencil.MSK_BRICK)) {
                 free++;
             } else {
                 break;
@@ -1489,7 +1492,7 @@ public class Lemming {
         }
         Stencil stencil = GameController.getStencil();
         for (int yb = yMin; yb <= yMax; yb++) {
-            if ((stencil.getMask(xm, yb) & Stencil.MSK_BRICK) != 0) {
+            if (BooleanUtils.toBoolean(stencil.getMask(xm, yb) & Stencil.MSK_BRICK)) {
                 return false;
             }
         }
@@ -1515,7 +1518,7 @@ public class Lemming {
             xm -= 1;
         }
         Stencil stencil = GameController.getStencil();
-        return ym >= 0 && ((stencil.getMask(xm, ym) & Stencil.MSK_BRICK) == 0);
+        return ym >= 0 && !BooleanUtils.toBoolean((stencil.getMask(xm, ym) & Stencil.MSK_BRICK));
     }
 
     /**
@@ -1553,7 +1556,7 @@ public class Lemming {
             if (ym < GameController.getLevel().getTopBoundary() - 1) {
                 return WALKER_OBSTACLE_HEIGHT + 1; // forbid leaving level to the top
             }
-            if ((stencil.getMask(pos) & Stencil.MSK_BRICK) == 0) {
+            if (!BooleanUtils.toBoolean(stencil.getMask(pos) & Stencil.MSK_BRICK)) {
                 break;
             }
         }
@@ -1577,7 +1580,7 @@ public class Lemming {
         }
         int pos = x;
         pos += ym * GameController.getWidth();
-        return (GameController.getStencil().getMask(pos) & Stencil.MSK_BRICK) == 0;
+        return !BooleanUtils.toBoolean(GameController.getStencil().getMask(pos) & Stencil.MSK_BRICK);
     }
     
     private void eraseBlockerMask() {
@@ -1590,29 +1593,14 @@ public class Lemming {
     }
 
     /**
-     * Replace a color in the animation frame with another color.
-     * Used to patch the color of debris from pink color to a level specific color.
+     * Replace two colors in the animation frames other colors.
+     * Used to patch the color of debris to level-specific colors.
      * @param replaceCol first color to replace
      * @param replaceCol2 second color to replace
      */
-    public static void patchColors(final int replaceCol, final int replaceCol2) {
-        for (int l = 0; l < NUM_RESOURCES; l++) {      // go through all the lemmings
-            LemmingResource lr = lemmings[l];
-            for (int f = 0; f < lr.frames; f++) {      // go through all frames
-                for (int d = 0; d < lr.dirs; d++) {    // go though all dirs
-                    for (int xp = 0; xp < lr.width; xp++) {
-                        for (int yp = 0; yp < lr.height; yp++) {
-                            LemmImage i = lr.getImage(Direction.get(d), f);
-                            int rgb = i.getRGB(xp, yp);
-                            if (rgb == templateColor) {
-                                i.setRGB(xp, yp, replaceCol);
-                            } else if (rgb == templateColor2) {
-                                i.setRGB(xp, yp, replaceCol2);
-                            }
-                        }
-                    }
-                }
-            }
+    public static void replaceColors(final int replaceCol, final int replaceCol2) {
+        for (int l = 0; l < NUM_RESOURCES; l++) { // go through all the lemmings
+            lemmings[l].replaceColors(templateColor, replaceCol, templateColor2, replaceCol2);
         }
     }
 
@@ -1630,8 +1618,8 @@ public class Lemming {
         }
         lemmings = new LemmingResource[NUM_RESOURCES];
         // read lemmings
-        templateColor = p.getInt("templateColor", DEF_TEMPLATE_COLOR) | 0xff000000;
-        templateColor2 = p.getInt("templateColor2", templateColor) | 0xff000000;
+        templateColor = p.getInt("templateColor", DEF_TEMPLATE_COLOR) & 0x00ffffff;
+        templateColor2 = p.getInt("templateColor2", templateColor) & 0x00ffffff;
         Type[] lemmTypes = Type.values();
         for (int i = 0; i < lemmings.length; i++) {
             // frames, directions, animation type
@@ -1661,14 +1649,14 @@ public class Lemming {
                 fn = Core.findResource(
                         Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
                         Core.IMAGE_EXTENSIONS);
-                LemmImage sourceImg = Core.loadBitmaskImage(fn);
+                LemmImage sourceImg = Core.loadTranslucentImage(fn);
                 Mask mask = new Mask(sourceImg, type.maskFrames);
                 lemmings[i].setMask(Direction.RIGHT, mask);
                 if (bidirectional) {
                     fn = Core.findResource(
                             Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
                             Core.IMAGE_EXTENSIONS);
-                    LemmImage sourceImgLeft = Core.loadBitmaskImage(fn);
+                    LemmImage sourceImgLeft = Core.loadTranslucentImage(fn);
                     Mask maskLeft = new Mask(sourceImgLeft, type.maskFrames);
                     lemmings[i].setMask(Direction.LEFT, maskLeft);
                 }
@@ -1718,6 +1706,7 @@ public class Lemming {
     /**
      * Set new skill/type of this Lemming.
      * @param skill new skill/type
+     * @param playSound
      * @return true if a change was possible, false otherwise
      */
     public boolean setSkill(final Type skill, boolean playSound) {
@@ -1915,6 +1904,14 @@ public class Lemming {
     public int midY() {
         return y - lemRes.size;
     }
+    
+    public int footX() {
+        return x;
+    }
+    
+    public int footY() {
+        return y;
+    }
 
     public int screenMaskX() {
         return x - lemRes.maskX;
@@ -2056,6 +2053,7 @@ class LemmingResource {
     int maskStep;
     /** array of images to store the animation [Direction][AnimationFrame] */
     private final LemmImage[][] img;
+    private final LemmImage[][] unpatchedImg;
     /** array of removal masks used for digging/bashing/mining/explosions etc. [Direction] */
     private final Mask[] mask;
     
@@ -2064,12 +2062,14 @@ class LemmingResource {
      */
     LemmingResource() {
         img = new LemmImage[1][1];
+        unpatchedImg = new LemmImage[1][1];
         mask = new Mask[1];
         width = 1;
         height = 1;
         dirs = 1;
         animMode = Lemming.Animation.NONE;
         img[Lemming.Direction.RIGHT.ordinal()][0] = ToolBox.createBitmaskImage(width, height);
+        unpatchedImg[Lemming.Direction.RIGHT.ordinal()][0] = img[Lemming.Direction.RIGHT.ordinal()][0];
     }
 
     /**
@@ -2079,6 +2079,7 @@ class LemmingResource {
      */
     LemmingResource(final LemmImage sourceImg, final int animFrames) {
         img = new LemmImage[1][];
+        unpatchedImg = new LemmImage[1][];
         mask = new Mask[1];
         frames = animFrames;
         width = sourceImg.getWidth();
@@ -2086,6 +2087,7 @@ class LemmingResource {
         dirs = 1;
         animMode = Lemming.Animation.NONE;
         img[Lemming.Direction.RIGHT.ordinal()] = ToolBox.getAnimation(sourceImg, animFrames);
+        unpatchedImg[Lemming.Direction.RIGHT.ordinal()] = img[Lemming.Direction.RIGHT.ordinal()].clone();
     }
     
     /**
@@ -2096,6 +2098,7 @@ class LemmingResource {
      */
     LemmingResource(final LemmImage sourceImg, final LemmImage sourceImgLeft, final int animFrames) {
         img = new LemmImage[2][];
+        unpatchedImg = new LemmImage[2][];
         mask = new Mask[2];
         frames = animFrames;
         width = Math.min(sourceImg.getWidth(), sourceImgLeft.getWidth());
@@ -2104,6 +2107,8 @@ class LemmingResource {
         animMode = Lemming.Animation.NONE;
         img[Lemming.Direction.RIGHT.ordinal()] = ToolBox.getAnimation(sourceImg, animFrames);
         img[Lemming.Direction.LEFT.ordinal()] = ToolBox.getAnimation(sourceImgLeft, animFrames);
+        unpatchedImg[Lemming.Direction.RIGHT.ordinal()] = img[Lemming.Direction.RIGHT.ordinal()].clone();
+        unpatchedImg[Lemming.Direction.LEFT.ordinal()] = img[Lemming.Direction.LEFT.ordinal()].clone();
     }
 
     /**
@@ -2143,6 +2148,23 @@ class LemmingResource {
             return img[dir.ordinal()][frame];
         } else {
             return img[0][frame];
+        }
+    }
+    
+    void replaceColors(final int templateCol, final int replaceCol,
+            final int templateCol2, final int replaceCol2) {
+        for (int d = 0; d < img.length; d++) { // go though all directions
+            for (int f = 0; f < img[d].length; f++) { // go through all frames
+                LemmImage i = new LemmImage(unpatchedImg[d][f]);
+                i.replaceColor(templateCol, replaceCol);
+                i.replaceColor(templateCol2, replaceCol2);
+                img[d][f] = i;
+            }
+        }
+        for (Mask d : mask) { // go though all directions
+            if (d != null) {
+                d.replaceColors(templateCol, replaceCol, templateCol2, replaceCol2);
+            }
         }
     }
 }

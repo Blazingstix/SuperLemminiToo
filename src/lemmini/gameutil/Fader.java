@@ -83,7 +83,7 @@ public class Fader {
      * @param a 8bit alpha value
      */
     public static synchronized void setAlpha(final int a) {
-        alpha = Math.min(Math.max(a, 0), 0xff);
+        alpha = ToolBox.cap(0, a, 0xff);
         init();
     }
 
@@ -153,13 +153,16 @@ public class Fader {
         fadeStep = step;
     }
     
+    /**
+     * Get step size.
+     * @return step size
+     */
     public static int getStep() {
         return fadeStep;
     }
 
     /**
      * Fade.
-     * @param g graphics to fade
      */
     public static synchronized void fade() {
         switch (fadeState) {

@@ -138,7 +138,7 @@ public class Icons {
             Path fn = Core.findResource(Paths.get(
                     "gfx", "icons", "icon_" + iconTypes[i].name().toLowerCase() + ".png"), Core.IMAGE_EXTENSIONS);
             LemmImage sourceImg = Core.loadTranslucentImage(fn);
-            icons[i] = new Sprite(sourceImg, 2);
+            icons[i] = new Sprite(sourceImg, 2, 1);
             iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
         }
     }

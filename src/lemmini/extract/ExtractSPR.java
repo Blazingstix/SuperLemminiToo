@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
+import org.apache.commons.lang3.BooleanUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -196,7 +197,7 @@ public class ExtractSPR {
                     lineOfs += 0x7f;
                     b = buffer.get();
                 }
-                if ((b & 0x80) != 0x80) {
+                if (!BooleanUtils.toBoolean(b & 0x80)) {
                     // additional line offset
                     lineOfs += (b & 0x7f);
                     b = buffer.get(); // start character

@@ -1,6 +1,12 @@
 package lemmini.graphics;
 
+import java.awt.Graphics2D;
+import java.awt.Point;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.util.Hashtable;
+import lemmini.tools.ToolBox;
 
 
 /*
@@ -31,12 +37,65 @@ public class LemmImage {
     }
     
     public LemmImage(LemmImage image) {
-        this.image = new BufferedImage(image.getWidth(), image.getHeight(), image.getImage().getType());
-        this.image.setData(image.getImage().getData());
+        BufferedImage oldBufferedImage = image.getImage();
+        this.image = new BufferedImage(oldBufferedImage.getColorModel(),
+                oldBufferedImage.copyData(null),
+                oldBufferedImage.isAlphaPremultiplied(),
+                image.getProperties());
     }
     
     public BufferedImage getImage() {
         return image;
+    }
+    
+    public Hashtable<String, Object> getProperties() {
+        String[] propertyNames = image.getPropertyNames();
+        if (propertyNames == null) {
+            return null;
+        } else {
+            Hashtable<String, Object> properties = new Hashtable<>(propertyNames.length);
+            for (String propertyName : propertyNames) {
+                properties.put(propertyName, image.getProperty(propertyName));
+            }
+            return properties;
+        }
+    }
+    
+    public LemmImage getScaledInstance(int targetWidth, int targetHeight,
+            Object interpolationHint, boolean multipass) {
+        int transparency = image.getTransparency();
+        BufferedImage img = image;
+        int w;
+        int h;
+        if (multipass) {
+            w = getWidth();
+            h = getHeight();
+        } else {
+            w = targetWidth;
+            h = targetHeight;
+        }
+        
+        do {
+            if (multipass) {
+                w = Math.max(w / 2, targetWidth);
+                h = Math.max(h / 2, targetHeight);
+            }
+            
+            BufferedImage tmp = ToolBox.createImage(w, h, transparency);
+            Graphics2D g2 = null;
+            try {
+                g2 = tmp.createGraphics();
+                g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, interpolationHint);
+                g2.drawImage(img, 0, 0, w, h, null);
+            } finally {
+                if (g2 != null) {
+                    g2.dispose();
+                }
+            }
+            img = tmp;
+        } while (w != targetWidth || h != targetHeight);
+        
+        return new LemmImage(img);
     }
     
     public GraphicsContext createGraphicsContext() {
@@ -135,6 +194,19 @@ public class LemmImage {
         image.setRGB(x, y, rgbNew);
     }
     
+    public void replaceColor(int oldRGB, int newRGB) {
+        int w = getWidth();
+        int h = getHeight();
+        for (int xp = 0; xp < w; xp++) {
+            for (int yp = 0; yp < h; yp++) {
+                int rgb = getRGB(xp, yp);
+                if ((rgb & 0x00ffffff) == oldRGB) {
+                    setRGB(xp, yp, (newRGB & 0x00ffffff) | (rgb & 0xff000000));
+                }
+            }
+        }
+    }
+    
     public void removeAlpha(int x, int y, int alpha) {
         if (x < 0 || x >= getWidth() || y < 0 || y >= getHeight()) {
             return;
@@ -155,6 +227,10 @@ public class LemmImage {
         } else {
             image.setRGB(x, y, 0);
         }
+    }
+    
+    public boolean isPixelOpaque(int x, int y) {
+        return (getRGB(x, y) >>> 24) >= 0x80;
     }
     
     public void applyTint(int tint) {
@@ -188,10 +264,10 @@ public class LemmImage {
     }
     
     private static double intToDouble(int i) {
-        return Math.max(Math.min(i / 255.0, 1.0), 0.0);
+        return ToolBox.cap(0.0, i / 255.0, 1.0);
     }
     
     private static int doubleToInt(double d) {
-        return Math.max(Math.min((int) Math.round(d * 255.0), 255), 0);
+        return ToolBox.cap(0, ToolBox.roundToInt(d * 255.0), 255);
     }
 }

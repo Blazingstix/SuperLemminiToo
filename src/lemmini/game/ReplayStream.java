@@ -119,6 +119,7 @@ public class ReplayStream {
      * Load replay buffer from file.
      * @param fname file name
      * @return replay information
+     * @throws LemmException
      */
     public ReplayLevelInfo load(final Path fname) throws LemmException {
         try (BufferedReader br = ToolBox.getBufferedReader(fname)) {

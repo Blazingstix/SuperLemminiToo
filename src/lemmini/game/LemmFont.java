@@ -9,6 +9,8 @@ import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -90,7 +92,7 @@ public class LemmFont {
         }
         
         for (int i = 0; true; i++) {
-            String fileNameStr = p.get("subset_" + i + "_fileName", "");
+            String fileNameStr = p.get("subset_" + i + "_fileName", StringUtils.EMPTY);
             Path fileName = Paths.get(fileNameStr);
             int numChars = p.getInt("subset_" + i + "_numChars", 0);
             
@@ -100,7 +102,7 @@ public class LemmFont {
             
             fn = Core.findResource(Paths.get("gfx/font").resolve(fileName), Core.IMAGE_EXTENSIONS);
             
-            String name = ToolBox.removeExtension(fileNameStr);
+            String name = FilenameUtils.removeExtension(fileNameStr);
             
             LemmImage sourceImg = Core.loadTranslucentImage(fn);
             LemmImage[] glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
@@ -140,8 +142,8 @@ public class LemmFont {
      * Draw string into graphics object in given color.
      * @param g graphics object to draw to.
      * @param s string to draw.
-     * @param sx X coordinate in pixels
-     * @param sy Y coordinate in pixels
+     * @param x X coordinate in pixels
+     * @param y Y coordinate in pixels
      * @param color Color
      */
     public static void strImage(final GraphicsContext g, String s, int x, final int y, final Color color) {

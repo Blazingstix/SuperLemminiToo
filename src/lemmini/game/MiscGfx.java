@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.math.NumberUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -153,7 +154,7 @@ public class MiscGfx {
         int rightWidth = minimapRight.getWidth();
         
         LemmImage tempMinimap = ToolBox.createTranslucentImage(leftWidth + centerWidth + rightWidth,
-                Math.max(Math.max(minimapLeft.getHeight(), minimapCenter.getHeight()), minimapRight.getHeight()));
+                NumberUtils.max(minimapLeft.getHeight(), minimapCenter.getHeight(), minimapRight.getHeight()));
         
         for (int y = 0; y < minimapLeft.getHeight(); y++) {
             for (int x = 0; x < leftWidth; x++) {

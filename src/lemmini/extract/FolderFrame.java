@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.swing.JFileChooser;
 import lemmini.LemminiFrame;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Frame to enter source and target paths for resource extraction.
@@ -180,13 +181,17 @@ public class FolderFrame extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        sourcePath = jTextFieldSrc.getText();
+        targetPath = jTextFieldTrg.getText();
+        synchronized (this) {
+            notifyAll();
+        }
+    }//GEN-LAST:event_formWindowClosed
+    
     private void jTextFieldSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldSrcActionPerformed
         sourcePath = jTextFieldSrc.getText();
     }//GEN-LAST:event_jTextFieldSrcActionPerformed
-
-    private void jTextFieldTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldTrgActionPerformed
-        targetPath = jTextFieldTrg.getText();
-    }//GEN-LAST:event_jTextFieldTrgActionPerformed
 
     private void jButtonSrcActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSrcActionPerformed
         JFileChooser jf = new JFileChooser(sourcePath);
@@ -197,6 +202,10 @@ public class FolderFrame extends javax.swing.JFrame {
             jTextFieldSrc.setText(sourcePath);
         }
     }//GEN-LAST:event_jButtonSrcActionPerformed
+
+    private void jTextFieldTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldTrgActionPerformed
+        targetPath = jTextFieldTrg.getText();
+    }//GEN-LAST:event_jTextFieldTrgActionPerformed
 
     private void jButtonTrgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonTrgActionPerformed
         JFileChooser jf = new JFileChooser(targetPath);
@@ -218,14 +227,6 @@ public class FolderFrame extends javax.swing.JFrame {
         dispose();
     }//GEN-LAST:event_jButtonQuitActionPerformed
 
-    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-        sourcePath = jTextFieldSrc.getText();
-        targetPath = jTextFieldTrg.getText();
-        synchronized (this) {
-            notifyAll();
-        }
-    }//GEN-LAST:event_formWindowClosed
-    
     /**
      * Set parameters for text edit boxes.
      * @param srcPath source (WINLEMM) path for extraction
@@ -246,7 +247,7 @@ public class FolderFrame extends javax.swing.JFrame {
         if (targetPath != null) {
             return Paths.get(targetPath);
         } else {
-            return Paths.get("");
+            return Paths.get(StringUtils.EMPTY);
         }
     }
 
@@ -258,7 +259,7 @@ public class FolderFrame extends javax.swing.JFrame {
         if (sourcePath != null) {
             return Paths.get(sourcePath);
         } else {
-            return Paths.get("");
+            return Paths.get(StringUtils.EMPTY);
         }
     }
 

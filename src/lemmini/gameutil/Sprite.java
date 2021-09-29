@@ -6,6 +6,7 @@ import lemmini.game.Lemming;
 import lemmini.graphics.GraphicsOperation;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -54,6 +55,8 @@ public class Sprite {
     protected int height;
     /** number of animation frames */
     private int numFrames;
+    private int counter;
+    private int speed;
     /** index of current animation frame */
     private int frameIdx;
     /** animation mode */
@@ -62,7 +65,6 @@ public class Sprite {
     private int[] sound;
     /** boolean flag: animation was triggered */
     private boolean triggered;
-    private int counter;
     /** array of animation frames */
     private LemmImage[] frames;
     private int[][] origColors;
@@ -72,9 +74,23 @@ public class Sprite {
      * Constructor.
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
+     * @param animSpeed number of game frames per sprite frame.
      */
-    public Sprite(final LemmImage sourceImg, final int animFrames) {
-        init(sourceImg, animFrames);
+    public Sprite(final LemmImage sourceImg, final int animFrames, final int animSpeed) {
+        numFrames = animFrames;
+        speed = animSpeed;
+        width = sourceImg.getWidth();
+        height = sourceImg.getHeight() / numFrames;
+        frameIdx = 0;
+        animMode = Animation.NONE;
+        triggered = false;
+        counter = 0;
+        // animation frames stored one above the other - now separate them into single images
+        frames = ToolBox.getAnimation(sourceImg, animFrames);
+        origColors = new int[numFrames][];
+        for (int i = 0; i < origColors.length; i++) {
+            origColors[i] = frames[i].getRGB(0, 0, width, height, null, 0, width);
+        }
     }
 
     /**
@@ -91,6 +107,7 @@ public class Sprite {
      */
     private void copyFrom(final Sprite src) {
         numFrames = src.numFrames;
+        speed = src.speed;
         width = src.width;
         height = src.height;
         frameIdx = src.frameIdx;
@@ -104,27 +121,6 @@ public class Sprite {
         origColors = src.origColors.clone();
         for (int i = 0; i < origColors.length; i++) {
             origColors[i] = origColors[i].clone();
-        }
-    }
-
-    /**
-     * Initialized sprite with new animation.
-     * @param sourceImg Image containing animation frames one above each other.
-     * @param animFrames number of frames.
-     */
-    private void init(final LemmImage sourceImg, final int animFrames) {
-        numFrames = animFrames;
-        width = sourceImg.getWidth();
-        height = sourceImg.getHeight() / numFrames;
-        frameIdx = 0;
-        animMode = Animation.NONE;
-        triggered = false;
-        counter = 0;
-        // animation frames stored one above the other - now separate them into single images
-        frames = ToolBox.getAnimation(sourceImg, animFrames);
-        origColors = new int[numFrames][];
-        for (int i = 0; i < origColors.length; i++) {
-            origColors[i] = frames[i].getRGB(0, 0, width, height, null, 0, width);
         }
     }
 
@@ -160,40 +156,50 @@ public class Sprite {
      * @return current animation frame (before increasing the animation step).
      */
     public LemmImage getImageAnim() {
-        LemmImage i = frames[frameIdx];
         switch (animMode) {
             case LOOP:
-                if (++frameIdx >= numFrames) {
-                    frameIdx = 0;
+                if (++counter >= speed) {
+                    counter = 0;
+                    if (++frameIdx >= numFrames) {
+                        frameIdx = 0;
+                    }
                 }
                 break;
             case ONCE:
-                if (frameIdx < numFrames - 1) {
-                    frameIdx++;
+                if (++counter >= speed) {
+                    counter = 0;
+                    if (frameIdx < numFrames - 1) {
+                        frameIdx++;
+                    }
                 }
                 break;
             case TRIGGERED:
                 if (triggered) {
-                    if (counter == 0 && frameIdx < numFrames - 1) {
-                        if (frameIdx < sound.length && lemming != null) {
-                            GameController.sound.play(sound[frameIdx + 1], lemming.getPan());
+                    if (++counter >= speed) {
+                        counter = 0;
+                        if (++frameIdx >= numFrames) {
+                            frameIdx = 0;
                         }
-                        frameIdx++;
+                    }
+                    if (frameIdx > 0) {
+                        if (counter == 0 && lemming != null) {
+                            GameController.sound.play(sound[frameIdx], lemming.getPan());
+                        }
                     } else {
                         frameIdx = 0;
-                        if (counter++ >= GameController.MAX_ANIM_CTR - 1) {
-                            counter = 0;
+                        if (counter >= speed - 1) {
                             triggered = false;
                         }
                     }
                 } else {
                     frameIdx = 0;
+                    counter = 0;
                 }
                 break;
             default:
                 break;
         }
-        return i;
+        return frames[frameIdx];
     }
 
     /**
@@ -293,7 +299,8 @@ public class Sprite {
             GameController.sound.play(sound[1], l.getPan());
         }
         triggered = true;
-        frameIdx = 1;
+        frameIdx = 0;
+        counter = speed - 1;
         return true;
     }
 
@@ -325,7 +332,7 @@ public class Sprite {
      * @return sound index
      */
     public int getSound() {
-        if (sound == null || sound.length == 0) {
+        if (ArrayUtils.isEmpty(sound)) {
             return -1;
         } else {
             return sound[0];

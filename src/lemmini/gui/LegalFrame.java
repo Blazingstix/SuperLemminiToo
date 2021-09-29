@@ -126,15 +126,11 @@ public class LegalFrame extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-        ok = true;
-        dispose();
-    }//GEN-LAST:event_jButtonOKActionPerformed
-
-    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-        ok = false;
-        dispose();
-    }//GEN-LAST:event_jButtonCancelActionPerformed
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        synchronized (this) {
+            notifyAll();
+        }
+    }//GEN-LAST:event_formWindowClosed
 
     private void jEditorPaneLegalHyperlinkUpdate(javax.swing.event.HyperlinkEvent evt) {//GEN-FIRST:event_jEditorPaneLegalHyperlinkUpdate
         URL url = evt.getURL();
@@ -157,13 +153,17 @@ public class LegalFrame extends javax.swing.JFrame {
             jEditorPaneLegal.setToolTipText(null);
         }
     }//GEN-LAST:event_jEditorPaneLegalHyperlinkUpdate
-
-    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-        synchronized (this) {
-            notifyAll();
-        }
-    }//GEN-LAST:event_formWindowClosed
     
+    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
+        ok = true;
+        dispose();
+    }//GEN-LAST:event_jButtonOKActionPerformed
+
+    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
+        ok = false;
+        dispose();
+    }//GEN-LAST:event_jButtonCancelActionPerformed
+
     /**
      * OK button was pressed.
      * @return true: OK button was pressed.

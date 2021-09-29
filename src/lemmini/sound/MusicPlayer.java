@@ -25,6 +25,7 @@ public interface MusicPlayer {
     /**
      * Load file, initialize player.
      * @param fn file name
+     * @param loop
      * @throws ResourceException
      * @throws LemmException
      */

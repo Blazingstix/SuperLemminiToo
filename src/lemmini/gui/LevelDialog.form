@@ -40,80 +40,90 @@
                   </Group>
                   <Group type="102" attributes="0">
                       <Component id="jScrollPaneLevels" pref="362" max="32767" attributes="0"/>
-                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Component id="jLabelLevelStats" alignment="1" max="32767" attributes="0"/>
-                          <Component id="jSeparatorLevelStats" alignment="1" max="32767" attributes="0"/>
-                          <Component id="jSeparatorSkills" max="32767" attributes="0"/>
-                          <Group type="102" alignment="1" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jLabelTimeLimit" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelReleaseRate" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumToRescue" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumLemmings" alignment="1" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
+                          <Group type="102" attributes="0">
                               <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                  <Component id="jTextFieldTimeLimit" pref="50" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldReleaseRate" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumLemmings" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumToRescue" max="32767" attributes="0"/>
-                              </Group>
-                          </Group>
-                          <Group type="102" alignment="1" attributes="0">
-                              <Group type="103" groupAlignment="1" attributes="0">
+                                  <Component id="jLabelLevelStats" alignment="1" max="32767" attributes="0"/>
+                                  <Component id="jSeparatorLevelStats" alignment="1" max="32767" attributes="0"/>
+                                  <Component id="jSeparatorSkills" max="32767" attributes="0"/>
                                   <Group type="102" alignment="1" attributes="0">
-                                      <Component id="jLabelNumFloaters" min="-2" max="-2" attributes="0"/>
-                                      <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
-                                  </Group>
-                                  <Component id="jLabelNumClimbers" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumBombers" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumBlockers" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumBuilders" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumBashers" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumMiners" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelNumDiggers" alignment="1" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                  <Component id="jTextFieldNumDiggers" pref="50" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumMiners" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumBashers" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumBuilders" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumBlockers" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumBombers" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumFloaters" max="32767" attributes="0"/>
-                                  <Component id="jTextFieldNumClimbers" max="32767" attributes="0"/>
-                              </Group>
-                          </Group>
-                      </Group>
-                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
-                      <Component id="jSeparator1" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace type="unrelated" min="-2" max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                          <Group type="102" alignment="0" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jLabelScore" alignment="1" max="-2" attributes="0"/>
-                                  <Component id="jLabelTimeElapsed" alignment="1" max="-2" attributes="0"/>
-                                  <Component id="jLabelSkillsUsed" alignment="1" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jLabelLemmingsSaved" alignment="1" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Group type="103" groupAlignment="0" attributes="0">
-                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                          <Component id="jTextFieldLemmingsSaved" alignment="0" pref="60" max="32767" attributes="0"/>
-                                          <Component id="jTextFieldScore" alignment="0" max="32767" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="jLabelTimeLimit" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelReleaseRate" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumToRescue" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumLemmings" alignment="1" min="-2" max="-2" attributes="0"/>
                                       </Group>
-                                      <Component id="jTextFieldTimeElapsed" alignment="1" min="-2" pref="60" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="jTextFieldTimeLimit" pref="50" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldReleaseRate" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumLemmings" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumToRescue" max="32767" attributes="0"/>
+                                      </Group>
                                   </Group>
-                                  <Component id="jTextFieldSkillsUsed" alignment="1" min="-2" pref="60" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="1" attributes="0">
+                                      <Group type="103" groupAlignment="1" attributes="0">
+                                          <Group type="102" alignment="1" attributes="0">
+                                              <Component id="jLabelNumFloaters" min="-2" max="-2" attributes="0"/>
+                                              <EmptySpace min="-2" pref="1" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Component id="jLabelNumClimbers" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumBombers" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumBlockers" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumBuilders" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumBashers" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumMiners" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelNumDiggers" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                          <Component id="jTextFieldNumDiggers" pref="50" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumMiners" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumBashers" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumBuilders" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumBlockers" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumBombers" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumFloaters" max="32767" attributes="0"/>
+                                          <Component id="jTextFieldNumClimbers" max="32767" attributes="0"/>
+                                      </Group>
+                                  </Group>
+                              </Group>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Component id="jSeparator2" min="-2" pref="2" max="-2" attributes="0"/>
+                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Component id="jLabelScore" alignment="1" max="-2" attributes="0"/>
+                                          <Component id="jLabelTimeElapsed" alignment="1" max="-2" attributes="0"/>
+                                          <Component id="jLabelSkillsUsed" alignment="1" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jLabelLemmingsSaved" alignment="1" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="0" attributes="0">
+                                          <Group type="103" groupAlignment="0" attributes="0">
+                                              <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                                                  <Component id="jTextFieldLemmingsSaved" alignment="0" pref="60" max="32767" attributes="0"/>
+                                                  <Component id="jTextFieldScore" alignment="0" max="32767" attributes="0"/>
+                                              </Group>
+                                              <Component id="jTextFieldTimeElapsed" alignment="1" min="-2" pref="60" max="-2" attributes="0"/>
+                                          </Group>
+                                          <Component id="jTextFieldSkillsUsed" alignment="1" min="-2" pref="60" max="-2" attributes="0"/>
+                                      </Group>
+                                  </Group>
+                                  <Component id="jSeparatorRecords" alignment="0" max="32767" attributes="0"/>
+                                  <Component id="jLabelRecords" alignment="0" max="32767" attributes="0"/>
                               </Group>
                           </Group>
-                          <Component id="jSeparatorRecords" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jLabelRecords" alignment="0" max="32767" attributes="0"/>
+                          <Group type="102" attributes="0">
+                              <Component id="jLabelAuthor" min="-2" max="-2" attributes="0"/>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jTextFieldAuthor" max="32767" attributes="0"/>
+                          </Group>
+                          <Component id="jSeparator1" max="32767" attributes="0"/>
                       </Group>
-                      <EmptySpace min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
                   </Group>
               </Group>
           </Group>
@@ -125,104 +135,115 @@
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Component id="jScrollPaneLevels" max="32767" attributes="0"/>
-                  <Group type="102" alignment="0" attributes="0">
+                  <Group type="102" attributes="0">
                       <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelLevelStats" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jLabelRecords" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="jTextFieldAuthor" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="jLabelAuthor" alignment="3" min="-2" max="-2" attributes="0"/>
                       </Group>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jSeparator1" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
-                              <Component id="jSeparatorLevelStats" min="-2" pref="2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelLevelStats" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelRecords" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="0" attributes="0">
+                                  <Group type="102" attributes="0">
+                                      <Component id="jSeparatorLevelStats" min="-2" pref="2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelNumLemmings" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldNumLemmings" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelNumToRescue" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldNumToRescue" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelReleaseRate" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldReleaseRate" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelTimeLimit" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldTimeLimit" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                  </Group>
+                                  <Group type="102" attributes="0">
+                                      <Component id="jSeparatorRecords" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelLemmingsSaved" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldLemmingsSaved" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelSkillsUsed" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldSkillsUsed" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelTimeElapsed" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldTimeElapsed" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                      <EmptySpace max="-2" attributes="0"/>
+                                      <Group type="103" groupAlignment="3" attributes="0">
+                                          <Component id="jLabelScore" alignment="3" min="-2" max="-2" attributes="0"/>
+                                          <Component id="jTextFieldScore" alignment="3" min="-2" max="-2" attributes="0"/>
+                                      </Group>
+                                  </Group>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Component id="jSeparatorSkills" min="-2" pref="2" max="-2" attributes="0"/>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelNumLemmings" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldNumLemmings" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelNumClimbers" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumClimbers" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelNumToRescue" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldNumToRescue" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelNumFloaters" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumFloaters" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelReleaseRate" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldReleaseRate" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelNumBombers" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumBombers" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
                               <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelTimeLimit" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldTimeLimit" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelNumBlockers" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumBlockers" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelNumBuilders" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumBuilders" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelNumBashers" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumBashers" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelNumMiners" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumMiners" alignment="3" min="-2" max="-2" attributes="0"/>
+                              </Group>
+                              <EmptySpace min="-2" max="-2" attributes="0"/>
+                              <Group type="103" groupAlignment="3" attributes="0">
+                                  <Component id="jLabelNumDiggers" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jTextFieldNumDiggers" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                           </Group>
-                          <Group type="102" attributes="0">
-                              <Component id="jSeparatorRecords" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelLemmingsSaved" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldLemmingsSaved" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelSkillsUsed" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldSkillsUsed" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelTimeElapsed" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldTimeElapsed" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelScore" alignment="3" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jTextFieldScore" alignment="3" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                          </Group>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jSeparatorSkills" min="-2" pref="2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumClimbers" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumClimbers" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumFloaters" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumFloaters" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumBombers" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumBombers" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumBlockers" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumBlockers" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumBuilders" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumBuilders" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumBashers" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumBashers" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumMiners" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumMiners" alignment="3" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="3" attributes="0">
-                          <Component id="jLabelNumDiggers" alignment="3" min="-2" max="-2" attributes="0"/>
-                          <Component id="jTextFieldNumDiggers" alignment="3" min="-2" max="-2" attributes="0"/>
+                          <Component id="jSeparator2" max="32767" attributes="0"/>
                       </Group>
                   </Group>
-                  <Component id="jSeparator1" alignment="0" max="32767" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
@@ -263,6 +284,21 @@
         </Component>
       </SubComponents>
     </Container>
+    <Component class="javax.swing.JLabel" name="jLabelAuthor">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Author:"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JTextField" name="jTextFieldAuthor">
+      <Properties>
+        <Property name="editable" type="boolean" value="false"/>
+        <Property name="highlighter" type="javax.swing.text.Highlighter" editor="org.netbeans.modules.form.ComponentChooserEditor">
+          <ComponentRef name="null"/>
+        </Property>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JSeparator" name="jSeparator1">
+    </Component>
     <Component class="javax.swing.JLabel" name="jLabelLevelStats">
       <Properties>
         <Property name="horizontalAlignment" type="int" value="0"/>
@@ -466,7 +502,7 @@
         </Property>
       </Properties>
     </Component>
-    <Component class="javax.swing.JSeparator" name="jSeparator1">
+    <Component class="javax.swing.JSeparator" name="jSeparator2">
       <Properties>
         <Property name="orientation" type="int" value="1"/>
       </Properties>

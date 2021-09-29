@@ -1,6 +1,8 @@
 package lemmini.game;
 
 import lemmini.graphics.LemmImage;
+import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.BooleanUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -29,14 +31,14 @@ import lemmini.graphics.LemmImage;
  * @author Volker Oth
  */
 public class Mask {
-    /** number of pixels in mask that may be indestructible before action is stopped */
-    private final int[] maxMaskPixels;
+    
     /** width of mask in pixels */
     private final int width;
     /** height of mask in pixels */
     private final int height;
-    /** array of byte arrays. Note: masks may be animated and thus contain multiple frames. */
-    private final byte[][] mask;
+    /** array of images. Note: masks may be animated and thus contain multiple frames. */
+    private final LemmImage[] mask;
+    private final LemmImage[] unpatchedMask;
 
     /**
      * Constructor.
@@ -46,32 +48,8 @@ public class Mask {
     public Mask(final LemmImage img, final int frames) {
         width = img.getWidth();
         height = img.getHeight() / frames;
-        mask = new byte[frames][];
-        maxMaskPixels = new int[frames];
-        for (int i = 0; i < frames; i++) {
-            int pos = 0;
-            int y0 = i * height;
-            maxMaskPixels[i] = 0;
-            mask[i] = new byte[width * height];
-            for (int y = y0; y < y0 + height; y++, pos += width) {
-                for (int x = 0; x < width; x++) {
-                    int rgba = img.getRGB(x, y);
-                    if ((rgba & 0xff000000) != 0) {
-                        mask[i][pos + x] = (byte) 1;
-                        maxMaskPixels[i]++;
-                    } else {
-                        mask[i][pos + x] = (byte) 0;
-                    }
-                }
-            }
-            /* now maxMaskPixels[i] contains the exact amount of active pixels in the mask
-             * however, it works better to stop a mask action already if there are only about
-             * a third of the pixels indestructible, so divide by 3
-             * critical: for diggers, the mask is 34 pixels in size but a maximum of
-             * 17 pixels is in the mask.
-             */
-            maxMaskPixels[i] /= 3;
-        }
+        mask = ToolBox.getAnimation(img, frames);
+        unpatchedMask = mask.clone();
     }
 
     /**
@@ -80,19 +58,17 @@ public class Mask {
      * @param y0 y position in pixels
      * @param maskNum index of mask if there are multiple animation frames, else 0
      * @param eraseMask Stencil attributes to erase
-     * @param checkMask Stencil bitmask with attributes that make the pixel indestructible
-     * @return true if the number of indestructible pixels was > than maxMaskPixels
+     * @param checkMask Stencil attributes that make the pixel indestructible
      */
-    public boolean eraseMask(final int x0, final int y0, final int maskNum, final int eraseMask, final int checkMask) {
-        int ctrIndestructible = 0;
+    public void eraseMask(final int x0, final int y0, final int maskNum, final int eraseMask, final int checkMask) {
         LemmImage fgImage = GameController.getFgImage();
         LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
-        byte[] m = mask[maskNum];
-        int sPos = y0 * fgImage.getWidth();
-        int pos = 0;
-        int scaleX = fgImage.getWidth() / fgImageSmall.getWidth();
-        int scaleY = fgImage.getHeight() / fgImageSmall.getHeight();
+        LemmImage m = mask[maskNum];
+        double scaleX = (double) fgImageSmall.getWidth() / (double) fgImage.getWidth();
+        double scaleY = (double) fgImageSmall.getHeight() / (double) fgImage.getHeight();
+        double scaleXHalf = scaleX / 2.0;
+        double scaleYHalf = scaleY / 2.0;
         int yMax = y0 + height;
         if (yMax >= fgImage.getHeight()) {
             yMax = fgImage.getHeight();
@@ -104,21 +80,32 @@ public class Mask {
 
         int bgCol = Minimap.isTinted() ? 0 : GameController.getLevel().getBgColor().getRGB();
 
-        for (int y = y0; y < yMax; y++, pos += width, sPos += fgImage.getWidth()) {
+        for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
             }
-            boolean drawSmallY = (y % scaleY) == 0;
+            double scaledY = (y + 0.5) * scaleY % 1.0;
+            boolean drawSmallY = (scaledY >= (0.5 - scaleYHalf) % 1.0 && scaledY < (0.5 + scaleYHalf) % 1.0)
+                    || StrictMath.abs(scaleY) >= 1.0;
             for (int x = x0; x < xMax; x++) {
                 if (x < 0) {
                     continue;
                 }
-                boolean drawSmallX = (x % scaleX) == 0;
-                int s = stencil.getMask(sPos + x);
-                int[] objects = stencil.getIDs(sPos + x);
-                if (m[pos + x - x0] != 0) {
-                    if ((s & checkMask) == 0) {
-                        // get object
+                double scaledX = (x + 0.5) * scaleX % 1.0;
+                boolean drawSmallX = (scaledX >= (0.5 - scaleXHalf) % 1.0 && scaledX < (0.5 + scaleXHalf) % 1.0)
+                        || StrictMath.abs(scaleX) >= 1.0;
+                int maskAlpha = m.getRGB(x - x0, y - y0) >>> 24;
+                int s = stencil.getMask(x, y);
+                if (!BooleanUtils.toBoolean(s & checkMask)) {
+                    int[] objects = stencil.getIDs(x, y);
+                    // erase pixel
+                    fgImage.removeAlpha(x, y, maskAlpha); // erase pixel in fgImage
+                    if (drawSmallX && drawSmallY) {
+                        // erase pixel in fgImageSmall
+                        fgImageSmall.removeAlpha(ToolBox.scale(x, scaleX), ToolBox.scale(y, scaleY), maskAlpha);
+                        fgImageSmall.addRGBBehind(ToolBox.scale(x, scaleX), ToolBox.scale(y, scaleY), bgCol);
+                    }
+                    if (!fgImage.isPixelOpaque(x, y)) {
                         for (int obj : objects) {
                             SpriteObject spr = GameController.getLevel().getSprObject(obj);
                             // remove pixel from all object images that are visible only on terrain
@@ -126,19 +113,14 @@ public class Mask {
                                 spr.setPixelVisibility(x - spr.getX(), y - spr.getY(), false);
                             }
                         }
-                        // erase pixel
-                        stencil.andMask(sPos + x, ~eraseMask); // erase brick in stencil
-                        fgImage.setRGB(x, y, 0); // erase pixel in fgImage
-                        if (drawSmallX && drawSmallY) {
-                            fgImageSmall.setRGB(x / scaleX, y / scaleY, bgCol); // erase pixel in fgImageSmall
-                        }
-                    } else { // don't erase pixel
-                        ctrIndestructible++;
+                    }
+                    if (m.isPixelOpaque(x - x0, y - y0)) {
+                        // erase brick in stencil
+                        stencil.andMask(x, y, ~eraseMask);
                     }
                 }
             }
         }
-        return ctrIndestructible > maxMaskPixels[maskNum]; // to be checked
     }
 
     /**
@@ -146,17 +128,16 @@ public class Mask {
      * @param x0 x position in pixels
      * @param y0 y position in pixels
      * @param maskNum index of mask if there are multiple animation frames, else 0
-     * @param color Color to use to paint the step in the foreground image
      */
-    public void paintStep(final int x0, final int y0, final int maskNum, final int color) {
+    public void paintStep(final int x0, final int y0, final int maskNum) {
         LemmImage fgImage = GameController.getFgImage();
         LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
-        byte[] m = mask[maskNum];
-        int sPos = y0 * fgImage.getWidth();
-        int pos = 0;
-        int scaleX = fgImage.getWidth() / fgImageSmall.getWidth();
-        int scaleY = fgImage.getHeight() / fgImageSmall.getHeight();
+        LemmImage m = mask[maskNum];
+        double scaleX = (double) fgImageSmall.getWidth() / (double) fgImage.getWidth();
+        double scaleY = (double) fgImageSmall.getHeight() / (double) fgImage.getHeight();
+        double scaleXHalf = scaleX / 2.0;
+        double scaleYHalf = scaleY / 2.0;
         int yMax = y0 + height;
         if (yMax >= fgImage.getHeight()) {
             yMax = fgImage.getHeight();
@@ -166,44 +147,51 @@ public class Mask {
             xMax = fgImage.getWidth();
         }
 
-        for (int y = y0; y < yMax; y++, pos += width, sPos += fgImage.getWidth()) {
+        for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
             }
-            boolean drawSmallY = (y % scaleY) == 0;
+            double scaledY = (y + 0.5) * scaleY % 1.0;
+            boolean drawSmallY = (scaledY >= (0.5 - scaleYHalf) % 1.0
+                    && scaledY < (0.5 + scaleYHalf) % 1.0)
+                    || StrictMath.abs(scaleY) >= 1.0;
             for (int x = x0; x < xMax; x++) {
                 if (x < 0) {
                     continue;
                 }
-                boolean drawSmallX = (x % scaleX) == 0;
-                //int s = stencil.getMask(sPos + x);
-                int[] objects = stencil.getIDs(sPos + x);
-                if (m[pos + x - x0] != 0 /*&& (s & Stencil.MSK_WALK_ON) == 0*/) {
-                    // mask pixel set
-                    //if ((s & Stencil.MSK_WALK_ON) == 0)
-                    //    s |= Stencil.MSK_BRICK;
-                    //stencil.setMask(sPos + x, s | Stencil.MSK_STAIR); // set type in stencil
+                double scaledX = (x + 0.5) * scaleX % 1.0;
+                boolean drawSmallX = (scaledX >= (0.5 - scaleXHalf) % 1.0
+                        && scaledX < (0.5 + scaleXHalf) % 1.0)
+                        || StrictMath.abs(scaleX) >= 1.0;
+                int color = m.getRGB(x - x0, y - y0);
+                int[] objects = stencil.getIDs(x, y);
+                fgImage.addRGB(x, y, color);
+                if (drawSmallX && drawSmallY) {
+                    int stepCol;
+                    if (Minimap.isTinted()) {
+                        stepCol = Minimap.tintColor(color);
+                    } else {
+                        stepCol = color;
+                    }
+                    // green pixel in fgImageSmall
+                    fgImageSmall.addRGB(ToolBox.scale(x, scaleX), ToolBox.scale(y, scaleY), stepCol);
+                }
+                if (fgImage.isPixelOpaque(x, y)) {
                     // get object
                     for (int obj : objects) {
                         SpriteObject spr = GameController.getLevel().getSprObject(obj);
-                        // remove pixel from all object images that are visible only on terrain
-                        if (spr != null && spr.getVisOnTerrain()) {
+                        // add pixel to all object images that are visible only on terrain
+                        if (spr != null && spr.getVisOnTerrain()
+                                && (GameController.getLevel().getClassicSteel() 
+                                        || !spr.getType().isSometimesIndestructible())
+                                && !(spr.getType().isSometimesIndestructible()
+                                        && BooleanUtils.toBoolean(stencil.getMask(x, y) & Stencil.MSK_NO_ONE_WAY_DRAW))) {
                             spr.setPixelVisibility(x - spr.getX(), y - spr.getY(), true);
                         }
                     }
-                    if ((stencil.getMask(sPos + x) & Stencil.MSK_BRICK) == 0) {
-                        stencil.orMask(sPos + x, Stencil.MSK_BRICK);
-                    }
-                    fgImage.setRGB(x, y, color);
-                    if (drawSmallX && drawSmallY) {
-                        int stepCol;
-                        if (Minimap.isTinted()) {
-                            stepCol = Minimap.tintColor(color);
-                        } else {
-                            stepCol = color;
-                        }
-                        fgImageSmall.setRGB(x / scaleX, y / scaleY, stepCol); // green pixel in fgImageSmall
-                    }
+                }
+                if (m.isPixelOpaque(x - x0, y - y0)) {
+                    stencil.orMask(x, y, Stencil.MSK_BRICK);
                 }
             }
         }
@@ -217,9 +205,6 @@ public class Mask {
     public void setBlockerMask(final int x0, final int y0) {
         LemmImage fgImage = GameController.getFgImage();
         Stencil stencil = GameController.getStencil();
-        //byte[] m = mask[0];
-        //int sPos = y0 * fgImage.getWidth();
-        //int pos = 0;
         int yMax = y0 + height;
         if (yMax >= fgImage.getHeight()) {
             yMax = fgImage.getHeight();
@@ -229,8 +214,9 @@ public class Mask {
             xMax = fgImage.getWidth();
         }
         
-        for (int i = 0; i < 3; i++)
-            for (int y = y0, pos = 0, sPos = y0 * fgImage.getWidth(); y < yMax; y++, pos += width, sPos += fgImage.getWidth()) {
+        for (int i = 0; i < 3; i++) {
+            LemmImage m = mask[i];
+            for (int y = y0; y < yMax; y++) {
                 if (y < 0) {
                     continue;
                 }
@@ -238,21 +224,16 @@ public class Mask {
                     if (x < 0) {
                         continue;
                     }
-                    if (mask[i][pos + x - x0] != 0) {
-                        //if (x < xMid) {
-                        //    stencil.orMask(sPos + x, Stencil.MSK_BLOCKER_LEFT); // set type in stencil
-                        //} else {
-                        //    stencil.orMask(sPos + x, Stencil.MSK_BLOCKER_RIGHT); // set type in stencil
-                        //}
+                    if (m.isPixelOpaque(x - x0, y - y0)) {
                         switch (i) {
                             case 0:
-                                stencil.orMask(sPos + x, Stencil.MSK_BLOCKER_LEFT); // set type in stencil
+                                stencil.orMask(x, y, Stencil.MSK_BLOCKER_LEFT); // set type in stencil
                                 break;
                             case 1:
-                                stencil.orMask(sPos + x, Stencil.MSK_BLOCKER_CENTER); // set type in stencil
+                                stencil.orMask(x, y, Stencil.MSK_BLOCKER_CENTER); // set type in stencil
                                 break;
                             case 2:
-                                stencil.orMask(sPos + x, Stencil.MSK_BLOCKER_RIGHT); // set type in stencil
+                                stencil.orMask(x, y, Stencil.MSK_BLOCKER_RIGHT); // set type in stencil
                                 break;
                             default:
                                 break;
@@ -261,6 +242,7 @@ public class Mask {
                     }
                 }
             }
+        }
     }
     
     /**
@@ -273,9 +255,7 @@ public class Mask {
      */
     public boolean checkType(final int x0, final int y0, final int maskNum, final int type) {
         Stencil stencil = GameController.getStencil();
-        byte[] m = mask[maskNum];
-        int sPos = y0 * stencil.getWidth();
-        int pos = 0;
+        LemmImage m = mask[maskNum];
         int yMax = y0 + height;
         if (yMax >= stencil.getHeight()) {
             yMax = stencil.getHeight();
@@ -285,7 +265,7 @@ public class Mask {
             xMax = stencil.getWidth();
         }
 
-        for (int y = y0; y < yMax; y++, pos += width, sPos += stencil.getWidth()) {
+        for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
             }
@@ -293,8 +273,8 @@ public class Mask {
                 if (x < 0) {
                     continue;
                 }
-                if (m[pos + x - x0] != 0) {
-                    int s = stencil.getMask(sPos + x);
+                if (m.isPixelOpaque(x - x0, y - y0)) {
+                    int s = stencil.getMask(x, y);
                     if ((s & type) != 0) {
                         return true;
                     }
@@ -314,9 +294,7 @@ public class Mask {
     public void clearType(final int x0, final int y0, final int maskNum, final int type) {
         LemmImage fgImage = GameController.getFgImage();
         Stencil stencil = GameController.getStencil();
-        byte[] m = mask[maskNum];
-        int sPos = y0 * fgImage.getWidth();
-        int pos = 0;
+        LemmImage m = mask[maskNum];
         int yMax = y0 + height;
         if (yMax >= fgImage.getHeight()) {
             yMax = fgImage.getHeight();
@@ -326,7 +304,7 @@ public class Mask {
             xMax = fgImage.getWidth();
         }
 
-        for (int y = y0; y < yMax; y++, pos += width, sPos += fgImage.getWidth()) {
+        for (int y = y0; y < yMax; y++) {
             if (y < 0) {
                 continue;
             }
@@ -334,12 +312,21 @@ public class Mask {
                 if (x < 0) {
                     continue;
                 }
-                if (m[pos + x - x0] != 0) {
-                    int s = stencil.getMask(sPos + x);
-                    stencil.andMask(sPos + x, ~type); // erase type in stencil
+                if (m.isPixelOpaque(x - x0, y - y0)) {
+                    stencil.andMask(x, y, ~type); // erase type in stencil
                     //fgImage.setRGB(x, y, 0xffff0000); // debug
                 }
             }
+        }
+    }
+    
+    void replaceColors(final int templateCol, final int replaceCol,
+            final int templateCol2, final int replaceCol2) {
+        for (int f = 0; f < mask.length; f++) { // go through all frames
+            LemmImage i = new LemmImage(unpatchedMask[f]);
+            i.replaceColor(templateCol, replaceCol);
+            i.replaceColor(templateCol2, replaceCol2);
+            mask[f] = i;
         }
     }
 

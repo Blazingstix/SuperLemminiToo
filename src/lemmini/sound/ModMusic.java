@@ -14,6 +14,7 @@ import javax.sound.sampled.SourceDataLine;
 import lemmini.game.GameController;
 import lemmini.game.LemmException;
 import lemmini.game.ResourceException;
+import lemmini.tools.ToolBox;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -73,7 +74,7 @@ public class ModMusic implements Runnable, MusicPlayer {
             throw new LemmException(fn + " (IO exception)");
         }
         Module module = new Module(songData);
-        int sampleRate = Math.min(Math.max((int) GameController.sound.getSampleRate(), 8000), 128000);
+        int sampleRate = ToolBox.cap(8000, (int) GameController.sound.getSampleRate(), 128000);
         ibxm = new IBXM(module, sampleRate);
         switch (GameController.sound.getResamplingQuality()) {
             case CUBIC:
@@ -198,7 +199,7 @@ public class ModMusic implements Runnable, MusicPlayer {
 
     /**
      * Set gain (volume) of MOD output
-     * @param gn gain factor: 0.0 (off) - 1.0 (full volume) - 2.0 (double volume)
+     * @param gain gain factor: 0.0 = off, 1.0 = full volume, 2.0 = double volume
      */
     @Override
     public void setGain(double gain) {

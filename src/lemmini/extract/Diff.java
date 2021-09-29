@@ -1,11 +1,11 @@
 package lemmini.extract;
 
-import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.Adler32;
+import org.apache.commons.io.output.ByteArrayOutputStream;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -78,7 +78,6 @@ public class Diff {
      * @return buffer of differences
      */
     public static byte[] diffBuffers(final byte[] bsrc, final byte[] btrg) {
-        //List<Byte> patch = new ArrayList<>();
         ByteArrayOutputStream patch = new ByteArrayOutputStream(16 * 1024);
         ByteBuffer src = ByteBuffer.wrap(bsrc).order(ByteOrder.LITTLE_ENDIAN);
         ByteBuffer trg = ByteBuffer.wrap(btrg).order(ByteOrder.LITTLE_ENDIAN);

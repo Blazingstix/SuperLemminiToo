@@ -1,6 +1,8 @@
 package lemmini.game;
 
 import java.nio.charset.StandardCharsets;
+import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.BooleanUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -79,9 +81,9 @@ public class LevelCode {
                 return null;
             }
         }
-        percent = StrictMath.min(StrictMath.max(percent, 0), MAX_PERCENT);
-        failed = StrictMath.min(StrictMath.max(failed, 0), MAX_FAILED);
-        unknown = StrictMath.min(StrictMath.max(unknown, 0), MAX_UNKNOWN);
+        percent = ToolBox.cap(0, percent, MAX_PERCENT);
+        failed = ToolBox.cap(0, failed, MAX_FAILED);
+        unknown = ToolBox.cap(0, unknown, MAX_UNKNOWN);
         byte[] bi;
         bi = seed.getBytes(StandardCharsets.US_ASCII);
         byte[] bo = new byte[bi.length];
@@ -171,7 +173,7 @@ public class LevelCode {
         }
         
         // check bits that must be 0
-        if (((bo[1] - bs[1]) & 2) + ((bo[6] - bs[6]) & 2) != 0) {
+        if (BooleanUtils.toBoolean((bo[1] - bs[1]) & 2) || BooleanUtils.toBoolean((bo[6] - bs[6]) & 2)) {
             return null;
         }
         

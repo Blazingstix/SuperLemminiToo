@@ -10,6 +10,9 @@ import java.util.zip.Adler32;
 import javax.swing.JOptionPane;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -56,7 +59,7 @@ public class Extract implements Runnable {
     /** index for files to be patched - static since multiple runs are possible */
     private static int patchNo = 0;
     /** array of extensions to be ignored - read from INI */
-    private static String[] ignoreExt = {};
+    private static String[] ignoreExt = ArrayUtils.EMPTY_STRING_ARRAY;
     /** output dialog */
     private static OutputFrame outputFrame;
     /** monitor the files created without erasing the target dir */
@@ -113,7 +116,7 @@ public class Extract implements Runnable {
                 throw new ExtractException("File " + INI_NAME + " not found or error while reading.");
             }
 
-            ignoreExt = props.getArray("ignore_ext", ignoreExt);
+            ignoreExt = props.getArray("ignore_ext", ArrayUtils.EMPTY_STRING_ARRAY);
 
             // prolog_ check CRC
             out(String.format("%nValidating WINLEMM"));
@@ -225,7 +228,7 @@ public class Extract implements Runnable {
             out(String.format("%nCreate directories"));
             for (int i = 0; true; i++) {
                 // 0: path
-                String path = props.get("mkdir_" + i, "");
+                String path = props.get("mkdir_" + i, StringUtils.EMPTY);
                 if (path.isEmpty()) {
                     break;
                 }
@@ -287,7 +290,7 @@ public class Extract implements Runnable {
                     try (Writer fCRCList = Files.newBufferedWriter(crcINIPath, StandardCharsets.UTF_8)) {
                         for (int i = 0; true; i++) {
                             String ppath;
-                            ppath = props.get("pcrc_" + i, "");
+                            ppath = props.get("pcrc_" + i, StringUtils.EMPTY);
                             if (ppath.isEmpty()) {
                                 break;
                             }
@@ -305,7 +308,7 @@ public class Extract implements Runnable {
                 try (Writer fPatchList = Files.newBufferedWriter(patchINIPath, StandardCharsets.UTF_8)) {
                     for (int i = 0; true; i++) {
                         String ppath;
-                        ppath = props.get("ppatch_" + i, "");
+                        ppath = props.get("ppatch_" + i, StringUtils.EMPTY);
                         if (ppath.isEmpty()) {
                             break;
                         }
@@ -339,7 +342,7 @@ public class Extract implements Runnable {
                 try {
                     copyFile(fnc, destination);
                 } catch (Exception ex) {
-                    throw new ExtractException(String.format("Unable to copy %s to %s.", patchPath.resolve(getFileName(copy[0])), destination));
+                    throw new ExtractException(String.format("Unable to copy %s to %s.", patchPath.resolve(FilenameUtils.getName(copy[0])), destination));
                 }
                 checkCancel();
             }
@@ -354,7 +357,7 @@ public class Extract implements Runnable {
                 out(ppath[0]);
                 String fnDif = ppath[0].replace('/', '@'); //getFileName(ppath[0]);
                 int pos = fnDif.lastIndexOf('.');
-                if (pos == -1) {
+                if (pos == StringUtils.INDEX_NOT_FOUND) {
                     pos = fnDif.length();
                 }
                 fnDif = fnDif.substring(0, pos) + ".dif";
@@ -534,7 +537,7 @@ public class Extract implements Runnable {
                     String fileName = file.getFileName().toString();
                     // check extension
                     pos = fileName.lastIndexOf('.');
-                    if (pos > -1) {
+                    if (pos != StringUtils.INDEX_NOT_FOUND) {
                         String ext = fileName.substring(pos + 1);
                         for (String ignoreExt1 : ignoreExt) {
                             if (ignoreExt1.equalsIgnoreCase(ext)) {
@@ -546,7 +549,7 @@ public class Extract implements Runnable {
                     Path fnIn = patchSourcePath.resolve(fileName);
                     Path fnOut = destPath.resolve(fileName);
                     pos = fileName.lastIndexOf('.');
-                    if (pos == -1) {
+                    if (pos == StringUtils.INDEX_NOT_FOUND) {
                         pos = fileName.length();
                     }
                     Path fnPatch = patchPath.resolve(subDirDecorated + fileName.substring(0, pos).toLowerCase(Locale.ROOT) + ".dif");
@@ -611,7 +614,7 @@ public class Extract implements Runnable {
                     String fileName = file.getFileName().toString();
                     // check extension
                     pos = fileName.lastIndexOf('.');
-                    if (pos > -1) {
+                    if (pos != StringUtils.INDEX_NOT_FOUND) {
                         String ext = fileName.substring(pos + 1);
                         for (String ignoreExt1 : ignoreExt) {
                             if (ignoreExt1.equalsIgnoreCase(ext)) {
@@ -649,34 +652,6 @@ public class Extract implements Runnable {
         } else {
             return fName;
         }
-    }
-
-    /**
-     * Exchange all Windows style file separators ("\") with Unix style separators ("/")
-     * @param fName file name
-     * @return file name with only Unix style separators
-     */
-    private static String exchangeSeparators(final String fName) {
-        return fName.replace('\\', '/');
-    }
-
-    /**
-     * Get only the name of the file from an absolute path.
-     * @param path absolute path of a file
-     * @return file name without the path
-     */
-    private static String getFileName(final String path) {
-        int p1 = path.lastIndexOf("/");
-        int p2 = path.lastIndexOf("\\");
-        if (p2 > p1) {
-            p1 = p2;
-        }
-        if (p1 < 0) {
-            p1 = 0;
-        } else {
-            p1++;
-        }
-        return path.substring(p1);
     }
 
     /**

@@ -3,6 +3,7 @@ package lemmini.game;
 import java.awt.Color;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
+import lemmini.tools.ToolBox;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -40,9 +41,9 @@ public class Minimap {
     /** image used for minimap */
     private static LemmImage img;
     /** X scale */
-    private static int scaleX;
+    private static double scaleX;
     /** Y scale */
-    private static int scaleY;
+    private static double scaleY;
     /** visible width of minimap */
     private static int visibleWidth;
     /** visible height of minimap */
@@ -52,25 +53,25 @@ public class Minimap {
 
     /**
      * init
-     * @param sx X Scale (2 -> 0.5)
-     * @param sy Y Scale (3 -> 0.333)
+     * @param sx X Scale
+     * @param sy Y Scale
      * @param tint true: apply greenish tint, false: use original colors
      */
-    public static void init(final int sx, final int sy, final boolean tint) {
+    public static void init(final double sx, final double sy, final boolean tint) {
         scaleX = sx;
         scaleY = sy;
         tinted = tint;
         Level level = GameController.getLevel();
         LemmImage fgImage = GameController.getFgImage();
-        img = level.createMinimap(img, fgImage, scaleX, scaleY, tint, false);
+        img = level.createMinimap(fgImage, scaleX, scaleY, false, tint, false);
         visibleWidth = Math.min(img.getWidth(), MAX_VISIBLE_WIDTH);
         visibleHeight = Math.min(img.getHeight(), MAX_VISIBLE_HEIGHT);
         MiscGfx.setMinimapWidth(visibleWidth);
         if (visibleWidth >= img.getWidth()) {
             xPos = 0;
         } else {
-            int xPosTemp = GameController.getLevel().getXPosCenter() / scaleX - visibleWidth / 2;
-            xPos = Math.max(0, Math.min(xPosTemp, img.getWidth() - visibleWidth));
+            int xPosTemp = ToolBox.scale(GameController.getLevel().getXPosCenter(), scaleX) - visibleWidth / 2;
+            xPos = ToolBox.cap(0, xPosTemp, img.getWidth() - visibleWidth);
         }
     }
 
@@ -81,7 +82,7 @@ public class Minimap {
      * @param y y position in pixels
      */
     public static void draw(final GraphicsContext g, final int x, final int y) {
-        g.drawImage(img, x - xPos, y - GameController.getYPos() / scaleY);
+        g.drawImage(img, x - xPos, y - ToolBox.scale(GameController.getYPos(), scaleY));
     }
 
     /**
@@ -93,8 +94,8 @@ public class Minimap {
      * @param ly original lemming y position in pixels
      */
     public static void drawLemming(final GraphicsContext g, final int x, final int y, final int lx, final int ly) {
-        int sx = x + lx / scaleX - xPos;
-        int sy = y + (ly - GameController.getYPos()) / scaleY;
+        int sx = x + ToolBox.scale(lx, scaleX) - xPos - LEMM_DOT_SCALE / 2;
+        int sy = y + ToolBox.scale(ly - GameController.getYPos(), scaleY) - LEMM_DOT_SCALE;
         if (sx + LEMM_DOT_SCALE > x && sx < x + visibleWidth
                 && sy + LEMM_DOT_SCALE > y && sy < y + visibleHeight) {
             g.setColor(LEMM_COLOR);
@@ -109,13 +110,13 @@ public class Minimap {
      * @param y y position in pixels
      */
     public static void drawFrame(final GraphicsContext g, final int x, final int y) {
-        int wWidth = Core.getDrawWidth() / scaleX;
-        int scaledXPos = GameController.getXPos() / scaleX;
+        int wWidth = ToolBox.scale(Core.getDrawWidth(), scaleX);
+        int scaledXPos = ToolBox.scale(GameController.getXPos(), scaleX);
         g.setColor(FRAME_COLOR);
         if (GameController.getWidth() < Core.getDrawWidth()) {
-            g.drawRect(x, y, GameController.getWidth() / scaleX, visibleHeight - 1);
+            g.drawRect(x, y, ToolBox.scale(GameController.getWidth(), scaleX) - 1, visibleHeight - 1);
         } else {
-            g.drawRect(x + scaledXPos - xPos, y, wWidth, visibleHeight - 1);
+            g.drawRect(x + scaledXPos - xPos, y, wWidth - 1, visibleHeight - 1);
         }
     }
 
@@ -139,11 +140,11 @@ public class Minimap {
         return xPos;
     }
     
-    public static int getScaleX() {
+    public static double getScaleX() {
         return scaleX;
     }
     
-    public static int getScaleY() {
+    public static double getScaleY() {
         return scaleY;
     }
 
@@ -151,22 +152,25 @@ public class Minimap {
      * Move screen frame via minimap.
      * @param x cursor x position relative to minimap in original gfx.
      * @param y cursor y position relative to minimap in original gfx.
-     * @param swidth screen width
      * @return new horizontal screen offset
      */
     public static int move(final int x, final int y) {
-        int scaledDrawWidth = Core.getDrawWidth() / scaleX;
-        int cappedX = Math.max(scaledDrawWidth / 2, Math.min(x, visibleWidth - scaledDrawWidth / 2));
-        return (cappedX - scaledDrawWidth / 2 + xPos) * scaleX;
+        int scaledDrawWidth = ToolBox.scale(Core.getDrawWidth(), scaleX);
+        int cappedX = (int) ToolBox.cap(scaledDrawWidth / 2.0, x, visibleWidth - scaledDrawWidth / 2.0);
+        return ToolBox.unscale(cappedX - scaledDrawWidth / 2 + xPos, scaleX);
     }
     
     public static void adjustXPos() {
-        int scaledDrawWidth = Core.getDrawWidth() / scaleX;
-        int scaledXPos = Math.max(0, Math.min(GameController.getXPos() / scaleX, img.getWidth() - scaledDrawWidth));
-        if (scaledXPos < xPos) {
-            xPos = scaledXPos;
-        } else if (scaledXPos > xPos + visibleWidth - scaledDrawWidth) {
-            xPos = scaledXPos + scaledDrawWidth - visibleWidth;
+        if (img.getWidth() <= MAX_VISIBLE_WIDTH) {
+            xPos = 0;
+        } else {
+            int scaledDrawWidth = ToolBox.scale(Core.getDrawWidth(), scaleX);
+            int scaledXPos = ToolBox.cap(0, ToolBox.scale(GameController.getXPos(), scaleX), img.getWidth() - scaledDrawWidth);
+            if (scaledXPos < xPos) {
+                xPos = scaledXPos;
+            } else if (scaledXPos > xPos + visibleWidth - scaledDrawWidth) {
+                xPos = scaledXPos + scaledDrawWidth - visibleWidth;
+            }
         }
     }
     

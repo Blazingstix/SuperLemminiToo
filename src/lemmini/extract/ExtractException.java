@@ -50,6 +50,7 @@ public class ExtractException extends Exception {
     /**
      * Constructor.
      * @param s Exception string
+     * @param c whether the operation was canceled by the user
      */
     public ExtractException(final String s, final boolean c) {
         super(s);

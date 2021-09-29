@@ -28,6 +28,8 @@ import javax.swing.tree.*;
 import lemmini.LemminiFrame;
 import lemmini.game.*;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -43,6 +45,8 @@ public class LevelDialog extends javax.swing.JDialog {
 
     /**
      * Creates new form LevelDialog
+     * @param parent
+     * @param modal
      */
     public LevelDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -66,6 +70,9 @@ public class LevelDialog extends javax.swing.JDialog {
         refreshLevels();
         jTreeLevels = new javax.swing.JTree();
         jTreeLevels.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+        jLabelAuthor = new javax.swing.JLabel();
+        jTextFieldAuthor = new javax.swing.JTextField();
+        jSeparator1 = new javax.swing.JSeparator();
         jLabelLevelStats = new javax.swing.JLabel();
         jSeparatorLevelStats = new javax.swing.JSeparator();
         jLabelNumLemmings = new javax.swing.JLabel();
@@ -93,7 +100,7 @@ public class LevelDialog extends javax.swing.JDialog {
         jTextFieldNumBashers = new javax.swing.JTextField();
         jTextFieldNumMiners = new javax.swing.JTextField();
         jTextFieldNumDiggers = new javax.swing.JTextField();
-        jSeparator1 = new javax.swing.JSeparator();
+        jSeparator2 = new javax.swing.JSeparator();
         jLabelRecords = new javax.swing.JLabel();
         jSeparatorRecords = new javax.swing.JSeparator();
         jLabelLemmingsSaved = new javax.swing.JLabel();
@@ -131,6 +138,11 @@ public class LevelDialog extends javax.swing.JDialog {
             }
         });
         jScrollPaneLevels.setViewportView(jTreeLevels);
+
+        jLabelAuthor.setText("Author:");
+
+        jTextFieldAuthor.setEditable(false);
+        jTextFieldAuthor.setHighlighter(null);
 
         jLabelLevelStats.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabelLevelStats.setText("Level stats");
@@ -208,7 +220,7 @@ public class LevelDialog extends javax.swing.JDialog {
         jTextFieldNumDiggers.setEditable(false);
         jTextFieldNumDiggers.setHighlighter(null);
 
-        jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
+        jSeparator2.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
         jLabelRecords.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabelRecords.setText("Records");
@@ -277,63 +289,70 @@ public class LevelDialog extends javax.swing.JDialog {
                         .addComponent(jScrollPaneLevels, javax.swing.GroupLayout.DEFAULT_SIZE, 362, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addComponent(jLabelLevelStats, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jSeparatorSkills)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabelTimeLimit, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelReleaseRate, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelNumToRescue, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelNumLemmings, javax.swing.GroupLayout.Alignment.TRAILING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jTextFieldTimeLimit, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
-                                    .addComponent(jTextFieldReleaseRate)
-                                    .addComponent(jTextFieldNumLemmings)
-                                    .addComponent(jTextFieldNumToRescue)))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(layout.createSequentialGroup()
-                                        .addComponent(jLabelNumFloaters)
-                                        .addGap(1, 1, 1))
-                                    .addComponent(jLabelNumClimbers)
-                                    .addComponent(jLabelNumBombers)
-                                    .addComponent(jLabelNumBlockers)
-                                    .addComponent(jLabelNumBuilders)
-                                    .addComponent(jLabelNumBashers)
-                                    .addComponent(jLabelNumMiners)
-                                    .addComponent(jLabelNumDiggers))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
-                                    .addComponent(jTextFieldNumMiners)
-                                    .addComponent(jTextFieldNumBashers)
-                                    .addComponent(jTextFieldNumBuilders)
-                                    .addComponent(jTextFieldNumBlockers)
-                                    .addComponent(jTextFieldNumBombers)
-                                    .addComponent(jTextFieldNumFloaters)
-                                    .addComponent(jTextFieldNumClimbers))))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabelScore, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabelLemmingsSaved, javax.swing.GroupLayout.Alignment.TRAILING))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jLabelLevelStats, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jSeparatorSkills)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabelTimeLimit, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelReleaseRate, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelNumToRescue, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelNumLemmings, javax.swing.GroupLayout.Alignment.TRAILING))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                            .addComponent(jTextFieldLemmingsSaved, javax.swing.GroupLayout.DEFAULT_SIZE, 60, Short.MAX_VALUE)
-                                            .addComponent(jTextFieldScore))
-                                        .addComponent(jTextFieldTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addComponent(jTextFieldSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(jSeparatorRecords)
-                            .addComponent(jLabelRecords, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                            .addComponent(jTextFieldTimeLimit, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
+                                            .addComponent(jTextFieldReleaseRate)
+                                            .addComponent(jTextFieldNumLemmings)
+                                            .addComponent(jTextFieldNumToRescue)))
+                                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addGroup(layout.createSequentialGroup()
+                                                .addComponent(jLabelNumFloaters)
+                                                .addGap(1, 1, 1))
+                                            .addComponent(jLabelNumClimbers)
+                                            .addComponent(jLabelNumBombers)
+                                            .addComponent(jLabelNumBlockers)
+                                            .addComponent(jLabelNumBuilders)
+                                            .addComponent(jLabelNumBashers)
+                                            .addComponent(jLabelNumMiners)
+                                            .addComponent(jLabelNumDiggers))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
+                                            .addComponent(jTextFieldNumMiners)
+                                            .addComponent(jTextFieldNumBashers)
+                                            .addComponent(jTextFieldNumBuilders)
+                                            .addComponent(jTextFieldNumBlockers)
+                                            .addComponent(jTextFieldNumBombers)
+                                            .addComponent(jTextFieldNumFloaters)
+                                            .addComponent(jTextFieldNumClimbers))))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jSeparator2, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabelScore, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING)
+                                            .addComponent(jLabelLemmingsSaved, javax.swing.GroupLayout.Alignment.TRAILING))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                                    .addComponent(jTextFieldLemmingsSaved, javax.swing.GroupLayout.DEFAULT_SIZE, 60, Short.MAX_VALUE)
+                                                    .addComponent(jTextFieldScore))
+                                                .addComponent(jTextFieldTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                            .addComponent(jTextFieldSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addComponent(jSeparatorRecords)
+                                    .addComponent(jLabelRecords, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addGroup(layout.createSequentialGroup()
+                                .addComponent(jLabelAuthor)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextFieldAuthor))
+                            .addComponent(jSeparator1))
                         .addContainerGap())))
         );
         layout.setVerticalGroup(
@@ -344,81 +363,89 @@ public class LevelDialog extends javax.swing.JDialog {
                     .addComponent(jScrollPaneLevels)
                     .addGroup(layout.createSequentialGroup()
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelLevelStats)
-                            .addComponent(jLabelRecords))
+                            .addComponent(jTextFieldAuthor, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabelAuthor))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabelLevelStats)
+                                    .addComponent(jLabelRecords))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelNumLemmings)
+                                            .addComponent(jTextFieldNumLemmings, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelNumToRescue)
+                                            .addComponent(jTextFieldNumToRescue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelReleaseRate)
+                                            .addComponent(jTextFieldReleaseRate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelTimeLimit)
+                                            .addComponent(jTextFieldTimeLimit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(jSeparatorRecords, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelLemmingsSaved)
+                                            .addComponent(jTextFieldLemmingsSaved, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelSkillsUsed)
+                                            .addComponent(jTextFieldSkillsUsed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelTimeElapsed)
+                                            .addComponent(jTextFieldTimeElapsed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                            .addComponent(jLabelScore)
+                                            .addComponent(jTextFieldScore, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jSeparatorSkills, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelNumLemmings)
-                                    .addComponent(jTextFieldNumLemmings, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumClimbers)
+                                    .addComponent(jTextFieldNumClimbers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelNumToRescue)
-                                    .addComponent(jTextFieldNumToRescue, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumFloaters)
+                                    .addComponent(jTextFieldNumFloaters, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelReleaseRate)
-                                    .addComponent(jTextFieldReleaseRate, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumBombers)
+                                    .addComponent(jTextFieldNumBombers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelTimeLimit)
-                                    .addComponent(jTextFieldTimeLimit, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addGroup(layout.createSequentialGroup()
-                                .addComponent(jSeparatorRecords, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabelNumBlockers)
+                                    .addComponent(jTextFieldNumBlockers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelLemmingsSaved)
-                                    .addComponent(jTextFieldLemmingsSaved, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumBuilders)
+                                    .addComponent(jTextFieldNumBuilders, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelSkillsUsed)
-                                    .addComponent(jTextFieldSkillsUsed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumBashers)
+                                    .addComponent(jTextFieldNumBashers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelTimeElapsed)
-                                    .addComponent(jTextFieldTimeElapsed, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jLabelNumMiners)
+                                    .addComponent(jTextFieldNumMiners, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelScore)
-                                    .addComponent(jTextFieldScore, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparatorSkills, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumClimbers)
-                            .addComponent(jTextFieldNumClimbers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumFloaters)
-                            .addComponent(jTextFieldNumFloaters, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumBombers)
-                            .addComponent(jTextFieldNumBombers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumBlockers)
-                            .addComponent(jTextFieldNumBlockers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumBuilders)
-                            .addComponent(jTextFieldNumBuilders, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumBashers)
-                            .addComponent(jTextFieldNumBashers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumMiners)
-                            .addComponent(jTextFieldNumMiners, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabelNumDiggers)
-                            .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jSeparator1))
+                                    .addComponent(jLabelNumDiggers)
+                                    .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jSeparator2))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonOK)
@@ -430,18 +457,35 @@ public class LevelDialog extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-        TreePath selPath = jTreeLevels.getSelectionPath();
-        Object[] selPathArray = selPath.getPath();
-        if (selPathArray.length >= 4) {
-            selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
+    private void jTreeLevelsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTreeLevelsKeyPressed
+        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
+            TreePath selPath = jTreeLevels.getSelectionPath();
+            Object[] selPathArray = selPath.getPath();
+            if (selPathArray.length >= 4) {
+                selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
+                dispose();
+            } else {
+                if (jTreeLevels.isExpanded(selPath)) {
+                    jTreeLevels.collapsePath(selPath);
+                } else {
+                    jTreeLevels.expandPath(selPath);
+                }
+            }
         }
-        dispose();
-    }//GEN-LAST:event_jButtonOKActionPerformed
+    }//GEN-LAST:event_jTreeLevelsKeyPressed
 
-    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-        dispose();
-    }//GEN-LAST:event_jButtonCancelActionPerformed
+    private void jTreeLevelsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeLevelsMousePressed
+        if (evt.getClickCount() == 2) {
+            TreePath selPath = jTreeLevels.getPathForLocation(evt.getX(), evt.getY());
+            if (selPath != null) {
+                Object[] selPathArray = selPath.getPath();
+                if (selPathArray.length >= 4) {
+                    selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
+                    dispose();
+                }
+            }
+        }
+    }//GEN-LAST:event_jTreeLevelsMousePressed
 
     private void jTreeLevelsValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreeLevelsValueChanged
         TreePath selPath = jTreeLevels.getSelectionPath();
@@ -450,6 +494,7 @@ public class LevelDialog extends javax.swing.JDialog {
             LevelPack lvlPack = GameController.getLevelPack(lvlItem.levelPack);
             LevelInfo lvlInfo = lvlPack.getInfo(lvlItem.rating, lvlItem.levelIndex);
             LevelRecord lvlRecord = Core.player.getLevelRecord(lvlPack.getName(), lvlPack.getRatings()[lvlItem.rating], lvlItem.levelIndex);
+            jTextFieldAuthor.setText(lvlInfo.getAuthor());
             int numLemmings = lvlInfo.getNumLemmings();
             int numToRescue = lvlInfo.getNumToRescue();
             int timeLimit = lvlInfo.getTimeLimit();
@@ -485,50 +530,37 @@ public class LevelDialog extends javax.swing.JDialog {
                 jTextFieldTimeElapsed.setText(String.format("%d:%02d", timeElapsed / 60, timeElapsed % 60));
                 jTextFieldScore.setText(Integer.toString(lvlRecord.getScore()));
             } else {
-                jTextFieldLemmingsSaved.setText("");
-                jTextFieldSkillsUsed.setText("");
-                jTextFieldTimeElapsed.setText("");
-                jTextFieldScore.setText("");
+                jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
+                jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
+                jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
+                jTextFieldScore.setText(StringUtils.EMPTY);
             }
             jButtonOK.setEnabled(true);
         } else {
-            jTextFieldNumLemmings.setText("");
-            jTextFieldNumToRescue.setText("");
-            jTextFieldReleaseRate.setText("");
-            jTextFieldTimeLimit.setText("");
-            jTextFieldNumClimbers.setText("");
-            jTextFieldNumFloaters.setText("");
-            jTextFieldNumBombers.setText("");
-            jTextFieldNumBlockers.setText("");
-            jTextFieldNumBuilders.setText("");
-            jTextFieldNumBashers.setText("");
-            jTextFieldNumMiners.setText("");
-            jTextFieldNumDiggers.setText("");
-            jTextFieldLemmingsSaved.setText("");
-            jTextFieldSkillsUsed.setText("");
-            jTextFieldTimeElapsed.setText("");
-            jTextFieldScore.setText("");
+            jTextFieldNumLemmings.setText(StringUtils.EMPTY);
+            jTextFieldNumToRescue.setText(StringUtils.EMPTY);
+            jTextFieldReleaseRate.setText(StringUtils.EMPTY);
+            jTextFieldTimeLimit.setText(StringUtils.EMPTY);
+            jTextFieldNumClimbers.setText(StringUtils.EMPTY);
+            jTextFieldNumFloaters.setText(StringUtils.EMPTY);
+            jTextFieldNumBombers.setText(StringUtils.EMPTY);
+            jTextFieldNumBlockers.setText(StringUtils.EMPTY);
+            jTextFieldNumBuilders.setText(StringUtils.EMPTY);
+            jTextFieldNumBashers.setText(StringUtils.EMPTY);
+            jTextFieldNumMiners.setText(StringUtils.EMPTY);
+            jTextFieldNumDiggers.setText(StringUtils.EMPTY);
+            jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
+            jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
+            jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
+            jTextFieldScore.setText(StringUtils.EMPTY);
             jButtonOK.setEnabled(false);
         }
     }//GEN-LAST:event_jTreeLevelsValueChanged
 
-    private void jTreeLevelsMousePressed(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTreeLevelsMousePressed
-        if (evt.getClickCount() == 2) {
-            TreePath selPath = jTreeLevels.getPathForLocation(evt.getX(), evt.getY());
-            if (selPath != null) {
-                Object[] selPathArray = selPath.getPath();
-                if (selPathArray.length >= 4) {
-                    selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
-                    dispose();
-                }
-            }
-        }
-    }//GEN-LAST:event_jTreeLevelsMousePressed
-
     private void jButtonAddExternalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalActionPerformed
         Path[] externLvls = ToolBox.getFileNames(this, lvlPath, Core.LEVEL_EXTENSIONS, true, true);
         if (externLvls != null) {
-            if (externLvls.length > 0) {
+            if (ArrayUtils.isNotEmpty(externLvls)) {
                 lvlPath = externLvls[0].getParent();
             }
             String lastLvlExt = null;
@@ -583,24 +615,20 @@ public class LevelDialog extends javax.swing.JDialog {
             }
         }
     }//GEN-LAST:event_jButtonAddExternalActionPerformed
-
-    private void jTreeLevelsKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTreeLevelsKeyPressed
-        if (evt.getKeyCode() == KeyEvent.VK_ENTER) {
-            TreePath selPath = jTreeLevels.getSelectionPath();
-            Object[] selPathArray = selPath.getPath();
-            if (selPathArray.length >= 4) {
-                selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
-                dispose();
-            } else {
-                if (jTreeLevels.isExpanded(selPath)) {
-                    jTreeLevels.collapsePath(selPath);
-                } else {
-                    jTreeLevels.expandPath(selPath);
-                }
-            }
-        }
-    }//GEN-LAST:event_jTreeLevelsKeyPressed
     
+    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
+        TreePath selPath = jTreeLevels.getSelectionPath();
+        Object[] selPathArray = selPath.getPath();
+        if (selPathArray.length >= 4) {
+            selectedLevel = (LevelItem) ((DefaultMutableTreeNode) selPathArray[3]).getUserObject();
+        }
+        dispose();
+    }//GEN-LAST:event_jButtonOKActionPerformed
+
+    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
+        dispose();
+    }//GEN-LAST:event_jButtonCancelActionPerformed
+
     /**
      * Returns an int array consisting of the indices of the chosen levelIndex pack,
      * rating, and levelIndex. If no levelIndex was chosen, then null is returned.
@@ -651,6 +679,7 @@ public class LevelDialog extends javax.swing.JDialog {
     private javax.swing.JButton jButtonAddExternal;
     private javax.swing.JButton jButtonCancel;
     private javax.swing.JButton jButtonOK;
+    private javax.swing.JLabel jLabelAuthor;
     private javax.swing.JLabel jLabelLemmingsSaved;
     private javax.swing.JLabel jLabelLevelStats;
     private javax.swing.JLabel jLabelNumBashers;
@@ -671,9 +700,11 @@ public class LevelDialog extends javax.swing.JDialog {
     private javax.swing.JLabel jLabelTimeLimit;
     private javax.swing.JScrollPane jScrollPaneLevels;
     private javax.swing.JSeparator jSeparator1;
+    private javax.swing.JSeparator jSeparator2;
     private javax.swing.JSeparator jSeparatorLevelStats;
     private javax.swing.JSeparator jSeparatorRecords;
     private javax.swing.JSeparator jSeparatorSkills;
+    private javax.swing.JTextField jTextFieldAuthor;
     private javax.swing.JTextField jTextFieldLemmingsSaved;
     private javax.swing.JTextField jTextFieldNumBashers;
     private javax.swing.JTextField jTextFieldNumBlockers;
@@ -712,6 +743,6 @@ class LevelItem {
     
     @Override
     public String toString() {
-        return (levelIndex + 1) + ": " + levelName + (completed ? " (completed)" : "");
+        return (levelIndex + 1) + ": " + levelName + (completed ? " (completed)" : StringUtils.EMPTY);
     }
 }

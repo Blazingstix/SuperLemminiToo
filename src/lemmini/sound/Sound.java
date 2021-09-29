@@ -13,6 +13,8 @@ import lemmini.game.Core;
 import lemmini.game.GameController;
 import lemmini.game.ResourceException;
 import lemmini.tools.Props;
+import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -241,7 +243,7 @@ public class Sound {
         
         PitchedEffect[] peValues = PitchedEffect.values();
         
-        Path fName = Paths.get("");
+        Path fName = Paths.get(StringUtils.EMPTY);
         boolean reloadPitched = false;
         if (!loaded) {
             sampleNum = sampleNames.size();
@@ -563,12 +565,12 @@ public class Sound {
                         double a1 = sample0 - 2.5 * sample1 + 2 * sample2 - 0.5 * sample3;
                         double a2 = -0.5 * sample0 + 0.5 * sample2;
                         double a3 = sample1;
-                        newSample = (int) Math.round(a0 * Math.pow(ofs, 3) + a1 * Math.pow(ofs, 2) + a2 * ofs + a3);
-                        newSample = Math.max(Math.min(newSample, maxValue), minValue);
+                        newSample = ToolBox.roundToInt(a0 * Math.pow(ofs, 3) + a1 * Math.pow(ofs, 2) + a2 * ofs + a3);
+                        newSample = ToolBox.cap(minValue, newSample, maxValue);
                         break;
                     case LINEAR:
                     default:
-                        newSample = (int) Math.round(sample1 + (sample2 - sample1) * ofs);
+                        newSample = ToolBox.roundToInt(sample1 + (sample2 - sample1) * ofs);
                         break;
                     case NEAREST:
                         newSample = sample1;
@@ -658,6 +660,8 @@ public class Sound {
      * Create a pitched version of a sample.
      * @param pe
      * @param af
+     * @param newSampleRate
+     * @param quality
      * @param oldBuffer
      * @param newBuffers
      */
@@ -812,7 +816,7 @@ public class Sound {
             
             synchronized (this) {
                 nextBuffer = newBuffer;
-                pan = (float) Math.max(Math.min(newPan, 1.0), -1.0);
+                pan = (float) ToolBox.cap(-1.0, newPan, 1.0);
                 notifyAll();
             }
         }

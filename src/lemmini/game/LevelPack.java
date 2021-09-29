@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.Locale;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -35,8 +37,6 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class LevelPack {
-    
-    public static final Path[] EMPTY_PATH_ARRAY = {};
     
     public static final String FAILURE_A1_DEF = "ROCK BOTTOM! I hope for your sake";
     public static final String FAILURE_A2_DEF = "that you nuked that level.";
@@ -74,7 +74,7 @@ public class LevelPack {
     private int codeOffset;
     
     private final String[] debriefings = new String[18];
-    private String[] mods;
+    private Path[] mods;
 
     /**
      * Constructor for dummy level pack. Needed for loading single levels.
@@ -82,9 +82,9 @@ public class LevelPack {
     public LevelPack() {
         name = "External Levels";
         allLevelsUnlocked = true;
-        path = Paths.get("");
-        mods = new String[0];
-        codeSeed = "";
+        path = Paths.get(StringUtils.EMPTY);
+        mods = Core.EMPTY_PATH_ARRAY;
+        codeSeed = StringUtils.EMPTY;
         maxFallDistance = 126;
         codeOffset = 0;
 
@@ -92,10 +92,6 @@ public class LevelPack {
         ratings[0] = "Single Levels";
 
         lvlInfo = new LevelInfo[1][0];
-        //lvlInfo[0][0] = new LevelInfo();
-        //lvlInfo[0][0].setMusic(Paths.get("tim1.mod"));
-        //lvlInfo[0][0].setName("test");
-        //lvlInfo[0][0].setFileName(Paths.get(""));
         
         debriefings[0]  = FAILURE_A1_DEF;
         debriefings[1]  = FAILURE_A2_DEF;
@@ -119,7 +115,7 @@ public class LevelPack {
 
     /**
      * Constructor for loading a level pack.
-     * @param fname file name of level pack ini
+     * @param fname file name of level pack INI
      * @throws ResourceException
      */
     public LevelPack(final Path fname) throws ResourceException {
@@ -131,15 +127,20 @@ public class LevelPack {
             throw new ResourceException(fname.toString());
         }
         // read name
-        name = props.get("name", "");
+        name = props.get("name", StringUtils.EMPTY);
         allLevelsUnlocked = props.getBoolean("allLevelsUnlocked", false);
         // read mods
-        mods = props.getArray("mods", null);
-        if (mods == null) {
-            mods = new String[0];
+        String[] modsStr = props.getArray("mods", ArrayUtils.EMPTY_STRING_ARRAY);
+        if (modsStr.length == 0) {
+            mods = Core.EMPTY_PATH_ARRAY;
+        } else {
+            mods = new Path[modsStr.length];
+            for (int i = 0; i < modsStr.length; i++) {
+                mods[i] = Paths.get("mods", modsStr[i]);
+            }
         }
         // read code seed
-        codeSeed = props.get("codeSeed", "").trim().toUpperCase(Locale.ROOT);
+        codeSeed = props.get("codeSeed", StringUtils.EMPTY).trim().toUpperCase(Locale.ROOT);
         // read code level offset
         codeOffset = props.getInt("codeOffset", 0);
         // read max falling distance
@@ -149,7 +150,7 @@ public class LevelPack {
         String track;
         int idx = 0;
         do {
-            track = props.get("music_" + (idx++), "");
+            track = props.get("music_" + (idx++), StringUtils.EMPTY);
             if (!track.isEmpty()) {
                 music.add(Paths.get(track));
             }
@@ -178,7 +179,7 @@ public class LevelPack {
         idx = 0;
         String rating;
         do {
-            rating = props.get("level_" + idx, "");
+            rating = props.get("level_" + idx, StringUtils.EMPTY);
             idx++;
             if (!rating.isEmpty()) {
                 ratingList.add(rating);
@@ -326,14 +327,6 @@ public class LevelPack {
     }
     
     public Path[] getModPaths() {
-        if (mods.length == 0) {
-            return EMPTY_PATH_ARRAY;
-        }
-        
-        Path[] retArray = new Path[mods.length];
-        for (int i = 0; i < mods.length; i++) {
-            retArray[i] = Paths.get("mods", mods[i]);
-        }
-        return retArray;
+        return mods;
     }
 }

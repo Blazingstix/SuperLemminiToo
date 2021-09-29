@@ -36,6 +36,8 @@ public class PlayerDialog extends javax.swing.JDialog {
 
     /**
      * Creates new form PlayerDialog
+     * @param parent
+     * @param modal
      */
     public PlayerDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
@@ -139,6 +141,11 @@ public class PlayerDialog extends javax.swing.JDialog {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        players.clear();
+        players = null;
+    }//GEN-LAST:event_formWindowClosing
+
     private void jButtonNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewActionPerformed
         String player = JOptionPane.showInputDialog(
                 LemminiFrame.getFrame(), "Enter Player Name", "Input", JOptionPane.QUESTION_MESSAGE);
@@ -183,11 +190,6 @@ public class PlayerDialog extends javax.swing.JDialog {
         players = null;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
-
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        players.clear();
-        players = null;
-    }//GEN-LAST:event_formWindowClosing
 
     /**
      * Get list of players.

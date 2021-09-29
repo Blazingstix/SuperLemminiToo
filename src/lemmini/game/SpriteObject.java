@@ -32,36 +32,42 @@ public class SpriteObject extends Sprite {
     /** Type of level object */
     public static enum Type {
         /** no influence on gameplay */
-        PASSIVE (false),
+        PASSIVE (false, false),
         /** Makes a lemming turn left. */
-        TURN_LEFT (true),
+        TURN_LEFT (true, false),
         /** Makes a lemming turn right. */
-        TURN_RIGHT (true),
-        /** right arrows - no digging to the left */
-        NO_BASH_LEFT (false),
+        TURN_RIGHT (true, false),
         /** left arrows - no digging to the right */
-        NO_BASH_RIGHT (false),
+        ONE_WAY_LEFT (false, true),
+        /** right arrows - no digging to the left */
+        ONE_WAY_RIGHT (false, true),
         /** trap triggering drowning animation */
-        TRAP_DROWN (true),
+        TRAP_DROWN (true, false),
         /** trap triggering a replacement with special death animation */
-        TRAP_REPLACE (true),
+        TRAP_REPLACE (true, false),
         /** trap triggering default death animation */
-        TRAP_DIE (true),
+        TRAP_DIE (true, false),
         /** level exit (active part!) */
-        EXIT (true),
+        EXIT (true, false),
         /** steel */
-        STEEL (false),
+        STEEL (false, true),
         /** level entrance */
-        ENTRANCE (false);
+        ENTRANCE (false, false);
         
         private final boolean triggeredByFoot;
+        private final boolean sometimesIndestructible;
         
-        private Type(boolean triggeredByFoot) {
+        private Type(boolean triggeredByFoot, boolean sometimesIndestructible) {
             this.triggeredByFoot = triggeredByFoot;
+            this.sometimesIndestructible = sometimesIndestructible;
         }
         
         public boolean isTriggeredByFoot() {
             return triggeredByFoot;
+        }
+        
+        public boolean isSometimesIndestructible() {
+            return sometimesIndestructible;
         }
     }
 
@@ -91,9 +97,9 @@ public class SpriteObject extends Sprite {
             case 2:
                 return Type.TURN_RIGHT;
             case 3:
-                return Type.NO_BASH_LEFT;
+                return Type.ONE_WAY_RIGHT;
             case 4:
-                return Type.NO_BASH_RIGHT;
+                return Type.ONE_WAY_LEFT;
             case 5:
                 return Type.TRAP_DROWN;
             case 6:
@@ -115,9 +121,10 @@ public class SpriteObject extends Sprite {
      * Constructor.
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
+     * @param animSpeed number of game frames per sprite frame.
      */
-    public SpriteObject(final LemmImage sourceImg, final int animFrames) {
-        super(sourceImg, animFrames);
+    public SpriteObject(final LemmImage sourceImg, final int animFrames, final int animSpeed) {
+        super(sourceImg, animFrames, animSpeed);
         type = Type.PASSIVE;
         setX(0);
         setY(0);
@@ -193,10 +200,10 @@ public class SpriteObject extends Sprite {
                 return Stencil.MSK_TURN_LEFT;
             case TURN_RIGHT:
                 return Stencil.MSK_TURN_RIGHT;
-            case NO_BASH_LEFT:
-                return Stencil.MSK_NO_BASH_LEFT;
-            case NO_BASH_RIGHT:
-                return Stencil.MSK_NO_BASH_RIGHT;
+            case ONE_WAY_LEFT:
+                return Stencil.MSK_ONE_WAY_LEFT;
+            case ONE_WAY_RIGHT:
+                return Stencil.MSK_ONE_WAY_RIGHT;
             case TRAP_DROWN:
                 return Stencil.MSK_TRAP_LIQUID;
             case TRAP_REPLACE:

@@ -34,6 +34,11 @@ import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.BooleanUtils;
+import org.apache.commons.lang3.JavaVersion;
+import org.apache.commons.lang3.SystemUtils;
 
 /**
  * Lemmini - a game engine for Lemmings.<br>
@@ -45,7 +50,7 @@ import lemmini.tools.ToolBox;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.96b";
+    public static final String REVISION = "0.97";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -280,49 +285,9 @@ public class LemminiFrame extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jMenuItemExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemExitActionPerformed
-        exit();
-    }//GEN-LAST:event_jMenuItemExitActionPerformed
-
-    private void jMenuItemManagePlayersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemManagePlayersActionPerformed
-        lemminiPanelMain.handlePlayers();
-    }//GEN-LAST:event_jMenuItemManagePlayersActionPerformed
-
-    private void jMenuItemPlayLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPlayLevelActionPerformed
-        lemminiPanelMain.handlePlayLevel();
-    }//GEN-LAST:event_jMenuItemPlayLevelActionPerformed
-
-    private void jMenuItemRestartLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRestartLevelActionPerformed
-        if (!GameController.getLevel().isReady()) {
-            GameController.requestChangeLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber(), false);
-        } else {
-            GameController.requestRestartLevel(false);
-        }
-    }//GEN-LAST:event_jMenuItemRestartLevelActionPerformed
-
-    private void jMenuItemLoadReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemLoadReplayActionPerformed
-        lemminiPanelMain.handleLoadReplay();
-    }//GEN-LAST:event_jMenuItemLoadReplayActionPerformed
-
-    private void jMenuItemEnterLevelCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEnterLevelCodeActionPerformed
-        lemminiPanelMain.handleEnterCode();
-    }//GEN-LAST:event_jMenuItemEnterLevelCodeActionPerformed
-
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        exit();
-    }//GEN-LAST:event_formWindowClosing
-
-    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
-        exit();
-    }//GEN-LAST:event_formWindowClosed
-
-    private void formWindowGainedFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowGainedFocus
-        lemminiPanelMain.focusGained();
-    }//GEN-LAST:event_formWindowGainedFocus
-
-    private void formWindowLostFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowLostFocus
-        lemminiPanelMain.focusLost();
-    }//GEN-LAST:event_formWindowLostFocus
+    private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
+        storeUnmaximizedPos();
+    }//GEN-LAST:event_formComponentMoved
 
     private void formKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_formKeyPressed
         int code = evt.getKeyCode();
@@ -383,7 +348,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                         break;
                     case KeyEvent.VK_V:
                         Path file = Core.resourcePath.resolve("level.png");
-                        LemmImage tmp = GameController.getLevel().createMinimap(null, GameController.getFgImage(), 1, 1, false, true);
+                        LemmImage tmp = GameController.getLevel().createMinimap(GameController.getFgImage(), 1.0, 1.0, true, false, true);
                         try (OutputStream out = Files.newOutputStream(file)) {
                             ImageIO.write(tmp.getImage(), "png", out);
                         } catch (IOException ex) {
@@ -498,7 +463,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                 switch (code) {
                     case KeyEvent.VK_S:
                         Path file = Core.resourcePath.resolve("level.png");
-                        LemmImage tmp = GameController.getLevel().createMinimap(null, GameController.getFgImage(), 1, 1, false, true);
+                        LemmImage tmp = GameController.getLevel().createMinimap(GameController.getFgImage(), 1.0, 1.0, true, false, true);
                         try (OutputStream out = Files.newOutputStream(file)) {
                             ImageIO.write(tmp.getImage(), "png", out);
                         } catch (IOException ex) {
@@ -580,9 +545,49 @@ public class LemminiFrame extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_formKeyReleased
 
-    private void formComponentMoved(java.awt.event.ComponentEvent evt) {//GEN-FIRST:event_formComponentMoved
-        storeUnmaximizedPos();
-    }//GEN-LAST:event_formComponentMoved
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        exit();
+    }//GEN-LAST:event_formWindowClosed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        exit();
+    }//GEN-LAST:event_formWindowClosing
+
+    private void formWindowGainedFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowGainedFocus
+        lemminiPanelMain.focusGained();
+    }//GEN-LAST:event_formWindowGainedFocus
+
+    private void formWindowLostFocus(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowLostFocus
+        lemminiPanelMain.focusLost();
+    }//GEN-LAST:event_formWindowLostFocus
+
+    private void jMenuItemExitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemExitActionPerformed
+        exit();
+    }//GEN-LAST:event_jMenuItemExitActionPerformed
+
+    private void jMenuItemManagePlayersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemManagePlayersActionPerformed
+        lemminiPanelMain.handlePlayers();
+    }//GEN-LAST:event_jMenuItemManagePlayersActionPerformed
+
+    private void jMenuItemPlayLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemPlayLevelActionPerformed
+        lemminiPanelMain.handlePlayLevel();
+    }//GEN-LAST:event_jMenuItemPlayLevelActionPerformed
+
+    private void jMenuItemRestartLevelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemRestartLevelActionPerformed
+        if (!GameController.getLevel().isReady()) {
+            GameController.requestChangeLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber(), false);
+        } else {
+            GameController.requestRestartLevel(false);
+        }
+    }//GEN-LAST:event_jMenuItemRestartLevelActionPerformed
+
+    private void jMenuItemLoadReplayActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemLoadReplayActionPerformed
+        lemminiPanelMain.handleLoadReplay();
+    }//GEN-LAST:event_jMenuItemLoadReplayActionPerformed
+
+    private void jMenuItemEnterLevelCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemEnterLevelCodeActionPerformed
+        lemminiPanelMain.handleEnterCode();
+    }//GEN-LAST:event_jMenuItemEnterLevelCodeActionPerformed
 
     private void jMenuItemOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemOptionsActionPerformed
         lemminiPanelMain.handleOptions();
@@ -627,13 +632,9 @@ public class LemminiFrame extends javax.swing.JFrame {
         /*
          * Check JVM version
          */
-        String jreStr = System.getProperty("java.version");
-        String[] vs = jreStr.split("[._]");
-        if (vs.length >= 3) {
-            if (!((getInt(vs[0]) == 1 && getInt(vs[1]) >= 7) || getInt(vs[0]) >= 2)) {
-                JOptionPane.showMessageDialog(null, "SuperLemmini requires JVM 1.7 or later.", "Error", JOptionPane.ERROR_MESSAGE);
-                System.exit(1);
-            }
+        if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_7)) {
+            JOptionPane.showMessageDialog(null, "SuperLemmini requires JVM 1.7 or later.", "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
         }
         
         // check free memory
@@ -654,7 +655,7 @@ public class LemminiFrame extends javax.swing.JFrame {
             public void run() {
                 while (true) {
                     try {
-                        Thread.sleep(Integer.MAX_VALUE);
+                        Thread.sleep(Long.MAX_VALUE);
                     } catch(InterruptedException ex) {
                     }
                 }
@@ -681,28 +682,15 @@ public class LemminiFrame extends javax.swing.JFrame {
         }
     }
     
-    /**
-     * Convert String to int.
-     * @param s String with decimal integer value
-     * @return integer value (0 if no valid number)
-     */
-    private static int getInt(final String s) {
-        try {
-            return Integer.parseInt(s);
-        } catch (NumberFormatException ex) {
-            return 0;
-        }
-    }
-    
     public static String addExternalLevel(Path name, boolean showErrors) {
         if (name != null) {
             try {
                 String fNameStr = name.getFileName().toString();
-                String fNameStrNoExt = ToolBox.removeExtension(fNameStr);
-                String fNameStrExt = ToolBox.getExtension(fNameStr).toLowerCase(Locale.ROOT);
+                String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
+                String fNameStrExt = FilenameUtils.getExtension(fNameStr).toLowerCase(Locale.ROOT);
                 if (fNameStrExt.equals("dat")) {
                     byte[][] levels = ExtractDAT.decompress(name);
-                    if (levels.length == 0) {
+                    if (ArrayUtils.isEmpty(levels)) {
                         if (showErrors) {
                             JOptionPane.showMessageDialog(getFrame(), "DAT file is empty.", "Load Level", JOptionPane.ERROR_MESSAGE);
                         }
@@ -725,7 +713,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                         ExtractLevel.convertLevel(name, outName, false, false);
                         name = outName;
                     }
-                    if (ToolBox.getExtension(name.getFileName().toString()).equals("ini")) {
+                    if (FilenameUtils.getExtension(name.getFileName().toString()).equals("ini")) {
                         LevelInfo li = new LevelInfo(name, null);
                         if (li.isValidLevel()) {
                             GameController.getLevelPack(0).addLevel(0, li);
@@ -754,8 +742,8 @@ public class LemminiFrame extends javax.swing.JFrame {
         Core.programProps.setInt("framePosX", unmaximizedPosX);
         Core.programProps.setInt("framePosY", unmaximizedPosY);
         // store maximized state
-        Core.programProps.setBoolean("maximizedHoriz", (getExtendedState() & MAXIMIZED_HORIZ) != 0);
-        Core.programProps.setBoolean("maximizedVert", (getExtendedState() & MAXIMIZED_VERT) != 0);
+        Core.programProps.setBoolean("maximizedHoriz", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_HORIZ));
+        Core.programProps.setBoolean("maximizedVert", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_VERT));
         Core.saveProgramProps();
         System.exit(0);
     }
@@ -768,10 +756,10 @@ public class LemminiFrame extends javax.swing.JFrame {
     
     private void storeUnmaximizedPos() {
         int frameState = getExtendedState();
-        if ((frameState & MAXIMIZED_HORIZ) == 0) {
+        if (!BooleanUtils.toBoolean(frameState & MAXIMIZED_HORIZ)) {
             unmaximizedPosX = getX();
         }
-        if ((frameState & MAXIMIZED_VERT) == 0) {
+        if (!BooleanUtils.toBoolean(frameState & MAXIMIZED_VERT)) {
             unmaximizedPosY = getY();
         }
     }

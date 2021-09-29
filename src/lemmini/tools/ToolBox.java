@@ -16,6 +16,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.GraphicsOperation;
 import lemmini.graphics.LemmImage;
+import org.apache.commons.io.ByteOrderMark;
+import org.apache.commons.io.input.BOMInputStream;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -43,6 +46,9 @@ import lemmini.graphics.LemmImage;
  */
 public class ToolBox {
     
+    private static final ByteOrderMark[] BYTE_ORDER_MARKS = {
+        ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_8,
+        ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE};
     private static final GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
     
     /**
@@ -61,7 +67,7 @@ public class ToolBox {
      * @return the cursor
      */
     public static Cursor createCursor(LemmImage image, int centerX, int centerY) {
-        return Toolkit.getDefaultToolkit().createCustomCursor(image.getImage(), new Point(centerX, centerY), "");
+        return Toolkit.getDefaultToolkit().createCustomCursor(image.getImage(), new Point(centerX, centerY), StringUtils.EMPTY);
     }
     
     /**
@@ -129,7 +135,7 @@ public class ToolBox {
      * Return an array of buffered images which contain an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
-     * @return an array of buffered images which contain an animation
+     * @return an array of images which contains an animation
      */
     public static LemmImage[] getAnimation(final LemmImage img, final int frames) {
         return getAnimation(img, frames, img.getWidth());
@@ -140,7 +146,7 @@ public class ToolBox {
      * @param img image containing all the frames one above each other
      * @param frames number of frames
      * @param width image width
-     * @return an array of buffered images which contain an animation
+     * @return an array of images which contains an animation
      */
     public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int width) {
         return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), width);
@@ -152,7 +158,7 @@ public class ToolBox {
      * @param frames number of frames
      * @param transparency {@link java.awt.Transparency}
      * @param width image width
-     * @return an array of buffered images which contain an animation
+     * @return an array of images which contains an animation
      */
     public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int transparency, final int width) {
         int height = img.getHeight() / frames;
@@ -173,34 +179,6 @@ public class ToolBox {
             arrImg[i] = frame;
         }
         return arrImg;
-    }
-
-    /**
-     * Flip image in X direction.
-     * @param source image to flip
-     * @return flipped image
-     */
-    public static LemmImage flipImageX(final LemmImage source) {
-        LemmImage target = createBitmaskImage(source.getWidth(), source.getHeight());
-        GraphicsOperation operation = createGraphicsOperation();
-        operation.setToScale(-1, 1);
-        operation.translate(-source.getWidth(), 0);
-        operation.execute(source, target);
-        return target;
-    }
-
-    /**
-     * Flip image in X direction and preserve translucency.
-     * @param source image to flip
-     * @return flipped image
-     */
-    public static LemmImage flipImageXTranslucent(final LemmImage source) {
-        LemmImage target = createTranslucentImage(source.getWidth(), source.getHeight());
-        GraphicsOperation operation = createGraphicsOperation();
-        operation.setToScale(-1, 1);
-        operation.translate(-source.getWidth(), 0);
-        operation.execute(source, target);
-        return target;
     }
 
     /**
@@ -289,39 +267,9 @@ public class ToolBox {
         }
         return null;
     }
-
-    /**
-     * Returns the extension (".XXX") of a filename without the dot.
-     * @param path String containing file name
-     * @return String containing only the extension (without the dot) or null (if no extension found)
-     */
-    public static String getExtension(final String path) {
-        int p1 = path.lastIndexOf("/");
-        int p2 = path.lastIndexOf("\\");
-        int p = path.lastIndexOf(".");
-        if (p == -1 || p < p1 || p < p2) {
-            return "";
-        }
-        return path.substring(p + 1);
-    }
-    
-    /**
-     * Returns the file name without the extension (".XXX").
-     * @param path String containing file name
-     * @return String containing file name without the extension
-     */
-    public static String removeExtension(String fname) {
-        int slashIndex = Math.max(fname.lastIndexOf("/"), fname.lastIndexOf("\\"));
-        int dotIndex = fname.lastIndexOf(".");
-        if (slashIndex < dotIndex) {
-            return fname.substring(0, dotIndex);
-        } else {
-            return fname;
-        }
-    }
      
     /**
-     * Returns the first few characters from the first line of a file to check its type.
+     * Checks whether the first few characters of the given file matches the given header.
      * @param r Reader for the file
      * @param header 
      * @return True if file begins with the given header, false otherwise
@@ -366,73 +314,16 @@ public class ToolBox {
     }
     
     private static BufferedReader getBufferedReader(final InputStream in) throws IOException {
-        Charset encoding = StandardCharsets.UTF_8;
-        byte[] b = new byte[4];
-        InputStream in2;
-        int count;
-        if (in.markSupported()) {
-            in2 = in;
-            in2.mark(b.length);
-            count = in2.read(b);
-            in2.reset();
+        BOMInputStream in2 = new BOMInputStream(in, BYTE_ORDER_MARKS);
+        Charset encoding;
+        if (in2.hasBOM()) {
+            encoding = Charset.forName(in2.getBOMCharsetName());
         } else {
-            in2 = new PushbackInputStream(in, b.length);
-            count = in2.read(b);
-            ((PushbackInputStream) in2).unread(b, 0, count);
-        }
-        switch (count) {
-            case 4:
-                if ((b[0] & 0xFF) == 0x00 && (b[1] & 0xFF) == 0x00 && (b[2] & 0xFF) == 0xFE && (b[3] & 0xFF) == 0xFF) {
-                    encoding = Charset.forName("UTF-32BE");
-                    in2.skip(4);
-                    break;
-                } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE && (b[2] & 0xFF) == 0x00 && (b[3] & 0xFF) == 0x00) {
-                    encoding = Charset.forName("UTF-32LE");
-                    in2.skip(4);
-                    break;
-                }
-                /* falls through */
-            case 3:
-                if ((b[0] & 0xFF) == 0xEF && (b[1] & 0xFF) == 0xBB && (b[2] & 0xFF) == 0xBF) {
-                    // Skip the UTF-8 BOM since Java doesn't do this automatically
-                    in2.skip(3);
-                    break;
-                }
-                /* falls through */
-            case 2:
-                if ((b[0] & 0xFF) == 0xFE && (b[1] & 0xFF) == 0xFF) {
-                    encoding = StandardCharsets.UTF_16BE;
-                    in2.skip(2);
-                    break;
-                } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE) {
-                    encoding = StandardCharsets.UTF_16LE;
-                    in2.skip(2);
-                    break;
-                }
-                break;
-            default:
-                break;
+            encoding = StandardCharsets.UTF_8;
         }
         
         BufferedReader r = new BufferedReader(new InputStreamReader(in2, encoding));
         return r;
-    }
-
-    /**
-     * Get path name from absolute file name.
-     * @param path absolute file name
-     * @return path name without the separator
-     */
-    public static String getPathName(final String path) {
-        int p1 = path.lastIndexOf("/");
-        int p2 = path.lastIndexOf("\\");
-        if (p2 > p1) {
-            p1 = p2;
-        }
-        if (p1 < 0) {
-            p1 = 0;
-        }
-        return path.substring(0, p1);
     }
 
     /**
@@ -451,6 +342,46 @@ public class ToolBox {
         m += "</html>";
         ex.printStackTrace();
         JOptionPane.showMessageDialog(null, m, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    public static int cap(int min, int value, int max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be >= min");
+        }
+        return StrictMath.max(min, StrictMath.min(value, max));
+    }
+    
+    public static long cap(long min, long value, long max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be >= min");
+        }
+        return StrictMath.max(min, StrictMath.min(value, max));
+    }
+    
+    public static float cap(float min, float value, float max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be >= min");
+        }
+        return StrictMath.max(min, StrictMath.min(value, max));
+    }
+    
+    public static double cap(double min, double value, double max) {
+        if (min > max) {
+            throw new IllegalArgumentException("max must be >= min");
+        }
+        return StrictMath.max(min, StrictMath.min(value, max));
+    }
+    
+    public static int roundToInt(double a) {
+        return (int) cap(Integer.MIN_VALUE, StrictMath.round(a), Integer.MAX_VALUE);
+    }
+    
+    public static int scale(int n, double s) {
+        return (int) roundToInt(n * s);
+    }
+    
+    public static int unscale(int n, double s) {
+        return (int) roundToInt(n / s);
     }
 
     /**
@@ -506,7 +437,7 @@ public class ToolBox {
                 throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
             }
             
-            long retval = Long.parseLong((hasSign ? s.substring(0, 1) : "") + s.substring(index), radix);
+            long retval = Long.parseLong((hasSign ? s.substring(0, 1) : StringUtils.EMPTY) + s.substring(index), radix);
             if ((retval & 0xFFFF_FFFF_0000_0000L) == 0) {
                 return (int) retval;
             } else {

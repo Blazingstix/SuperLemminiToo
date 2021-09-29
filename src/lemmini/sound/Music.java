@@ -11,7 +11,7 @@ import java.util.Locale;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
 import lemmini.game.ResourceException;
-import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -93,7 +93,7 @@ public class Music {
         close();
         playing = false;
         Path fName2 = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
-        switch (ToolBox.getExtension(fName2.getFileName().toString().toLowerCase(Locale.ROOT))) {
+        switch (FilenameUtils.getExtension(fName2.getFileName().toString().toLowerCase(Locale.ROOT))) {
             case "mid":
                 if (!midiAvailable) {
                     throw new LemmException("MIDI not supported.");
@@ -143,7 +143,7 @@ public class Music {
             Path dir2 = dir.resolve("special");
             try (DirectoryStream<Path> files = Files.newDirectoryStream(dir2, filter)) {
                 for (Path file : files) {
-                    String name = ToolBox.removeExtension(file.getFileName().toString());
+                    String name = FilenameUtils.removeExtension(file.getFileName().toString());
                     if (specialStyle.equalsIgnoreCase(name)) {
                         return Paths.get("special").resolve(file.getFileName());
                     }

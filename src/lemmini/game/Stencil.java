@@ -1,6 +1,6 @@
 package lemmini.game;
 
-import java.util.Arrays;
+import org.apache.commons.lang3.ArrayUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -27,40 +27,41 @@ import java.util.Arrays;
  */
 public class Stencil {
     
-    private static final int[] EMPTY_ARRAY = {};
     /** empty space - background is visible */
     public static final int MSK_EMPTY = 0;
     /** brick - Lemmings can walk on it */
     public static final int MSK_BRICK = 1;
     /** steel - can't be destroyed */
     public static final int MSK_STEEL = 1 << 1;
-    public static final int MSK_TURN_LEFT = 1 << 2;
-    public static final int MSK_TURN_RIGHT = 1 << 3;
+    public static final int MSK_NO_ONE_WAY = 1 << 2;
+    public static final int MSK_NO_ONE_WAY_DRAW = 1 << 3;
+    public static final int MSK_TURN_LEFT = 1 << 4;
+    public static final int MSK_TURN_RIGHT = 1 << 5;
     /** right side of blocker mask - reflects to the right */
-    public static final int MSK_BLOCKER_LEFT = 1 << 4;
+    public static final int MSK_BLOCKER_LEFT = 1 << 6;
     /** center of blocker mask */
-    public static final int MSK_BLOCKER_CENTER = 1 << 5;
+    public static final int MSK_BLOCKER_CENTER = 1 << 7;
     /** left side of blocker mask - reflects to the left */
-    public static final int MSK_BLOCKER_RIGHT = 1 << 6;
+    public static final int MSK_BLOCKER_RIGHT = 1 << 8;
     /** blocker mask (either left, center, or right) */
     public static final int MSK_BLOCKER = MSK_BLOCKER_LEFT | MSK_BLOCKER_CENTER | MSK_BLOCKER_RIGHT;
-    /** arrow to the right - no bashing to the left */
-    public static final int MSK_NO_BASH_LEFT = 1 << 7;
-    /** arrow to the left - no bashing to the right */
-    public static final int MSK_NO_BASH_RIGHT = 1 << 8;
+    /** left arrows - no bashing to the right */
+    public static final int MSK_ONE_WAY_LEFT = 1 << 9;
+    /** right arrows - no bashing to the left */
+    public static final int MSK_ONE_WAY_RIGHT = 1 << 10;
     /** no bashing - either left or right */
-    public static final int MSK_NO_BASH = MSK_NO_BASH_LEFT | MSK_NO_BASH_RIGHT;
+    public static final int MSK_ONE_WAY = MSK_ONE_WAY_LEFT | MSK_ONE_WAY_RIGHT;
 
     /** a trap that triggers the drowning animation - i.e. water */
-    public static final int MSK_TRAP_LIQUID = 1 << 9;
+    public static final int MSK_TRAP_LIQUID = 1 << 11;
     /** a trap that removes the Lemming */
-    public static final int MSK_TRAP_REMOVE = 1 << 10;
+    public static final int MSK_TRAP_REMOVE = 1 << 12;
     /** a trap that triggers the normal death animation */
-    public static final int MSK_TRAP_FIRE = 1 << 11;
+    public static final int MSK_TRAP_FIRE = 1 << 13;
     /** a trap (either LIQUID, REMOVE or FIRE) */
     public static final int MSK_TRAP = MSK_TRAP_LIQUID | MSK_TRAP_REMOVE | MSK_TRAP_FIRE;
     /** the level exit */
-    public static final int MSK_EXIT = 1 << 12;
+    public static final int MSK_EXIT = 1 << 14;
 
     /** array which represents the stencil buffer */
     private final StencilPixel[] stencil;
@@ -258,7 +259,7 @@ public class Stencil {
      */
     public int[] getIDs(final int x, final int y) {
         if (x < 0 || x >= width || y < 0 || y >= height) {
-            return EMPTY_ARRAY;
+            return ArrayUtils.EMPTY_INT_ARRAY;
         }
         
         int pos = x + y * width;
@@ -308,7 +309,6 @@ public class Stencil {
 }
 
 class StencilPixel {
-    private static final int[] EMPTY_ARRAY = {};
     
     private int mask;
     private int maskObjectID;
@@ -317,13 +317,13 @@ class StencilPixel {
     public StencilPixel() {
         mask = 0;
         maskObjectID = -1;
-        objectIDs = null;
+        objectIDs = ArrayUtils.EMPTY_INT_ARRAY;
     }
     
     public void clear() {
         mask = 0;
         maskObjectID = -1;
-        objectIDs = null;
+        objectIDs = ArrayUtils.EMPTY_INT_ARRAY;
     }
     
     public void setMask(int newMask) {
@@ -343,19 +343,7 @@ class StencilPixel {
     }
     
     public void addObjectID(int newID) {
-        if (objectIDs == null) {
-            objectIDs = new int[1];
-            objectIDs[0] = newID;
-        } else {
-            for (int i = 0; i < objectIDs.length; i++) {
-                if (objectIDs[i] == newID) {
-                    return;
-                }
-            }
-            int[] tempArray = Arrays.copyOf(objectIDs, objectIDs.length + 1);
-            tempArray[tempArray.length - 1] = newID;
-            objectIDs = tempArray;
-        }
+        objectIDs = ArrayUtils.add(objectIDs, newID);
     }
     
     public int getMask() {
@@ -367,10 +355,6 @@ class StencilPixel {
     }
     
     public int[] getObjectIDs() {
-        if (objectIDs != null) {
-            return objectIDs;
-        } else {
-            return EMPTY_ARRAY;
-        }
+        return objectIDs;
     }
 }

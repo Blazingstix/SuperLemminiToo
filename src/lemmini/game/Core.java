@@ -18,6 +18,9 @@ import lemmini.graphics.LemmImage;
 import lemmini.gui.LegalFrame;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.SystemUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -57,11 +60,13 @@ public class Core {
     public static final String[] SOUNDBANK_EXTENSIONS = {"sf2", "dls"};
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
+    public static final Path[] EMPTY_PATH_ARRAY = {};
+    
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.95";
+    private static final String REVISION = "0.97";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
-
+    
     /** program properties */
     public static Props programProps;
     /** path of (extracted) resources */
@@ -97,7 +102,7 @@ public class Core {
      */
     public static boolean init(final boolean createPatches) throws LemmException, IOException  {
         // get ini path
-        programPropsFilePath = Paths.get(System.getProperty("user.home"));
+        programPropsFilePath = Paths.get(SystemUtils.USER_HOME);
         programPropsFilePath = programPropsFilePath.resolve(INI_NAME);
         // read main ini file
         programProps = new Props();
@@ -113,10 +118,10 @@ public class Core {
 
         //scale = Core.programProps.getDouble("scale", 1.0);
         bilinear = Core.programProps.getBoolean("bilinear", true);
-        String resourcePathStr = programProps.get("resourcePath", "");
+        String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
         resourcePath = Paths.get(resourcePathStr);
-        Path sourcePath = Paths.get(programProps.get("sourcePath", ""));
-        String rev = programProps.get("revision", "");
+        Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
+        String rev = programProps.get("revision", StringUtils.EMPTY);
         GameController.setMusicOn(programProps.getBoolean("music", true));
         GameController.setSoundOn(programProps.getBoolean("sound", true));
         double gain;
@@ -158,7 +163,7 @@ public class Core {
         String defaultPlayer = playerProps.get("defaultPlayer", "default");
         players = new ArrayList<>(16);
         for (int idx = 0; true; idx++) {
-            String p = playerProps.get("player_" + idx, "");
+            String p = playerProps.get("player_" + idx, StringUtils.EMPTY);
             if (p.isEmpty()) {
                 break;
             }
@@ -175,12 +180,11 @@ public class Core {
     }
     
     public static String appendBeforeExtension(String fname, String suffix) {
-        int slashIndex = Math.max(fname.lastIndexOf("/"), fname.lastIndexOf("\\"));
-        int dotIndex = fname.lastIndexOf(".");
-        if (slashIndex < dotIndex) {
-            return fname.substring(0, dotIndex) + suffix + fname.substring(dotIndex);
+        String extension = FilenameUtils.getExtension(fname);
+        if (extension.isEmpty()) {
+            return FilenameUtils.removeExtension(fname) + suffix;
         } else {
-            return fname + suffix;
+            return FilenameUtils.removeExtension(fname) + suffix + "." + extension;
         }
     }
     
@@ -223,7 +227,7 @@ public class Core {
         if (fname.startsWith(resourcePath)) {
             fname = fname.subpath(resourcePath.getNameCount(), fname.getNameCount());
         }
-        String fnameNoExt = ToolBox.removeExtension(fname.toString());
+        String fnameNoExt = FilenameUtils.removeExtension(fname.toString());
         // try to load the file from the mod paths with each extension
         for (Path mod : GameController.getModPaths()) {
             for (String ext : extensions) {
@@ -511,11 +515,11 @@ public class Core {
     }
     
     public static int scale(int n) {
-        return (scale == 1.0) ? n : ((int) Math.round(n * scale));
+        return ToolBox.scale(n, scale);
     }
     
     public static int unscale(int n) {
-        return (scale == 1.0) ? n : ((int) Math.round(n / scale));
+        return ToolBox.unscale(n, scale);
     }
     
     public static boolean isBilinear() {

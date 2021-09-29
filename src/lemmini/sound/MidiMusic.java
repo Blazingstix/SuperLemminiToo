@@ -102,7 +102,7 @@ public class MidiMusic implements MusicPlayer {
                 //sequencer.addMetaEventListener(new MetaEventListener() {
                 //    public void meta(MetaMessage event) {
                 //        int type = event.getType();
-                //        //System.out.println("MIDI message: "+type+" "+event.toString());
+                //        //System.out.println("MIDI message: " + type + StringUtils.SPACE + event.toString());
                 //        if (type == 47) {
                 //            sequencer.setTickPosition(0);
                 //            sequencer.start();

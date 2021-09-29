@@ -18,6 +18,8 @@ import lemmini.sound.Music;
 import lemmini.sound.Sound;
 import lemmini.tools.NanosecondTimer;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 
 
 /**
@@ -159,8 +161,6 @@ public class GameController {
     private static int releaseCtr;
     /** threshold to release a new Lemming */
     private static int releaseBase;
-    /** frame counter used to update animated sprite objects */
-    private static int animCtr;
     /** level object */
     private static Level level;
     /** index of current rating */
@@ -175,7 +175,7 @@ public class GameController {
     private static int nextLevelPack;
     /** index of next level */
     private static int nextLevelNumber;
-    private static Path[] modPaths = new Path[0];
+    private static Path[] modPaths = Core.EMPTY_PATH_ARRAY;
     /** list of all active Lemmings in the Level */
     private static final List<Lemming> lemmings = new LinkedList<>();
     /** list of all active explosions */
@@ -274,8 +274,8 @@ public class GameController {
         fgGfx = fgImage.createGraphicsContext();
         bgImages = new ArrayList<>(4);
         
-        bgWidths = new int[0];
-        bgHeights = new int[0];
+        bgWidths = ArrayUtils.EMPTY_INT_ARRAY;
+        bgHeights = ArrayUtils.EMPTY_INT_ARRAY;
 
         gameState = State.INIT;
 
@@ -310,14 +310,11 @@ public class GameController {
                 levelPackList.add(new LevelPack(lp));
             }
         }
-        levelPack = levelPackList.toArray(new LevelPack[0]);
+        levelPack = levelPackList.toArray(new LevelPack[levelPackList.size()]);
         curRating = 0;
-        curLevelPack = 1; // since 0 is dummy
+        curLevelPack = 0;
         curLevelNumber = 0;
-        
-        if (levelPack.length >= 2) {
-            modPaths = levelPack[curLevelPack].getModPaths();
-        }
+        modPaths = levelPack[curLevelPack].getModPaths();
         
         sound = new Sound();
         sound.setGain(soundGain);
@@ -326,7 +323,7 @@ public class GameController {
         Lemming.loadLemmings();
         lemmSkillRequest = null;
 
-        MiscGfx.init(width / 16);
+        MiscGfx.init(ToolBox.scale(width, 1.0 / 16.0));
         LemmFont.init();
         TextScreen.init();
         NumFont.init();
@@ -501,7 +498,7 @@ public class GameController {
         int oldHeight = height;
         
         numExited = 0;
-        releaseRate = StrictMath.min(StrictMath.max(level.getReleaseRate(), 0), MAX_RELEASE_RATE);
+        releaseRate = ToolBox.cap(0, level.getReleaseRate(), MAX_RELEASE_RATE);
         numLemmingsMax = level.getNumLemmings();
         numLemmingsOut = 0;
         numToRescue = level.getNumToRescue();
@@ -534,7 +531,7 @@ public class GameController {
             fgGfx.dispose();
             fgImage = ToolBox.createTranslucentImage(width, height);
             fgGfx = fgImage.createGraphicsContext();
-            MiscGfx.setMinimapWidth(width / 16);
+            MiscGfx.setMinimapWidth(ToolBox.scale(width, 1.0 / 16.0));
         }
         fgGfx.setBackground(BLANK_COLOR);
         fgGfx.clearRect(0, 0, fgImage.getWidth(), fgImage.getHeight());
@@ -585,11 +582,8 @@ public class GameController {
         if (height % 80 != 0) {
             scaleFactorHeight++;
         }
-        int scaleFactor = Math.max(scaleFactorWidth, scaleFactorHeight);
-        if (scaleFactor < 4) {
-            scaleFactor = 4;
-        }
-        mapPreview = level.createMinimap(mapPreview, fgImage, scaleFactor, scaleFactor, false, true);
+        int scaleFactor = NumberUtils.max(4, scaleFactorWidth, scaleFactorHeight);
+        mapPreview = level.createMinimap(fgImage, 1.0 / scaleFactor, 1.0 / scaleFactor, true, false, true);
         
         setSuperLemming(level.isSuperLemming());
         forceNormalTimerSpeed = level.getForceNormalTimerSpeed();
@@ -601,8 +595,11 @@ public class GameController {
         nukeOld = false;
         
         try {
-            Music.load(Paths.get("music").resolve(GameController.levelPack[GameController.curLevelPack]
-                    .getInfo(GameController.curRating, GameController.curLevelNumber).getMusic()));
+            Path music = level.getMusic();
+            if (music == null) {
+                music = levelPack[curLevelPack].getInfo(curRating, curLevelNumber).getMusic();
+            }
+            Music.load(Paths.get("music").resolve(music));
         } catch (ResourceException ex) {
             Core.resourceError(ex.getMessage());
         } catch (LemmException ex) {
@@ -679,18 +676,12 @@ public class GameController {
             TextScreen.init();
             NumFont.init();
             LemmCursor.init();
+            Lemming.loadLemmings();
         }
         
         Path lvlPath = levelPack[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
-        // lemmings need to be reloaded to contain pink color
-        Lemming.loadLemmings();
-        // loading the level will patch pink lemmings pixels to correct color
+        // loading the level will patch appropriate lemmings pixels to the correct colors
         level.loadLevel(lvlPath);
-        
-        // if width and height would be stored inside the level, the fgImage etc. would have to
-        // be recreated here
-        // fgImage = gc.createCompatibleImage(Level.width, Level.height, Transparency.BITMASK);
-        // fgGfx = fgImage.createGraphics();
         
         initLevel();
         
@@ -1168,7 +1159,7 @@ public class GameController {
                 for (int i : entranceSounds) {
                     sound.play(i);
                 }
-            } else if (entranceOpenCtr == MAX_ENTRANCE_OPEN_CTR + 15 * MAX_ANIM_CTR) {
+            } else if (entranceOpenCtr == MAX_ENTRANCE_OPEN_CTR + 30) {
                 //System.out.println("opened");
                 entranceOpened = true;
                 releaseCtr = 0; // first lemming to enter at once
@@ -1213,17 +1204,13 @@ public class GameController {
         }
 
         // animate level objects
-        if (animCtr >= MAX_ANIM_CTR) {
-            animCtr -= MAX_ANIM_CTR;
-            for (int n = 0; n < level.getSprObjectNum(); n++) {
-                SpriteObject spr = level.getSprObject(n);
-                if (spr != null) {
-                    spr.getImageAnim(); // just to animate
-                }
+        for (int n = 0; n < level.getSprObjectNum(); n++) {
+            SpriteObject spr = level.getSprObject(n);
+            if (spr != null) {
+                spr.getImageAnim(); // just to animate
             }
-            level.advanceBackgroundFrame();
         }
-        animCtr++;
+        level.advanceBackgroundFrame();
 
         if (!replayMode) {
             assignSkill(true); // 2nd try to assign skill
@@ -1408,7 +1395,6 @@ public class GameController {
      */
     public static synchronized void handleIconButton(final Icons.Type type) {
         Lemming.Type lemmSkillOld = lemmSkill;
-        boolean ok = false;
         if (testIcon(type)) {
             switch (type) {
                 case PLUS:
@@ -1584,7 +1570,6 @@ public class GameController {
 
     /**
      * Fade in/out.
-     * @param g graphics object
      */
     public static void fade() {
         if (Fader.getState() == Fader.State.OFF && transitionState != TransitionState.NONE) {
@@ -1677,6 +1662,7 @@ public class GameController {
      * @param width width of screen in pixels
      * @param height height of screen in pixels
      * @param xOfs horizontal level offset in pixels
+     * @param yOfs vertical level offset in pixels
      */
     public static synchronized void drawExplosions(final GraphicsContext g,
             final int width, final int height, final int xOfs, final int yOfs) {
@@ -1729,8 +1715,8 @@ public class GameController {
     
     public static synchronized void drawMinimapLemmings(final GraphicsContext g, final int x, final int y) {
         for (Lemming l : lemmings) {
-            int lx = l.midX();
-            int ly = l.midY();
+            int lx = l.footX();
+            int ly = l.footY();
             // draw pixel in minimap
             Minimap.drawLemming(g, x, y, lx, ly);
         }
@@ -1948,6 +1934,7 @@ public class GameController {
      * Load a replay.
      * @param fn file name
      * @return replay level info object
+     * @throws LemmException
      */
     public static ReplayLevelInfo loadReplay(final Path fn) throws LemmException {
         return replay.load(fn);

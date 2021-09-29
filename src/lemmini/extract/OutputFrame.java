@@ -116,16 +116,6 @@ public class OutputFrame extends javax.swing.JFrame {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-        cancel = false;
-        dispose();
-    }//GEN-LAST:event_jButtonOKActionPerformed
-
-    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
-        cancel = true;
-        dispose();
-    }//GEN-LAST:event_jButtonCancelActionPerformed
-
     private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         synchronized (this) {
             notifyAll();
@@ -136,6 +126,16 @@ public class OutputFrame extends javax.swing.JFrame {
         cancel = true;
     }//GEN-LAST:event_formWindowClosing
     
+    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
+        cancel = false;
+        dispose();
+    }//GEN-LAST:event_jButtonOKActionPerformed
+
+    private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
+        cancel = true;
+        dispose();
+    }//GEN-LAST:event_jButtonCancelActionPerformed
+
     /**
      * Print text to output console.
      * @param txt text to print

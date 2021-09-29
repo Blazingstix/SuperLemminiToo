@@ -29,6 +29,8 @@ public class OptionsDialog extends javax.swing.JDialog {
 
     /**
      * Creates new form OptionsDialog
+     * @param parent
+     * @param modal
      */
     public OptionsDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);

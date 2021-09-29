@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.lang3.BooleanUtils;
 
 /**
  * Extracts files from Lemmings DAT files.
@@ -253,7 +254,7 @@ class DATSection {
      * @return true if the bit is set to 1, false if it's set to 0
      */
     private boolean nextBit() {
-        boolean retBool = (compressedData[index] & (1 << bitIndex)) != 0;
+        boolean retBool = BooleanUtils.toBoolean(compressedData[index] & (1 << bitIndex));
         bitIndex++;
         if (bitIndex >= 8 || (index == compressedData.length - 1 && bitIndex >= numBitsInFirstByte)) {
             // All bits read from this byte; advance (decrease) the byte index
