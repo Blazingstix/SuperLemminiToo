@@ -57,6 +57,9 @@ public class Level {
     public static final int DEFAULT_HEIGHT = 160 * 2;
     /** array of default ARGB colors for particle effects */
     public static final int[] DEFAULT_PARTICLE_COLORS = {0xff00ff00, 0xff0000ff, 0xffffffff, 0xffffffff, 0xffff0000};
+    
+    /** color used to erase the foreground */
+    public static final Color BLANK_COLOR = new Color(0, 0, 0, 0);
 
     /** array of default styles */
     private static final String[] STYLES = {"dirt", "fire", "marble", "pillar", "crystal",
@@ -166,10 +169,11 @@ public class Level {
     /**
      * Load a level and all level resources.
      * @param fname file name
+     * @param level2 level with resources to reuse
      * @throws ResourceException
      * @throws LemmException
      */
-    public Level(final Path fname) throws ResourceException, LemmException {
+    public Level(final Path fname, final Level level2) throws ResourceException, LemmException {
         levelProps = new ArrayList<>(4);
         steelTiles = new HashSet<>(16);
         hints = new ArrayList<>(4);
@@ -484,6 +488,13 @@ public class Level {
         }
         backgrounds = backgroundList.toArray(new Background[backgroundList.size()]);
         bgBuffers = bgBufferList.toArray(new GraphicsBuffer[bgBufferList.size()][]);
+        
+        if (level2 != null) {
+            fgImage = level2.fgImage;
+            level2.fgImage = null;
+            stencil = level2.stencil;
+            level2.stencil = null;
+        }
     }
 
     /**
@@ -494,15 +505,33 @@ public class Level {
         sprObjFront = null;
         sprObjBehind = null;
         sprObjects = null;
+        entrances = null;
         System.gc();
         // create images and stencil
-        fgImage = ToolBox.createTranslucentImage(levelWidth, levelHeight);
+        if (fgImage != null && fgImage.getWidth() == levelWidth && fgImage.getHeight() == levelHeight) {
+            GraphicsContext gfx = null;
+            try {
+                gfx = fgImage.createGraphicsContext();
+                gfx.setBackground(BLANK_COLOR);
+                gfx.clearRect(0, 0, fgImage.getWidth(), fgImage.getHeight());
+            } finally {
+                if (gfx != null) {
+                    gfx.dispose();
+                }
+            }
+        } else {
+            fgImage = ToolBox.createTranslucentImage(levelWidth, levelHeight);
+        }
         bgImages = new LemmImage[backgrounds.length];
         for (int i = 0; i < backgrounds.length; i++) {
             bgImages[i] = ToolBox.createTranslucentImage(
                     backgrounds[i].width + BG_BUFFER_PADDING * 2, backgrounds[i].height + BG_BUFFER_PADDING * 2);
         }
-        stencil = new Stencil(levelWidth, levelHeight);
+        if (stencil != null && stencil.getWidth() == levelWidth && stencil.getHeight() == levelHeight) {
+            stencil.clear();
+        } else {
+            stencil = new Stencil(levelWidth, levelHeight);
+        }
         // paint terrain
         for (Terrain t : terrain) {
             if (t.id < 0) {
@@ -1326,7 +1355,7 @@ public class Level {
             gx = img.createGraphicsContext();
             // clear background
             if (tint) {
-                gx.setBackground(GameController.BLANK_COLOR);
+                gx.setBackground(BLANK_COLOR);
             } else {
                 gx.setBackground(bgColor);
             }

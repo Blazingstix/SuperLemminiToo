@@ -1,7 +1,6 @@
 package lemmini.game;
 
 import com.ibm.icu.lang.UCharacter;
-import java.awt.Color;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -93,9 +92,6 @@ public class GameController {
     public static final long NANOSEC_PER_FRAME = 30_000_000;
     /** redraw animated level objects every 2nd frame (about 60ms) */
     public static final int MAX_ANIM_CTR = 2;
-    
-    /** color used to erase the foreground */
-    public static final Color BLANK_COLOR = new Color(0, 0, 0, 0);
     
     private static final int MAX_START_SOUND_CTR = 28;
     /** open entrance after about 2 seconds */
@@ -686,7 +682,7 @@ public class GameController {
         
         Path lvlPath = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
         // loading the level will patch appropriate lemmings pixels to the correct colors
-        level = new Level(lvlPath);
+        level = new Level(lvlPath, level);
         
         initLevel();
         

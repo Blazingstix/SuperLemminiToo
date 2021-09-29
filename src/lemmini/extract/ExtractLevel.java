@@ -760,7 +760,7 @@ public class ExtractLevel {
                         w.write("superlemming = true\r\n");
                     }
                     if (toBoolean(gimmickFlags & GIMMICK_FLAG_CHEAPO_FALL_DISTANCE)) {
-                        w.write("maxFallDistance = 160\r\n");
+                        w.write("maxFallDistance = 152\r\n");
                     }
                 } else {
                     switch (extra1) {

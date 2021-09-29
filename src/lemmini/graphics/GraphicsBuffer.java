@@ -95,6 +95,10 @@ public class GraphicsBuffer {
         return graphics;
     }
     
+    public synchronized void dispose() {
+        graphics.dispose();
+    }
+    
     private static int toPowerOf2(int n) {
         if (n <= 0) {
             return 1;
