@@ -114,6 +114,9 @@ public class TextDialog {
      */
     public void addString(final String s, final String group,
             final int x0, final int y0, final LemmFont.Color col) {
+        if (LemmFont.getCharCount(s) <= 0) {
+            return;
+        }
         int x = x0 * LemmFont.getWidth();
         int y = y0 * (LemmFont.getHeight() + 4);
         addImageGroup(group);
@@ -141,6 +144,9 @@ public class TextDialog {
     public void addStringCentered(final String s, final String group,
             final int y0, final LemmFont.Color col) {
         int charCount = LemmFont.getCharCount(s);
+        if (charCount <= 0) {
+            return;
+        }
         if (charCount % 2 > 0) {
             charCount = (charCount + 2) - charCount % 2;
         }
@@ -309,6 +315,11 @@ class Button {
         x = xi;
         y = yi;
         type = typei;
+        width = 0;
+        height = 0;
+        selected = false;
+        image = null;
+        imgSelected = null;
     }
 
     /**
@@ -358,7 +369,10 @@ class Button {
      * @param cy
      */
     void draw(final GraphicsContext g, final int cx, final int cy) {
-        g.drawImage(getImage(), cx + x, cy + y);
+        LemmImage img = getImage();
+        if (img != null) {
+            g.drawImage(getImage(), cx + x, cy + y);
+        }
     }
 
     /**
@@ -370,7 +384,6 @@ class Button {
     boolean inside(final int xi, final int yi) {
         return (xi >= x && xi < x + width && yi >= y && yi < y + height);
     }
-
 }
 
 /**
@@ -394,6 +407,9 @@ class TextButton extends Button {
      * @param color Color of the button (LemmFont color!)
      */
     void setText(final String s, final LemmFont.Color color) {
+        if (LemmFont.getCharCount(s) <= 0) {
+            return;
+        }
         image = LemmFont.strImage(s, color);
         if (image.getHeight() > height) {
             height = image.getHeight();
@@ -409,6 +425,9 @@ class TextButton extends Button {
      * @param color Color of the button (LemmFont color!)
      */
     void setTextSelected(final String s, final LemmFont.Color color) {
+        if (LemmFont.getCharCount(s) <= 0) {
+            return;
+        }
         imgSelected = LemmFont.strImage(s, color);
         if (imgSelected.getHeight() > height) {
             height = imgSelected.getHeight();
