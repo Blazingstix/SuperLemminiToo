@@ -7,6 +7,7 @@ import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.GraphicsOperation;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -99,7 +100,7 @@ public class TextScreen {
     /** scroll text */
     private static final String SCROLL_TEXT =
         "SuperLemmini - a game engine for Lemmings(tm) in Java. "
-        + "Coded by Ryan Sakowski 2013-2014. "
+        + "Coded by Ryan Sakowski 2013-2015. "
         + "Original Lemmini by Volker Oth 2005-2014. "
         + "Original website: www.lemmini.de. "
         + "Thanks to Martin Cameron for his IBXM library, "
@@ -169,7 +170,7 @@ public class TextScreen {
     static void initIntro() {
         textDialog.clear();
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN), true);
-        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 11/2014", null, 4, RED);
+        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 1/2015", null, 4, RED);
         textDialog.addTextButton("Play Level", "Play Level", null, -5, -2, Button.PLAY_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Load Replay", "Load Replay", null, -14, 0, Button.LOAD_REPLAY, BLUE, BROWN);
         textDialog.addTextButton("Enter Code", "Enter Code", null, 3, 0, Button.ENTER_CODE, BLUE, BROWN);
@@ -186,8 +187,8 @@ public class TextScreen {
         hintIndex = 0;
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_GREEN), true);
         Level level = GameController.getLevel();
-        textDialog.addImage(GameController.getMapPreview(), null, -200);
-        textDialog.addString(String.format("Level %-3d %s", GameController.getCurLevelNumber() + 1, level.getLevelName()), null, -21, -3, RED);
+        textDialog.addImage(GameController.getMapPreview(), null, -225);
+        textDialog.addString(String.format("Level %-3d %s", GameController.getCurLevelNumber() + 1, level.getLevelName()), null, -21, -4, RED);
         showLevelInfo();
         textDialog.addTextButton("Start Level", "Start Level", null, -12, 6, Button.START_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Menu", "Menu", null, 4, 6, Button.MENU, BLUE, BROWN);
@@ -257,7 +258,7 @@ public class TextScreen {
             int lpn = GameController.getCurLevelPackIdx();
             int r = GameController.getCurRating();
             int ln = GameController.getCurLevelNumber();
-            if (lp.getLevels(r).length > ln + 1) {
+            if (lp.getLevelCount(r) > ln + 1) {
                 int absLevel = GameController.absLevelNum(lpn, r, ln + 1);
                 String code = LevelCode.create(lp.getCodeSeed(), absLevel, rescuedPercent,
                         GameController.getTimesFailed(), 0, lp.getCodeOffset());
@@ -268,16 +269,14 @@ public class TextScreen {
             } else if (!(lpn == 0 && r == 0)) {
                 textDialog.addStringCentered("Congratulations!", null, 2, BROWN);
                 textDialog.addStringCentered(String.format("You finished all the %s levels!", lp.getRatings()[GameController.getCurRating()]), null, 3, GREEN);
-                if (lpn != 0 && lp.getLevels(r).length <= ln + 1 && lp.getRatings().length > r + 1) {
+                if (lpn != 0 && lp.getLevelCount(r) <= ln + 1 && lp.getRatings().length > r + 1) {
                     textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.NEXT_RATING, BLUE, BROWN);
                 }
             }
         }
         if (!GameController.getWasCheated()) {
             textDialog.addTextButton("Replay", "Replay", null, -12, 5, Button.REPLAY, BLUE, BROWN);
-            if (GameController.getCurLevelPackIdx() != 0) { // not for external levels
-                textDialog.addTextButton("Save Replay", "Save Replay", null, -4, 5, Button.SAVE_REPLAY, BLUE, BROWN);
-            }
+            textDialog.addTextButton("Save Replay", "Save Replay", null, -4, 5, Button.SAVE_REPLAY, BLUE, BROWN);
         }
         textDialog.addTextButton("Menu", "Menu", null, 9, 5, Button.MENU, BLUE, BROWN);
     }
@@ -287,24 +286,28 @@ public class TextScreen {
             textDialog.clearGroup("info");
             Level level = GameController.getLevel();
             String rating = GameController.getCurLevelPack().getRatings()[GameController.getCurRating()];
-            textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), "info", -9, -1, BLUE);
+            textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), "info", -9, -2, BLUE);
             if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
-                textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), "info", -9, 0, GREEN);
+                textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), "info", -9, -1, GREEN);
             } else {
-                textDialog.addString(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), "info", -9, 0, GREEN);
+                textDialog.addString(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), "info", -9, -1, GREEN);
             }
-            textDialog.addString(String.format("Release Rate %d", level.getReleaseRate()), "info", -9, 1, BROWN);
+            textDialog.addString(String.format("Release Rate %d", level.getReleaseRate()), "info", -9, 0, BROWN);
             int minutes = level.getTimeLimitSeconds() / 60;
             int seconds = level.getTimeLimitSeconds() % 60;
             if (!GameController.isTimed()) {
-                textDialog.addString("No time limit", "info", -9, 2, TURQUOISE);
+                textDialog.addString("No time limit", "info", -9, 1, TURQUOISE);
             } else if (seconds == 0) {
                 String minuteWord = (minutes == 1) ? "Minute" : "Minutes";
-                textDialog.addString(String.format("Time         %d %s", minutes, minuteWord), "info", -9, 2, TURQUOISE);
+                textDialog.addString(String.format("Time      %d %s", minutes, minuteWord), "info", -9, 1, TURQUOISE);
             } else {
-                textDialog.addString(String.format("Time         %d-%02d", minutes, seconds), "info", -9, 2, TURQUOISE);
+                textDialog.addString(String.format("Time      %d-%02d", minutes, seconds), "info", -9, 1, TURQUOISE);
             }
-            textDialog.addString(String.format("Rating       %s", rating), "info", -9, 3, VIOLET);
+            textDialog.addString(String.format("Rating    %s", rating), "info", -9, 2, VIOLET);
+            String author = level.getAuthor();
+            if (StringUtils.isNotEmpty(author)) {
+                textDialog.addString(String.format("Author    %s", author), "info", -9, 3, RED);
+            }
             if (GameController.getTimesFailed() >= FAILURE_THRESHOLD_FOR_HINTS && level.getNumHints() > 0) {
                 textDialog.addTextButton("Show Hint", "Show Hint", "info", -4, 5, Button.SHOW_HINT, BLUE, BROWN);
             }
@@ -315,8 +318,8 @@ public class TextScreen {
         synchronized (monitor) {
             textDialog.clearGroup("info");
             Level level = GameController.getLevel();
-            textDialog.addString(String.format("Hint %d", hintIndex + 1), "info", -3, -1, TURQUOISE);
-            textDialog.addStringCentered(level.getHint(hintIndex), "info", 1, GREEN);
+            textDialog.addString(String.format("Hint %d", hintIndex + 1), "info", -3, -2, TURQUOISE);
+            textDialog.addStringCentered(level.getHint(hintIndex), "info", 0, GREEN);
             textDialog.addTextButton("Show Info", "Show Info", "info", -4, 5, Button.SHOW_INFO, BLUE, BROWN);
             if (hintIndex > 0) {
                 textDialog.addTextButton("Previous Hint", "Previous Hint", "info", -19, 5, Button.PREVIOUS_HINT, BLUE, BROWN);

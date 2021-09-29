@@ -31,7 +31,11 @@
               <EmptySpace min="-2" max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
                   <Group type="102" attributes="0">
-                      <Component id="jButtonAddExternal" min="-2" max="-2" attributes="0"/>
+                      <Component id="jLabelExternalLevels" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jButtonAddExternalLevels" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Component id="jButtonClearExternalLevels" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="32767" attributes="0"/>
                       <Component id="jButtonOK" min="-2" max="-2" attributes="0"/>
                       <EmptySpace min="-2" pref="6" max="-2" attributes="0"/>
@@ -249,7 +253,9 @@
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="jButtonOK" alignment="3" min="-2" max="-2" attributes="0"/>
                   <Component id="jButtonCancel" alignment="3" min="-2" max="-2" attributes="0"/>
-                  <Component id="jButtonAddExternal" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jButtonAddExternalLevels" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jLabelExternalLevels" alignment="3" min="-2" max="-2" attributes="0"/>
+                  <Component id="jButtonClearExternalLevels" alignment="3" min="-2" max="-2" attributes="0"/>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -280,6 +286,7 @@
           <AuxValues>
             <AuxValue name="JavaCodeGenerator_CreateCodePost" type="java.lang.String" value="jTreeLevels.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);"/>
             <AuxValue name="JavaCodeGenerator_CreateCodePre" type="java.lang.String" value="topNode = new DefaultMutableTreeNode(&quot;Levels&quot;);&#xa;levelModel = new DefaultTreeModel(topNode);&#xa;refreshLevels();"/>
+            <AuxValue name="JavaCodeGenerator_InitCodePost" type="java.lang.String" value="selectCurrentLevel();"/>
           </AuxValues>
         </Component>
       </SubComponents>
@@ -579,12 +586,25 @@
         </Property>
       </Properties>
     </Component>
-    <Component class="javax.swing.JButton" name="jButtonAddExternal">
+    <Component class="javax.swing.JLabel" name="jLabelExternalLevels">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Add External Levels..."/>
+        <Property name="text" type="java.lang.String" value="External Levels:"/>
+      </Properties>
+    </Component>
+    <Component class="javax.swing.JButton" name="jButtonAddExternalLevels">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Add..."/>
       </Properties>
       <Events>
-        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonAddExternalActionPerformed"/>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonAddExternalLevelsActionPerformed"/>
+      </Events>
+    </Component>
+    <Component class="javax.swing.JButton" name="jButtonClearExternalLevels">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Clear"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jButtonClearExternalLevelsActionPerformed"/>
       </Events>
     </Component>
     <Component class="javax.swing.JButton" name="jButtonOK">

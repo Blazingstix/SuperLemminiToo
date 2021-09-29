@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.sound.sampled.*;
 import lemmini.game.Core;
 import lemmini.game.GameController;
@@ -128,6 +130,8 @@ public class Sound {
     /** maximum number of sounds played in parallel */
     private static final int MAX_SIMUL_SOUNDS = 7;
     private static final String SOUND_INI_STR = "sound/sound.ini";
+    
+    private static int lineCounter = 0;
 
     private boolean loaded = false;
     private final LineHandler[] lineHandlers;
@@ -749,7 +753,7 @@ public class Sound {
             nextBuffer = null;
             open = false;
             
-            lineThread = new Thread(null, this, "LineHandler");
+            lineThread = new Thread(null, this, "LineHandler-" + lineCounter++);
         }
 
         @Override
@@ -799,9 +803,12 @@ public class Sound {
                             }
                         }
                     }
-            } catch (LineUnavailableException ex) {
+            } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {
+                synchronized (origDeque) {
+                    origDeque.remove(this);
+                }
                 line.stop();
                 line.flush();
                 line.close();

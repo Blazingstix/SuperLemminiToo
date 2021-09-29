@@ -104,6 +104,7 @@ public class ExtractLevel {
     }
     
     private static final int GIMMICK_FLAG_SUPERLEMMING = 1;
+    private static final int GIMMICK_FLAG_CHEAPO_FALL_DISTANCE = 1 << 30;
     
     private static final int SKILL_FLAG_CLIMBER = 1 << 14;
     private static final int SKILL_FLAG_FLOATER = 1 << 12;
@@ -671,14 +672,7 @@ public class ExtractLevel {
             b.get(bName);
             lvlName = new String(bName, StandardCharsets.US_ASCII);
         }
-        lvlName = lvlName.replace("\\", "\\\\");
-        lvlName = lvlName.replace("#", "\\#");
-        lvlName = lvlName.replace("=", "\\=");
-        lvlName = lvlName.replace(":", "\\:");
-        lvlName = lvlName.replace("!", "\\!");
-        if (lvlName.charAt(0) == ' ') {
-            lvlName = "\\" + lvlName;
-        }
+        lvlName = ToolBox.addBackslashes(lvlName, false);
         if (classic && lvlName.indexOf('`') != StringUtils.INDEX_NOT_FOUND) {
             origLvlName = lvlName;
             // replace wrong apostrophes
@@ -730,16 +724,16 @@ public class ExtractLevel {
             if (!classic) {
                 w.write("yPosCenter = " + yPos + "\r\n");
             }
-            w.write("style = " + styleStr + "\r\n");
+            w.write("style = " + ToolBox.addBackslashes(styleStr, false) + "\r\n");
             if (specialStyleStr != null) {
-                w.write("specialStyle = " + specialStyleStr + "\r\n");
+                w.write("specialStyle = " + ToolBox.addBackslashes(specialStyleStr, false) + "\r\n");
                 if (format >= 3) {
                     w.write("specialStylePositionX = " + specialStylePositionX + "\r\n");
                     w.write("specialStylePositionY = " + specialStylePositionY + "\r\n");
                 }
             }
             if (musicStr != null) {
-                w.write("music = " + musicStr + "\r\n");
+                w.write("music = " + ToolBox.addBackslashes(musicStr, false) + "\r\n");
             }
             if (toBoolean(optionFlags & OPTION_FLAG_AUTOSTEEL)) {
                 if (toBoolean(optionFlags & OPTION_FLAG_SIMPLE_AUTOSTEEL)) {
@@ -763,6 +757,9 @@ public class ExtractLevel {
                 if (format >= 1 || toBoolean(optionFlags & OPTION_FLAG_CUSTOM_GIMMICKS)) {
                     if (toBoolean(gimmickFlags & GIMMICK_FLAG_SUPERLEMMING)) {
                         w.write("superlemming = true\r\n");
+                    }
+                    if (toBoolean(gimmickFlags & GIMMICK_FLAG_CHEAPO_FALL_DISTANCE)) {
+                        w.write("maxFallDistance = 158\r\n");
                     }
                 } else {
                     switch (extra1) {

@@ -1059,16 +1059,52 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                     ReplayLevelInfo rli = GameController.loadReplay(replayPath);
                     if (rli != null) {
                         int lpn = -1;
+                        int rn = -1;
+                        int ln = -1;
+                        LevelPack lp = null;
                         for (int i = 0; i < GameController.getLevelPackCount(); i++) {
-                            String packName = Normalizer.normalize(
-                                    GameController.getLevelPack(i).getName(), Normalizer.Form.NFKC);
-                            if (packName.equals(rli.getLevelPack())) {
+                            LevelPack lpTemp = GameController.getLevelPack(i);
+                            if (Normalizer.normalize(lpTemp.getName(), Normalizer.Form.NFKC)
+                                    .equals(rli.getLevelPack())) {
                                 lpn = i;
+                                lp = lpTemp;
                             }
                         }
-                        if (lpn > -1) {
+                        if (lp != null && lpn >= 0) {
+                            String[] ratings = lp.getRatings();
+                            int rnTemp = rli.getRatingNumber();
+                            if (rnTemp < ratings.length) {
+                                rn = rnTemp;
+                            }
+                            if (rn < 0 || !Normalizer.normalize(ratings[rn].trim(), Normalizer.Form.NFKC)
+                                    .equals(rli.getRatingName())) {
+                                for (int i = 0; i < ratings.length; i++) {
+                                    if (Normalizer.normalize(ratings[i], Normalizer.Form.NFKC)
+                                            .equals(rli.getRatingName())) {
+                                        rn = i;
+                                    }
+                                }
+                            }
+                            if (rn >= 0) {
+                                String[] levels = lp.getLevels(rn);
+                                int lnTemp = rli.getLvlNumber();
+                                if (lnTemp < levels.length) {
+                                    ln = lnTemp;
+                                }
+                                if (ln < 0 || !Normalizer.normalize(levels[ln].trim(), Normalizer.Form.NFKC)
+                                        .equals(rli.getLvlName())) {
+                                    for (int i = 0; i < levels.length; i++) {
+                                        if (Normalizer.normalize(levels[i], Normalizer.Form.NFKC)
+                                                .equals(rli.getLvlName())) {
+                                            ln = i;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        if (lpn >= 0 && rn >= 0 && ln >= 0) {
                             // success
-                            GameController.requestChangeLevel(lpn, rli.getRating(), rli.getLvlNumber(), true);
+                            GameController.requestChangeLevel(lpn, rn, ln, true);
                             getParentFrame().setRestartEnabled(true);
                         } else {
                             // no success

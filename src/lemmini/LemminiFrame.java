@@ -25,17 +25,14 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Locale;
 import javax.imageio.ImageIO;
-import javax.swing.*;
-import lemmini.extract.ExtractDAT;
-import lemmini.extract.ExtractLevel;
+import javax.swing.JOptionPane;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.JavaVersion;
 import org.apache.commons.lang3.SystemUtils;
@@ -50,7 +47,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.98a";
+    public static final String REVISION = "0.99";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -667,68 +664,9 @@ public class LemminiFrame extends javax.swing.JFrame {
         thisFrame.init();
         
         if (level != null) {
-            String lvlExt = addExternalLevel(level, true);
-            switch (lvlExt) {
-                case "ini":
-                case "lvl":
-                    GameController.requestChangeLevel(0, 0, 0, false);
-                    break;
-                case "dat":
-                    GameController.requestChangeLevel(0, 1, 0, false);
-                    break;
-                default:
-                    break;
-            }
+            int[] levelPosition = GameController.addExternalLevel(level, null, true);
+            GameController.requestChangeLevel(levelPosition[0], levelPosition[1], levelPosition[2], false);
         }
-    }
-    
-    public static String addExternalLevel(Path name, boolean showErrors) {
-        if (name != null) {
-            try {
-                String fNameStr = name.getFileName().toString();
-                String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
-                String fNameStrExt = FilenameUtils.getExtension(fNameStr).toLowerCase(Locale.ROOT);
-                if (fNameStrExt.equals("dat")) {
-                    byte[][] levels = ExtractDAT.decompress(name);
-                    if (ArrayUtils.isEmpty(levels)) {
-                        if (showErrors) {
-                            JOptionPane.showMessageDialog(getFrame(), "DAT file is empty.", "Load Level", JOptionPane.ERROR_MESSAGE);
-                        }
-                        return null;
-                    }
-                    LevelInfo[] li = new LevelInfo[levels.length];
-                    for (int i = 0; i < levels.length; i++) {
-                        Path outName = Core.tempPath.resolve(fNameStrNoExt + "_" + i + ".ini");
-                        ExtractLevel.convertLevel(levels[i], fNameStr + " (section " + i + ")", outName, false, false);
-                        li[i] = new LevelInfo(outName, null);
-                        if (!li[i].isValidLevel()) {
-                            return null;
-                        }
-                    }
-                    GameController.getLevelPack(0).addRating(fNameStrNoExt, li);
-                    return fNameStrExt;
-                } else {
-                    if (fNameStrExt.equals("lvl")) {
-                        Path outName = Core.tempPath.resolve(fNameStrNoExt + ".ini");
-                        ExtractLevel.convertLevel(name, outName, false, false);
-                        name = outName;
-                    }
-                    if (FilenameUtils.getExtension(name.getFileName().toString()).equals("ini")) {
-                        LevelInfo li = new LevelInfo(name, null);
-                        if (li.isValidLevel()) {
-                            GameController.getLevelPack(0).addLevel(0, li);
-                            return fNameStrExt;
-                        }
-                    }
-                }
-                if (showErrors) {
-                    JOptionPane.showMessageDialog(getFrame(), "Wrong format!", "Load Level", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (Exception ex) {
-                ToolBox.showException(ex);
-            }
-        }
-        return null;
     }
     
     /**

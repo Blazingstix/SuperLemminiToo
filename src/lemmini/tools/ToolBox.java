@@ -325,6 +325,23 @@ public class ToolBox {
         BufferedReader r = new BufferedReader(new InputStreamReader(in2, encoding));
         return r;
     }
+    
+    public static String addBackslashes(String s, final boolean addBackslashesToAllSpaces) {
+        s = s.replace("\\", "\\\\");
+        s = s.replace("#", "\\#");
+        s = s.replace("=", "\\=");
+        s = s.replace(":", "\\:");
+        s = s.replace("!", "\\!");
+        if (addBackslashesToAllSpaces) {
+            s = s.replace(" ", "\\ ");
+        } else {
+            if (s.charAt(0) == ' ') {
+                s = "\\" + s;
+            }
+        }
+        
+        return s;
+    }
 
     /**
      * Show exception message box.

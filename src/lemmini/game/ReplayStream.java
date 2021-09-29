@@ -151,7 +151,7 @@ public class ReplayStream {
                     throw new LemmException("Replay file does not contain exactly one player.");
                 }
             } else {
-                throw new LemmException("Replay file of replay does not specify a player count.");
+                throw new LemmException("Replay file does not specify a player count.");
             }
             // read level info
             line = br.readLine();
@@ -160,13 +160,23 @@ public class ReplayStream {
                 e[j] = e[j].trim();
             }
             if (e.length < 3 || e[0].charAt(0) != '#') {
-                throw new LemmException("Replay file of replay does not specify a level.");
+                throw new LemmException("Replay file does not specify a level.");
             }
             e[0] = Normalizer.normalize(e[0], Normalizer.Form.NFKC);
             ReplayLevelInfo rli = new ReplayLevelInfo();
             rli.setLevelPack(e[0].substring(1));
-            rli.setRating(Integer.parseInt(e[1]));
+            rli.setRatingNumber(Integer.parseInt(e[1]));
             rli.setLvlNumber(Integer.parseInt(e[2]));
+            if (e.length >= 4) {
+                rli.setRatingName(e[3]);
+            } else {
+                rli.setRatingName(null);
+            }
+            if (e.length >= 5) {
+                rli.setLvlName(e[4]);
+            } else {
+                rli.setLvlName(null);
+            }
             // read events
             while ((line = br.readLine()) != null) {
                 e = line.split(",");
@@ -240,16 +250,25 @@ public class ReplayStream {
      * @return true if save OK, false otherwise
      */
     public boolean save(final Path fname) {
-        try (Writer w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
-            w.write("#REPLAY NEW\r\n");
-            w.write("#FORMAT " + CURRENT_FORMAT + "\r\n");
-            w.write("#REVISION " + CURRENT_REVISION + "\r\n");
-            w.write("#Players 1\r\n");
+        try (BufferedWriter w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
+            w.write("#REPLAY NEW");
+            w.newLine();
+            w.write("#FORMAT " + CURRENT_FORMAT);
+            w.newLine();
+            w.write("#REVISION " + CURRENT_REVISION);
+            w.newLine();
+            w.write("#Players 1");
+            w.newLine();
             LevelPack lp = GameController.getCurLevelPack();
-            String name = Normalizer.normalize(lp.getName(), Normalizer.Form.NFKC);
-            w.write(String.format("#%s, %d, %d\r\n", name, GameController.getCurRating(), GameController.getCurLevelNumber()));
+            String packName = Normalizer.normalize(lp.getName(), Normalizer.Form.NFKC);
+            String ratingName = Normalizer.normalize(lp.getRatings()[GameController.getCurRating()], Normalizer.Form.NFKC);
+            String levelName = Normalizer.normalize(GameController.getLevel().getLevelName().trim(), Normalizer.Form.NFKC);
+            w.write(String.format("#%s, %d, %d, %s, %s", packName, GameController.getCurRating(), GameController.getCurLevelNumber(),
+                    ratingName, levelName));
+            w.newLine();
             for (ReplayEvent r : events) {
-                w.write(r + "\r\n"); // will use toString of the correct child object
+                w.write(r.toString()); // will use toString of the correct child object
+                w.newLine();
             }
 
             return true;

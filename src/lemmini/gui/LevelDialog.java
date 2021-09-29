@@ -23,11 +23,13 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import javax.swing.JOptionPane;
 import javax.swing.tree.*;
 import lemmini.LemminiFrame;
 import lemmini.game.*;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -42,6 +44,10 @@ public class LevelDialog extends javax.swing.JDialog {
     private DefaultMutableTreeNode topNode = null;
     private DefaultTreeModel levelModel = null;
     private LevelItem selectedLevel = null;
+    
+    private int[] levelPackPositionLookup;
+    private int[][] ratingPositionLookup;
+    private int[][][] levelPositionLookup;
 
     /**
      * Creates new form LevelDialog
@@ -111,7 +117,9 @@ public class LevelDialog extends javax.swing.JDialog {
         jTextFieldSkillsUsed = new javax.swing.JTextField();
         jTextFieldTimeElapsed = new javax.swing.JTextField();
         jTextFieldScore = new javax.swing.JTextField();
-        jButtonAddExternal = new javax.swing.JButton();
+        jLabelExternalLevels = new javax.swing.JLabel();
+        jButtonAddExternalLevels = new javax.swing.JButton();
+        jButtonClearExternalLevels = new javax.swing.JButton();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
 
@@ -122,6 +130,7 @@ public class LevelDialog extends javax.swing.JDialog {
         jTreeLevels.setModel(levelModel);
         jTreeLevels.setRootVisible(false);
         jTreeLevels.setShowsRootHandles(true);
+        selectCurrentLevel();
         jTreeLevels.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 jTreeLevelsMousePressed(evt);
@@ -249,10 +258,19 @@ public class LevelDialog extends javax.swing.JDialog {
         jTextFieldScore.setEditable(false);
         jTextFieldScore.setHighlighter(null);
 
-        jButtonAddExternal.setText("Add External Levels...");
-        jButtonAddExternal.addActionListener(new java.awt.event.ActionListener() {
+        jLabelExternalLevels.setText("External Levels:");
+
+        jButtonAddExternalLevels.setText("Add...");
+        jButtonAddExternalLevels.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButtonAddExternalActionPerformed(evt);
+                jButtonAddExternalLevelsActionPerformed(evt);
+            }
+        });
+
+        jButtonClearExternalLevels.setText("Clear");
+        jButtonClearExternalLevels.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonClearExternalLevelsActionPerformed(evt);
             }
         });
 
@@ -279,7 +297,11 @@ public class LevelDialog extends javax.swing.JDialog {
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(jButtonAddExternal)
+                        .addComponent(jLabelExternalLevels)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonAddExternalLevels)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonClearExternalLevels)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jButtonOK)
                         .addGap(6, 6, 6)
@@ -450,7 +472,9 @@ public class LevelDialog extends javax.swing.JDialog {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonOK)
                     .addComponent(jButtonCancel)
-                    .addComponent(jButtonAddExternal))
+                    .addComponent(jButtonAddExternalLevels)
+                    .addComponent(jLabelExternalLevels)
+                    .addComponent(jButtonClearExternalLevels))
                 .addContainerGap())
         );
 
@@ -537,6 +561,7 @@ public class LevelDialog extends javax.swing.JDialog {
             }
             jButtonOK.setEnabled(true);
         } else {
+            jTextFieldAuthor.setText(StringUtils.EMPTY);
             jTextFieldNumLemmings.setText(StringUtils.EMPTY);
             jTextFieldNumToRescue.setText(StringUtils.EMPTY);
             jTextFieldReleaseRate.setText(StringUtils.EMPTY);
@@ -557,64 +582,46 @@ public class LevelDialog extends javax.swing.JDialog {
         }
     }//GEN-LAST:event_jTreeLevelsValueChanged
 
-    private void jButtonAddExternalActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalActionPerformed
+    private void jButtonAddExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalLevelsActionPerformed
         Path[] externLvls = ToolBox.getFileNames(this, lvlPath, Core.LEVEL_EXTENSIONS, true, true);
         if (externLvls != null) {
             if (ArrayUtils.isNotEmpty(externLvls)) {
                 lvlPath = externLvls[0].getParent();
             }
-            String lastLvlExt = null;
+            int[] lastLevelPosition = null;
             for (Path externLvl : externLvls) {
                 if (Files.isDirectory(externLvl)) {
-                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, "*.{ini,lvl,dat}")) {
+                    try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, new DirectoryStream.Filter<Path>() {
+                        @Override
+                        public boolean accept(Path entry) throws IOException {
+                            String extension = FilenameUtils.getExtension(entry.toString()).toLowerCase(Locale.ROOT);
+                            return extension.equals("ini") || extension.equals("lvl") || extension.equals("dat");
+                        }
+                    })) {
                         for (Path lvl : stream) {
-                            String lvlExt = LemminiFrame.addExternalLevel(lvl, false);
-                            if (lvlExt != null) {
-                                lastLvlExt = lvlExt;
+                            int[] levelPosition = GameController.addExternalLevel(lvl, null, false);
+                            if (levelPosition != null) {
+                                lastLevelPosition = levelPosition;
                             }
                         }
                     } catch (IOException ex) {
                     }
                 } else {
-                    String lvlExt = LemminiFrame.addExternalLevel(externLvl, false);
-                    if (lvlExt != null) {
-                        lastLvlExt = lvlExt;
+                    int[] levelPosition = GameController.addExternalLevel(externLvl, null, false);
+                    if (levelPosition != null) {
+                        lastLevelPosition = levelPosition;
                     }
                 }
             }
-            if (lastLvlExt != null) {
+            if (lastLevelPosition != null) {
                 refreshLevels();
-                Object[] selPathArray = new Object[4];
-                switch (lastLvlExt) {
-                    case "ini":
-                    case "lvl":
-                        TreeNode lp = topNode.getFirstChild();
-                        TreeNode rating = lp.getChildAt(0);
-                        TreeNode level = rating.getChildAt(rating.getChildCount() - 1);
-                        selPathArray[0] = topNode;
-                        selPathArray[1] = lp;
-                        selPathArray[2] = rating;
-                        selPathArray[3] = level;
-                        break;
-                    case "dat":
-                        lp = topNode.getFirstChild();
-                        rating = lp.getChildAt(lp.getChildCount() - 1);
-                        level = rating.getChildAt(0);
-                        selPathArray[0] = topNode;
-                        selPathArray[1] = lp;
-                        selPathArray[2] = rating;
-                        selPathArray[3] = level;
-                        break;
-                    default:
-                        break;
-                }
                 levelModel.reload();
-                jTreeLevels.setSelectionPath(new TreePath(selPathArray));
+                selectLevel(lastLevelPosition[0], lastLevelPosition[1], lastLevelPosition[2]);
             } else {
                 JOptionPane.showMessageDialog(this, "No valid level files were loaded.", "Load Level", JOptionPane.ERROR_MESSAGE);
             }
         }
-    }//GEN-LAST:event_jButtonAddExternalActionPerformed
+    }//GEN-LAST:event_jButtonAddExternalLevelsActionPerformed
     
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
         TreePath selPath = jTreeLevels.getSelectionPath();
@@ -628,6 +635,12 @@ public class LevelDialog extends javax.swing.JDialog {
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
+
+    private void jButtonClearExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonClearExternalLevelsActionPerformed
+        GameController.clearExternalLevelList();
+        refreshLevels();
+        levelModel.reload();
+    }//GEN-LAST:event_jButtonClearExternalLevelsActionPerformed
 
     /**
      * Returns an int array consisting of the indices of the chosen levelIndex pack,
@@ -646,16 +659,23 @@ public class LevelDialog extends javax.swing.JDialog {
     private void refreshLevels() {
         topNode.removeAllChildren();
         // read level packs
-        for (int i = 0; i < GameController.getLevelPackCount(); i++) {
+        int levelPackCount = GameController.getLevelPackCount();
+        levelPackPositionLookup = new int[levelPackCount];
+        ratingPositionLookup = new int[levelPackCount][];
+        levelPositionLookup = new int[levelPackCount][][];
+        for (int i = 0, ia = 0; i < levelPackCount; i++) {
             LevelPack lp = GameController.getLevelPack(i);
             DefaultMutableTreeNode lpNode = new DefaultMutableTreeNode(lp.getName());
             // read ratings
             String[] ratings = lp.getRatings();
-            for (int j = 0; j < ratings.length; j++) {
+            ratingPositionLookup[i] = new int[ratings.length];
+            levelPositionLookup[i] = new int[ratings.length][];
+            for (int j = 0, ja = 0; j < ratings.length; j++) {
                 DefaultMutableTreeNode ratingNode = new DefaultMutableTreeNode(ratings[j]);
                 // read levels
                 String[] levels = lp.getLevels(j);
-                for (int k = 0; k < levels.length; k++) {
+                levelPositionLookup[i][j] = new int[levels.length];
+                for (int k = 0, ka = 0; k < levels.length; k++) {
                     if (lp.getAllLevelsUnlocked()
                             || Core.player.isAvailable(lp.getName(), ratings[j], k)) {
                         DefaultMutableTreeNode levelNode = new DefaultMutableTreeNode(
@@ -663,23 +683,60 @@ public class LevelDialog extends javax.swing.JDialog {
                                 Core.player.getLevelRecord(lp.getName(), ratings[j], k).isCompleted()),
                                 false);
                         ratingNode.add(levelNode);
+                        levelPositionLookup[i][j][k] = ka++;
+                    } else {
+                        levelPositionLookup[i][j][k] = -1;
                     }
                 }
                 if (ratingNode.getChildCount() > 0) {
                     lpNode.add(ratingNode);
+                    ratingPositionLookup[i][j] = ja++;
+                } else {
+                    ratingPositionLookup[i][j] = -1;
                 }
             }
             if (lpNode.getChildCount() > 0) {
                 topNode.add(lpNode);
+                levelPackPositionLookup[i] = ia++;
+            } else {
+                levelPackPositionLookup[i] = -1;
             }
         }
     }
     
+    private void selectLevel(int lp, int rating, int level) {
+        int newLp = levelPackPositionLookup[lp];
+        int newRating = ratingPositionLookup[lp][rating];
+        int newLevel = levelPositionLookup[lp][rating][level];
+        
+        if (newLp >= 0 && newRating >= 0 && newLevel >= 0) {
+            Object[] selPathArray = new Object[4];
+            TreeNode lpNode = topNode.getChildAt(newLp);
+            TreeNode ratingNode = lpNode.getChildAt(newRating);
+            TreeNode levelNode = ratingNode.getChildAt(newLevel);
+            selPathArray[0] = topNode;
+            selPathArray[1] = lpNode;
+            selPathArray[2] = ratingNode;
+            selPathArray[3] = levelNode;
+            jTreeLevels.setSelectionPath(new TreePath(selPathArray));
+        }
+    }
+    
+    private void selectCurrentLevel() {
+        GameController.State state = GameController.getGameState();
+        if (state == GameController.State.BRIEFING || state == GameController.State.LEVEL
+                || state == GameController.State.LEVEL_END || state == GameController.State.DEBRIEFING) {
+            selectLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber());
+        }
+    }
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JButton jButtonAddExternal;
+    private javax.swing.JButton jButtonAddExternalLevels;
     private javax.swing.JButton jButtonCancel;
+    private javax.swing.JButton jButtonClearExternalLevels;
     private javax.swing.JButton jButtonOK;
     private javax.swing.JLabel jLabelAuthor;
+    private javax.swing.JLabel jLabelExternalLevels;
     private javax.swing.JLabel jLabelLemmingsSaved;
     private javax.swing.JLabel jLabelLevelInfo;
     private javax.swing.JLabel jLabelNumBashers;

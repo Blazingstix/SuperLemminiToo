@@ -4,7 +4,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import lemmini.tools.Props;
@@ -277,20 +276,35 @@ public class LevelPack {
      * @param li LevelInfo for the new level
      */
     public void addLevel(final int rating, final LevelInfo li) {
-        lvlInfo[rating] = Arrays.copyOf(lvlInfo[rating], lvlInfo[rating].length + 1);
-        lvlInfo[rating][lvlInfo[rating].length - 1] = li;
+        lvlInfo[rating] = ArrayUtils.add(lvlInfo[rating], li);
+    }
+    
+    /**
+     * Remove a level from a rating.
+     * @param rating rating
+     * @param level index of the level to remove
+     */
+    public void removeLevel(final int rating, final int level) {
+        lvlInfo[rating] = ArrayUtils.remove(lvlInfo[rating], level);
     }
     
     /**
      * Add a rating to this level pack.
-     * @param name name of rating
+     * @param rating name of rating
      * @param li LevelInfo for each level
      */
-    public void addRating(final String name, final LevelInfo[] li) {
-        ratings = Arrays.copyOf(ratings, ratings.length + 1);
-        ratings[ratings.length - 1] = name;
-        lvlInfo = Arrays.copyOf(lvlInfo, lvlInfo.length + 1);
-        lvlInfo[lvlInfo.length - 1] = li;
+    public void addRating(final String rating, final LevelInfo[] li) {
+        ratings = ArrayUtils.add(ratings, rating);
+        lvlInfo = ArrayUtils.add(lvlInfo, li);
+    }
+    
+    /**
+     * Remove a rating from this level pack.
+     * @param rating index of rating to remove
+     */
+    public void removeRating(final int rating) {
+        ratings = ArrayUtils.remove(ratings, rating);
+        lvlInfo = ArrayUtils.remove(lvlInfo, rating);
     }
 
     /**
@@ -304,6 +318,14 @@ public class LevelPack {
             names[i] = lvlInfo[rating][i].getName().trim();
         }
         return names;
+    }
+    
+    public int getRatingCount() {
+        return lvlInfo.length;
+    }
+    
+    public int getLevelCount(final int rating) {
+        return lvlInfo[rating].length;
     }
     
     public Path[] getModPaths() {

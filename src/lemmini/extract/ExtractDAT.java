@@ -302,7 +302,7 @@ class DATSection {
     
     /**
      * Copies the specified number of bytes from one index of the given array
-     * to another index. The first byte is copied from the specified offest to
+     * to another index. The first byte is copied from the specified offset to
      * the specified index, and each subsequent byte is copied from the
      * previous offset to the previous index.
      * @param data the array containing bytes to copy

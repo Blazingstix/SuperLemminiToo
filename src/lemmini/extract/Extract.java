@@ -476,12 +476,11 @@ public class Extract implements Runnable {
         } catch (IOException ex) {
         }
 
-        try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, "*.lvl")) {
+        try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, "*.LVL")) {
             for (Path level : levels) {
                 Path fIn = r.resolve(level.getFileName());
                 String fOutStr = level.getFileName().toString().toLowerCase(Locale.ROOT);
-                int pos = fOutStr.lastIndexOf(".lvl"); // MUST be there because of file filter
-                Path fOut = dest.resolve(fOutStr.substring(0, pos) + ".ini");
+                Path fOut = dest.resolve(FilenameUtils.removeExtension(fOutStr) + ".ini");
                 createdFiles.add(fOut);
                 out(level.getFileName().toString());
                 ExtractLevel.convertLevel(fIn, fOut, false, true);
@@ -567,6 +566,7 @@ public class Extract implements Runnable {
                         Adler32 crc = new Adler32();
                         crc.update(src);
                         out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc.getValue());
+                        out = ToolBox.addBackslashes(out, false);
                         fPatchList.write(String.format(Locale.ROOT, "extract_%d = %s\r\n", extractNo++, out));
                         // copy missing files to patch dir
                         copyFile(fnIn, patchPath.resolve(subDirDecorated + fileName));
@@ -576,6 +576,7 @@ public class Extract implements Runnable {
                     byte[] patch = Diff.diffBuffers(trg, src);
                     int crc = Diff.targetCRC; // crc of target buffer
                     out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc);
+                    out = ToolBox.addBackslashes(out, false);
                     if (patch == null) {
                         //out("sourceFile and trg are identical");
                         fPatchList.write(String.format(Locale.ROOT, "check_%d = %s\r\n", checkNo++, out));
@@ -624,6 +625,7 @@ public class Extract implements Runnable {
                     Adler32 crc32 = new Adler32();
                     crc32.update(src);
                     out = String.format(Locale.ROOT, "%s%s, %d, %#010x", addSeparator(sDir), fileName, src.length, crc32.getValue());
+                    out = ToolBox.addBackslashes(out, false);
                     fCRCList.write(String.format(Locale.ROOT, "crc_%d = %s\r\n", crcNo++, out));
                 }
         } catch (Exception ex) {

@@ -64,6 +64,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     /** file name of patching configuration */
     public static final String PATCH_INI_NAME = "patch.ini";
+    public static final String EXTERNAL_LEVELS_CACHE_FOLDER = "$external";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
@@ -76,6 +77,8 @@ public class Core {
     public static Props programProps;
     /** path of (extracted) resources */
     public static Path resourcePath;
+    /** path of external level cache */
+    public static Path externalLevelCachePath;
     /** path for temporary files */
     public static Path tempPath;
     /** current player */
@@ -126,6 +129,7 @@ public class Core {
         bilinear = Core.programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
         resourcePath = Paths.get(resourcePathStr);
+        
         Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
         String rev = programProps.get("revision", StringUtils.EMPTY);
         GameController.setMusicOn(programProps.getBoolean("music", true));
@@ -189,6 +193,10 @@ public class Core {
         // create temp folder
         tempPath = resourcePath.resolve("temp");
         Files.createDirectories(tempPath);
+        
+        // create folder for external level cache
+        externalLevelCachePath = resourcePath.resolve("levels").resolve(EXTERNAL_LEVELS_CACHE_FOLDER);
+        Files.createDirectories(externalLevelCachePath);
         
         System.gc(); // force garbage collection here before the game starts
 

@@ -26,10 +26,14 @@ package lemmini.game;
 public class ReplayLevelInfo {
     /** name of level pack */
     private String levelPack;
-    /** rating */
-    private int rating;
+    /** rating number */
+    private int ratingNumber;
+    /** rating name */
+    private String ratingName;
     /** level number */
     private int lvlNumber;
+    /** level name */
+    private String lvlName;
 
     /**
      * Set name of level pack.
@@ -47,19 +51,35 @@ public class ReplayLevelInfo {
     }
 
     /**
-     * Set rating.
-     * @param rating rating
+     * Set rating number.
+     * @param ratingNumber rating
      */
-    public void setRating(final int rating) {
-        this.rating = rating;
+    public void setRatingNumber(final int ratingNumber) {
+        this.ratingNumber = ratingNumber;
     }
 
     /**
-     * Get rating.
+     * Get rating number.
      * @return rating
      */
-    public int getRating() {
-        return rating;
+    public int getRatingNumber() {
+        return ratingNumber;
+    }
+
+    /**
+     * Set rating name.
+     * @param ratingName rating name
+     */
+    public void setRatingName(final String ratingName) {
+        this.ratingName = ratingName;
+    }
+
+    /**
+     * Get rating name.
+     * @return rating name
+     */
+    public String getRatingName() {
+        return ratingName;
     }
 
     /**
@@ -76,5 +96,21 @@ public class ReplayLevelInfo {
      */
     public int getLvlNumber() {
         return lvlNumber;
+    }
+
+    /**
+     * Set level name.
+     * @param lvlName level name
+     */
+    public void setLvlName(final String lvlName) {
+        this.lvlName = lvlName;
+    }
+
+    /**
+     * Get level name.
+     * @return level name
+     */
+    public String getLvlName() {
+        return lvlName;
     }
 }

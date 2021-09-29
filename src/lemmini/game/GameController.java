@@ -9,6 +9,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
+import lemmini.extract.ExtractDAT;
+import lemmini.extract.ExtractLevel;
 import lemmini.gameutil.Fader;
 import lemmini.gameutil.KeyRepeat;
 import lemmini.gameutil.Sprite;
@@ -17,7 +19,9 @@ import lemmini.graphics.LemmImage;
 import lemmini.sound.Music;
 import lemmini.sound.Sound;
 import lemmini.tools.NanosecondTimer;
+import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 
@@ -66,6 +70,12 @@ public class GameController {
         /** go to level: fade in level */
         TO_LEVEL
     }
+    
+    public static enum LevelFormat {
+        INI,
+        LVL,
+        DAT
+    }
 
     /** key repeat bitmask for icons */
     public static final int KEYREPEAT_ICON = 1;
@@ -104,6 +114,8 @@ public class GameController {
     private static final long NANOSEC_KEYREPEAT_START = 250_000_000;
     /** +/- icons: time for key repeat rate */
     private static final long NANOSEC_KEYREPEAT_REPEAT = 67_000_000;
+    
+    private static final String LEVEL_CACHE_INI = "$levelcache.ini";
 
     /** sound object */
     public static Sound sound;
@@ -183,7 +195,8 @@ public class GameController {
     /** list of all Lemmings under the mouse cursor */
     private static final Deque<Lemming> lemmsUnderCursor = new ArrayDeque<>(128);
     /** array of available level packs */
-    private static LevelPack[] levelPack;
+    private static LevelPack[] levelPacks;
+    private static Set<ExternalLevelEntry> externalLevelList;
     /** small preview version of level used in briefing screen */
     private static LemmImage mapPreview;
     /** timer used for nuking */
@@ -292,7 +305,7 @@ public class GameController {
         try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, new DirectoryStream.Filter<Path>() {
             @Override
             public boolean accept(Path entry) throws IOException {
-                return Files.isDirectory(entry);
+                return Files.isDirectory(entry) && !entry.endsWith(Core.EXTERNAL_LEVELS_CACHE_FOLDER);
             }
         })) {
             for (Path file : files) {
@@ -303,18 +316,42 @@ public class GameController {
         Collections.sort(dirs);
 
         List<LevelPack> levelPackList = new ArrayList<>(32);
-        levelPackList.add(new LevelPack()); // dummy
+        externalLevelList = new LinkedHashSet<>();
+        LevelPack externalLevels = new LevelPack();
+        Props externalLevelsINI = new Props();
+        if (externalLevelsINI.load(Core.externalLevelCachePath.resolve(LEVEL_CACHE_INI))) {
+            boolean updateINI = false;
+            for (int i = 0; true; i++) {
+                String[] levelData = externalLevelsINI.getArray("level_" + i, null);
+                if (levelData != null) {
+                    if (levelData.length >= 2) {
+                        Path lvlPath = Paths.get(levelData[1]);
+                        if (Files.isReadable(lvlPath)) {
+                            addExternalLevel(lvlPath, externalLevels, false);
+                        } else {
+                            updateINI = true;
+                        }
+                    }
+                } else {
+                    break;
+                }
+            }
+            if (updateINI) {
+                saveExternalLevelList();
+            }
+        }
+        levelPackList.add(externalLevels);
         for (Path lvlName : dirs) {
             Path lp = Core.resourcePath.resolve("levels").resolve(lvlName).resolve("levelpack.ini");
             if (Files.isRegularFile(lp)) {
                 levelPackList.add(new LevelPack(lp));
             }
         }
-        levelPack = levelPackList.toArray(new LevelPack[levelPackList.size()]);
+        levelPacks = levelPackList.toArray(new LevelPack[levelPackList.size()]);
         curRating = 0;
         curLevelPack = 0;
         curLevelNumber = 0;
-        modPaths = levelPack[curLevelPack].getModPaths();
+        modPaths = levelPacks[curLevelPack].getModPaths();
         
         sound = new Sound();
         sound.setGain(soundGain);
@@ -350,11 +387,11 @@ public class GameController {
      * @return absolute level number (0-127)
      */
     static int absLevelNum(final int lvlPack, final int rating, final int level) {
-        LevelPack lpack = levelPack[lvlPack];
+        LevelPack lpack = levelPacks[lvlPack];
         // calculate absolute level number
         int absLvl = level;
         for (int i = 0; i < rating; i++) {
-            absLvl += lpack.getLevels(i).length;
+            absLvl += lpack.getLevelCount(i);
         }
         return absLvl;
     }
@@ -367,14 +404,14 @@ public class GameController {
      */
     public static int[] relLevelNum(final int lvlPack, final int lvlAbs) {
         int[] retval = new int[2];
-        LevelPack lpack = levelPack[lvlPack];
+        LevelPack lpack = levelPacks[lvlPack];
         int ratings = lpack.getRatings().length;
         int lvl = -1;
         int rating = -1;
         for (int i = 0, ls = 0; i < ratings; i++) {
             int lsOld = ls;
             // add number of levels existing in this rating
-            ls += lpack.getLevels(i).length;
+            ls += lpack.getLevelCount(i);
             if (lvlAbs < ls) {
                 rating = i;
                 lvl = lvlAbs - lsOld; // relative level mumber
@@ -393,7 +430,7 @@ public class GameController {
     public static synchronized boolean nextLevel() {
         int num = curLevelNumber + 1;
 
-        if (num < levelPack[curLevelPack].getLevels(curRating).length) {
+        if (num < levelPacks[curLevelPack].getLevelCount(curRating)) {
             curLevelNumber = num;
             return true;
         } else {
@@ -408,7 +445,7 @@ public class GameController {
     public static synchronized boolean nextRating() {
         int num = curRating + 1;
 
-        if (num < levelPack[curLevelPack].getRatings().length) {
+        if (num < levelPacks[curLevelPack].getRatings().length) {
             curRating = num;
             curLevelNumber = 0;
             return true;
@@ -441,7 +478,7 @@ public class GameController {
         if (!wasLost() && curLevelPack != 0) {
             LevelPack lvlPack = getCurLevelPack();
             Core.player.setLevelRecord(lvlPack.getName(), lvlPack.getRatings()[curRating], curLevelNumber, getLevelRecord());
-            if (curLevelNumber + 1 < lvlPack.getLevels(curRating).length) {
+            if (curLevelNumber + 1 < lvlPack.getLevelCount(curRating)) {
                 Core.player.setAvailable(lvlPack.getName(), lvlPack.getRatings()[curRating], curLevelNumber + 1);
             }
             Core.player.store();
@@ -597,7 +634,7 @@ public class GameController {
         try {
             Path music = level.getMusic();
             if (music == null) {
-                music = levelPack[curLevelPack].getInfo(curRating, curLevelNumber).getMusic();
+                music = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getMusic();
             }
             Music.load(Paths.get("music").resolve(music));
         } catch (ResourceException ex) {
@@ -667,7 +704,7 @@ public class GameController {
         curLevelNumber = lNum;
         
         Path[] oldMods = modPaths;
-        modPaths = levelPack[curLevelPack].getModPaths();
+        modPaths = levelPacks[curLevelPack].getModPaths();
         if (!Arrays.equals(modPaths, oldMods)) {
             sound.load();
             Icons.init();
@@ -679,7 +716,7 @@ public class GameController {
             Lemming.loadLemmings();
         }
         
-        Path lvlPath = levelPack[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
+        Path lvlPath = levelPacks[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
         // loading the level will patch appropriate lemmings pixels to the correct colors
         level.loadLevel(lvlPath);
         
@@ -1800,7 +1837,7 @@ public class GameController {
      * @return current level pack
      */
     public static LevelPack getCurLevelPack() {
-        return levelPack[curLevelPack];
+        return levelPacks[curLevelPack];
     }
 
     /**
@@ -1808,7 +1845,7 @@ public class GameController {
      * @return number of level packs
      */
     public static int getLevelPackCount() {
-        return levelPack.length;
+        return levelPacks.length;
     }
 
     /**
@@ -1817,7 +1854,7 @@ public class GameController {
      * @return LevelPack
      */
     public static LevelPack getLevelPack(final int i) {
-        return levelPack[i];
+        return levelPacks[i];
     }
 
     /**
@@ -1834,6 +1871,108 @@ public class GameController {
      */
     public static int getCurLevelNumber() {
         return curLevelNumber;
+    }
+    
+    public static int[] addExternalLevel(Path name, LevelPack lp, boolean showErrors) {
+        if (lp == null) {
+            lp = levelPacks[0];
+        }
+        if (name != null) {
+            try {
+                String fNameStr = name.getFileName().toString();
+                String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
+                try {
+                    LevelFormat format = LevelFormat.valueOf(FilenameUtils.getExtension(fNameStr).toUpperCase(Locale.ROOT));
+                    ExternalLevelEntry entry = new ExternalLevelEntry(format, name);
+                    if (externalLevelList.contains(entry)) {
+                        switch (format) {
+                            case DAT:
+                                String[] ratings = lp.getRatings();
+                                for (int i = 1; i < ratings.length; i++) {
+                                    if (ratings[i].toLowerCase(Locale.ROOT).equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
+                                        return new int[]{0, i, 0};
+                                    }
+                                }
+                                break;
+                            case LVL:
+                            case INI:
+                                int numLevels = lp.getLevelCount(0);
+                                for (int i = 0; i < numLevels; i++) {
+                                    if (FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString()).toLowerCase(Locale.ROOT)
+                                            .equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
+                                        return new int[]{0, 0, i};
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else {
+                        switch (format) {
+                            case DAT:
+                                byte[][] levels = ExtractDAT.decompress(name);
+                                if (ArrayUtils.isEmpty(levels)) {
+                                    if (showErrors) {
+                                        JOptionPane.showMessageDialog(LemminiFrame.getFrame(), "DAT file is empty.", "Load Level", JOptionPane.ERROR_MESSAGE);
+                                    }
+                                    return null;
+                                }
+                                LevelInfo[] liArray = new LevelInfo[levels.length];
+                                for (int i = 0; i < levels.length; i++) {
+                                    Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + "_" + i + ".ini");
+                                    ExtractLevel.convertLevel(levels[i], fNameStr + " (section " + i + ")", outName, false, false);
+                                    liArray[i] = new LevelInfo(outName, null);
+                                    if (!liArray[i].isValidLevel()) {
+                                        return null;
+                                    }
+                                }
+                                lp.addRating(fNameStrNoExt, liArray);
+                                externalLevelList.add(entry);
+                                saveExternalLevelList();
+                                return new int[]{0, lp.getRatings().length - 1, 0};
+                            case LVL:
+                                Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + ".ini");
+                                ExtractLevel.convertLevel(name, outName, false, false);
+                                name = outName;
+                                /* falls through */
+                            case INI:
+                                LevelInfo li = new LevelInfo(name, null);
+                                if (li.isValidLevel()) {
+                                    lp.addLevel(0, li);
+                                    externalLevelList.add(entry);
+                                    saveExternalLevelList();
+                                    return new int[]{0, 0, lp.getLevelCount(0) - 1};
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                } catch (IllegalArgumentException ex) {
+                }
+                if (showErrors) {
+                    JOptionPane.showMessageDialog(LemminiFrame.getFrame(), "Wrong format!", "Load Level", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                ToolBox.showException(ex);
+            }
+        }
+        return null;
+    }
+    
+    public static void clearExternalLevelList() {
+        externalLevelList.clear();
+        levelPacks[0] = new LevelPack();
+        saveExternalLevelList();
+    }
+    
+    private static void saveExternalLevelList() {
+        int idx = 0;
+        Props output = new Props();
+        for (ExternalLevelEntry extLvl : externalLevelList) {
+            output.set("level_" + (idx++), extLvl.toString());
+        }
+        output.save(Core.externalLevelCachePath.resolve(LEVEL_CACHE_INI));
     }
 
 
@@ -2395,6 +2534,51 @@ public class GameController {
 }
 
 
+class ExternalLevelEntry {
+    
+    private final GameController.LevelFormat format;
+    private final Path lvlPath;
+    
+    ExternalLevelEntry(GameController.LevelFormat newFormat, Path newPath) throws IOException {
+        format = newFormat;
+        lvlPath = newPath;
+    }
+    
+    GameController.LevelFormat getFormat() {
+        return format;
+    }
+    
+    Path getPath() {
+        return lvlPath;
+    }
+    
+    @Override
+    public String toString() {
+        return String.format(Locale.ROOT, "%s, %s", format.name().toLowerCase(Locale.ROOT), lvlPath);
+    }
+    
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ExternalLevelEntry)) {
+            return false;
+        }
+        if (obj == this) {
+            return true;
+        }
+        
+        ExternalLevelEntry obj2 = (ExternalLevelEntry) obj;
+        return obj2.getFormat() == format && obj2.getPath().equals(lvlPath);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 97 * hash + Objects.hashCode(this.format);
+        hash = 97 * hash + Objects.hashCode(this.lvlPath);
+        return hash;
+    }
+}
+
 /**
  * Trapdoor/Entrance class
  * Trapdoor logic: for numbers >1, just take the next door for each lemming and wrap around to 1 when
@@ -2407,8 +2591,6 @@ class TrapDoor {
     /** pattern for three entrances */
     private static final int[] PATTERN3 = {0, 1, 2, 1};
 
-    /** number of entrances */
-    private static int entrances;
     /** order of entrances */
     private static int[] entranceOrder;
     /** entrance counter */
@@ -2423,7 +2605,6 @@ class TrapDoor {
         if (e == 0) {
             throw new LemmException("Level does not have any entrances.");
         }
-        entrances = e;
         if (eOrder == null) {
             if (e == 3) {
                 // special case: 3 entrances
