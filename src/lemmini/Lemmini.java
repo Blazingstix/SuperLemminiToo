@@ -61,7 +61,7 @@ import lemmini.tools.ToolBox;
  *
  * @author Volker Oth
  */
-public class Lemmini extends JFrame implements KeyListener {
+public class Lemmini extends JFrame implements KeyListener, WindowFocusListener {
     
     /** minimum sleep duration in milliseconds - values too small may cause system clock shift under WinXP etc. */
     static final int MIN_SLEEP = 10;
@@ -69,7 +69,7 @@ public class Lemmini extends JFrame implements KeyListener {
     static final int THR_SLEEP = 16;
     /** height of menu and icon bar in pixels */
     private static final int WIN_OFS = 120;
-    public static final String REVISION = "0.93";
+    public static final String REVISION = "0.93a";
     
     private static final long serialVersionUID = 0x01;
     
@@ -121,6 +121,7 @@ public class Lemmini extends JFrame implements KeyListener {
      */
     void init() {
         addKeyListener(this);
+        addWindowFocusListener(this);
         try {
             boolean successful = Core.init(this, isWebstartApp, createPatches);      // initialize Core object
             if (!successful) {
@@ -880,7 +881,7 @@ public class Lemmini extends JFrame implements KeyListener {
      * Update the level menus according to the given progress information.
      * @param pack name of level pack
      * @param rating name of rating
-     * @param bf bitmap containing availability flags for each level
+     * @param bf bitfield containing availability flags for each level
      */
     private void updateLevelMenu(final String pack, final String rating, final BigInteger bf) {
         List<LvlMenuItem> menuItems = ratingMenus.get(LevelPack.getID(pack, rating));
@@ -1175,6 +1176,15 @@ public class Lemmini extends JFrame implements KeyListener {
         System.exit(0);
     }
 
+    @Override
+    public void windowGainedFocus(WindowEvent e) {
+    }
+
+    @Override
+    public void windowLostFocus(WindowEvent e) {
+        gp.resetButtons();
+    }
+
 
     /**
      * Listener to inform the GUI of the player's progress.
@@ -1196,7 +1206,8 @@ public class Lemmini extends JFrame implements KeyListener {
                     num = GameController.getCurLevelNumber();
                 }
                 // set next level as available
-                BigInteger bf = Core.player.setAvailable(pack, rating, num);
+                Core.player.setAvailable(pack, rating, num);
+                BigInteger bf = Core.player.getBitField(lvlPack, rating);
                 // update the menu
                 updateLevelMenu(pack, rating, bf);
             }
@@ -1241,9 +1252,10 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
 
     private static final long serialVersionUID = 0x01;
     
-    public static final int X_STEP = 4;
+    /** step size in pixels for horizontal scrolling */
+    static final int X_STEP = 4;
     /** step size in pixels for fast horizontal scrolling */
-    public static final int X_STEP_FAST = 16;
+    static final int X_STEP_FAST = 16;
     /** size of auto scrolling range in pixels (from the left and right border) */
     static final int AUTOSCROLL_RANGE = 20;
     /** y coordinate of score display in pixels */
@@ -1251,11 +1263,11 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
     /** y coordinate of counter displays in pixels */
     static final int COUNTER_Y = SCORE_Y + 40;
     /** y coordinate of icons in pixels */
-    public static final int ICONS_Y = COUNTER_Y + 14;
+    static final int ICONS_Y = COUNTER_Y + 14;
     /** x coordinate of minimap in pixels */
-    public static final int SMALL_X = 640 - 16 - 200;
+    static final int SMALL_X = 640 - 16 - 200;
     /** y coordinate of minimap in pixels */
-    public static final int SMALL_Y = ICONS_Y;
+    static final int SMALL_Y = ICONS_Y;
 
     private int menuOffsetX;
     /** start position of mouse drag (for mouse scrolling) */
@@ -1286,6 +1298,7 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
     private boolean mouseButton5Pressed = false;
     /** flag: debug draw is active */
     private boolean draw;
+    private boolean mouseScrollingEnabled;
     /** image for information string display */
     private Image outStrImg;
     /** graphics object for information string display */
@@ -1308,6 +1321,7 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
         this.setCursor(LemmCursor.getCursor());
         this.addMouseListener(this);
         this.addMouseMotionListener(this);
+        mouseScrollingEnabled = true;
     }
 
     /**
@@ -1376,6 +1390,22 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
         }
     }
     
+    public void resetButtons() {
+        shiftPressed = false;
+        leftMousePressed = false;
+        middleMousePressed = false;
+        rightMousePressed = false;
+        mouseButton4Pressed = false;
+        mouseButton5Pressed = false;
+        GameController.releasePlus(GameController.KEYREPEAT_ICON | GameController.KEYREPEAT_KEY);
+        GameController.releaseMinus(GameController.KEYREPEAT_ICON | GameController.KEYREPEAT_KEY);
+        GameController.releaseIcon(Icons.Type.MINUS);
+        GameController.releaseIcon(Icons.Type.PLUS);
+        GameController.releaseIcon(Icons.Type.NUKE);
+        setCursor(LemmCursor.CursorType.NORMAL);
+        mouseScrollingEnabled = false;
+    }
+    
     /**
      * Delete offImage to avoid redraw and force init.
      */
@@ -1427,7 +1457,7 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
                     if (fgImage != null) {
                         GameController.update();
                         // mouse movement
-                        if (yMouseScreen > 40 && yMouseScreen < SCORE_Y * scale) { // avoid scrolling if menu is selected
+                        if (mouseScrollingEnabled && yMouseScreen > 40 && yMouseScreen < SCORE_Y * scale) { // avoid scrolling if menu is selected
                             int xOfsTemp;
                             if (xMouseScreen > this.getWidth() - AUTOSCROLL_RANGE * scale) {
                                 xOfsTemp = GameController.getXPos() + (isShiftPressed() ? X_STEP_FAST : X_STEP);
@@ -1940,6 +1970,7 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
         int y = mouseEvent.getY() / scale;
         LemmCursor.setX(x);
         LemmCursor.setY(y);
+        mouseScrollingEnabled = true;
     }
 
     /* (non-Javadoc)

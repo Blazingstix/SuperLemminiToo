@@ -969,11 +969,6 @@ public class Lemming {
                                 break;
                             }
                             /* falls through */
-                        case SPLATTER:
-                            if (type == Type.SPLATTER) {
-                                break;
-                            }
-                            /* falls through */
                         case WALKER:
                         case FLOATER:
                         case FLOATER_START:
