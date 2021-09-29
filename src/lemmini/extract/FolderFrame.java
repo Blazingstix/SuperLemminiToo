@@ -16,34 +16,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package lemmini.extract;
 
+import java.awt.Toolkit;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.swing.JFileChooser;
+import lemmini.LemminiFrame;
 
 /**
- * Dialog to enter source and target paths for resource extraction.
+ * Frame to enter source and target paths for resource extraction.
  *
  * @author Volker Oth
  */
-public class FolderDialog extends javax.swing.JDialog {
+public class FolderFrame extends javax.swing.JFrame {
     
-    private static final long serialVersionUID = 0x01;
+    private static final long serialVersionUID = 0x01L;
 
     /** target (Lemmini resource) path for extraction */
     private String targetPath;
     /** source (WINLEMM) path for extraction */
     private String sourcePath;
     /** flag that tells whether to extract or not */
-    private boolean doExtract;
+    private boolean doExtract = false;
 
     /**
-     * Creates new form FolderDialog
+     * Creates new form FolderFrame
      */
-    public FolderDialog(java.awt.Frame parent, boolean modal) {
-        super(parent, modal);
+    public FolderFrame() {
         initComponents();
     }
 
@@ -68,9 +68,11 @@ public class FolderDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("SuperLemmini Resource Extractor");
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
+        setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
-            public void windowClosing(java.awt.event.WindowEvent evt) {
-                formWindowClosing(evt);
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
             }
         });
 
@@ -167,7 +169,7 @@ public class FolderDialog extends javax.swing.JDialog {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jTextFieldTrg, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jButtonTrg))
-                .addGap(18, 18, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 18, Short.MAX_VALUE)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButtonExtract)
                     .addComponent(jButtonQuit))
@@ -207,25 +209,23 @@ public class FolderDialog extends javax.swing.JDialog {
     }//GEN-LAST:event_jButtonTrgActionPerformed
 
     private void jButtonExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExtractActionPerformed
-        sourcePath = jTextFieldSrc.getText();
-        targetPath = jTextFieldTrg.getText();
         doExtract = true;
         dispose();
     }//GEN-LAST:event_jButtonExtractActionPerformed
 
     private void jButtonQuitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonQuitActionPerformed
-        sourcePath = jTextFieldSrc.getText();
-        targetPath = jTextFieldTrg.getText();
         doExtract = false;
         dispose();
     }//GEN-LAST:event_jButtonQuitActionPerformed
 
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
         sourcePath = jTextFieldSrc.getText();
         targetPath = jTextFieldTrg.getText();
-        doExtract = false;
-    }//GEN-LAST:event_formWindowClosing
-
+        synchronized (this) {
+            notifyAll();
+        }
+    }//GEN-LAST:event_formWindowClosed
+    
     /**
      * Set parameters for text edit boxes.
      * @param srcPath source (WINLEMM) path for extraction
@@ -268,6 +268,19 @@ public class FolderDialog extends javax.swing.JDialog {
      */
     public boolean getSuccess() {
         return doExtract;
+    }
+    
+    /**
+     * Blocks until the window is closed. If this window is already closed,
+     * then this method returns immediately.
+     */
+    public synchronized void waitUntilClosed() {
+        while (isVisible()) {
+            try {
+                wait();
+            } catch (InterruptedException ex) {
+            }
+        }
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables

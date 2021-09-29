@@ -1,9 +1,8 @@
 package lemmini.game;
 
 import java.awt.Color;
-import lemmini.Lemmini;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -35,17 +34,20 @@ public class Minimap {
     /** color of screen frame in minimap */
     private static final Color FRAME_COLOR = Color.YELLOW;
     private static final int LEMM_DOT_SCALE = 2;
+    private static final int MAX_VISIBLE_WIDTH = 200;
+    private static final int MAX_VISIBLE_HEIGHT = 40;
 
     /** image used for minimap */
-    private static Image img;
+    private static LemmImage img;
     /** X scale */
     private static int scaleX;
     /** Y scale */
     private static int scaleY;
-    /** height of minimap */
-    private static int height;
-    /** width of minimap */
-    private static int width;
+    /** visible width of minimap */
+    private static int visibleWidth;
+    /** visible height of minimap */
+    private static int visibleHeight;
+    private static int xPos;
     private static boolean tinted;
 
     /**
@@ -59,10 +61,17 @@ public class Minimap {
         scaleY = sy;
         tinted = tint;
         Level level = GameController.getLevel();
-        Image fgImage = GameController.getFgImage();
+        LemmImage fgImage = GameController.getFgImage();
         img = level.createMinimap(img, fgImage, scaleX, scaleY, tint, false);
-        width = img.getWidth();
-        height = img.getHeight();
+        visibleWidth = Math.min(img.getWidth(), MAX_VISIBLE_WIDTH);
+        visibleHeight = Math.min(img.getHeight(), MAX_VISIBLE_HEIGHT);
+        MiscGfx.setMinimapWidth(visibleWidth);
+        if (visibleWidth >= img.getWidth()) {
+            xPos = 0;
+        } else {
+            int xPosTemp = GameController.getLevel().getXPosCenter() / scaleX - visibleWidth / 2;
+            xPos = Math.max(0, Math.min(xPosTemp, img.getWidth() - visibleWidth));
+        }
     }
 
     /**
@@ -72,19 +81,22 @@ public class Minimap {
      * @param y y position in pixels
      */
     public static void draw(final GraphicsContext g, final int x, final int y) {
-        g.drawImage(img, x, y - GameController.getYPos() / scaleY);
+        g.drawImage(img, x - xPos, y - GameController.getYPos() / scaleY);
     }
 
     /**
      * Draw Lemming in minimap.
      * @param g Graphics object to draw on
+     * @param x x position in pixels
+     * @param y y position in pixels
      * @param lx original lemming x position in pixels
      * @param ly original lemming y position in pixels
      */
     public static void drawLemming(final GraphicsContext g, final int x, final int y, final int lx, final int ly) {
-        int sx = x + lx / scaleX;
+        int sx = x + lx / scaleX - xPos;
         int sy = y + (ly - GameController.getYPos()) / scaleY;
-        if (sx + LEMM_DOT_SCALE > x && sx < x + width && sy + LEMM_DOT_SCALE > y && sy < y + Lemmini.LEVEL_HEIGHT) {
+        if (sx + LEMM_DOT_SCALE > x && sx < x + visibleWidth
+                && sy + LEMM_DOT_SCALE > y && sy < y + visibleHeight) {
             g.setColor(LEMM_COLOR);
             g.fillRect(sx, sy, LEMM_DOT_SCALE, LEMM_DOT_SCALE);
         }
@@ -95,15 +107,15 @@ public class Minimap {
      * @param g Graphics object to draw on
      * @param x x position in pixels
      * @param y y position in pixels
-     * @param xOfs horizontal level offset
      */
-    public static void drawFrame(final GraphicsContext g, final int x, final int y, final int xOfs) {
-        int wWidth = Core.unscale(Lemmini.getPaneWidth());
+    public static void drawFrame(final GraphicsContext g, final int x, final int y) {
+        int wWidth = Core.getDrawWidth() / scaleX;
+        int scaledXPos = GameController.getXPos() / scaleX;
         g.setColor(FRAME_COLOR);
-        if (GameController.getWidth() < Core.unscale(Lemmini.getPaneWidth())) {
-            g.drawRect(x, y, GameController.getWidth() / scaleX, Lemmini.LEVEL_HEIGHT / scaleY - 1);
+        if (GameController.getWidth() < Core.getDrawWidth()) {
+            g.drawRect(x, y, GameController.getWidth() / scaleX, visibleHeight - 1);
         } else {
-            g.drawRect(x + xOfs / scaleX, y, wWidth / scaleX, Lemmini.LEVEL_HEIGHT / scaleY - 1);
+            g.drawRect(x + scaledXPos - xPos, y, wWidth, visibleHeight - 1);
         }
     }
 
@@ -111,16 +123,20 @@ public class Minimap {
      * Return current image.
      * @return current image.
      */
-    public static Image getImage() {
+    public static LemmImage getImage() {
         return img;
     }
     
-    public static int getWidth() {
-        return width;
+    public static int getVisibleWidth() {
+        return visibleWidth;
     }
     
-    public static int getHeight() {
-        return height;
+    public static int getVisibleHeight() {
+        return visibleHeight;
+    }
+    
+    public static int getXPos() {
+        return xPos;
     }
     
     public static int getScaleX() {
@@ -138,20 +154,20 @@ public class Minimap {
      * @param swidth screen width
      * @return new horizontal screen offset
      */
-    public static int move(final int x, final int y, final int swidth) {
-        int xOfs;
-        if (swidth > GameController.getWidth()) {
-            xOfs = (GameController.getWidth() - swidth) / 2;
-        } else {
-            xOfs = x * scaleX - swidth / 2;
-            if (xOfs > GameController.getWidth() - swidth) {
-                xOfs = GameController.getWidth() - swidth;
-            }
-            if (xOfs < 0) {
-                xOfs = 0;
-            }
+    public static int move(final int x, final int y) {
+        int scaledDrawWidth = Core.getDrawWidth() / scaleX;
+        int cappedX = Math.max(scaledDrawWidth / 2, Math.min(x, visibleWidth - scaledDrawWidth / 2));
+        return (cappedX - scaledDrawWidth / 2 + xPos) * scaleX;
+    }
+    
+    public static void adjustXPos() {
+        int scaledDrawWidth = Core.getDrawWidth() / scaleX;
+        int scaledXPos = Math.max(0, Math.min(GameController.getXPos() / scaleX, img.getWidth() - scaledDrawWidth));
+        if (scaledXPos < xPos) {
+            xPos = scaledXPos;
+        } else if (scaledXPos > xPos + visibleWidth - scaledDrawWidth) {
+            xPos = scaledXPos + scaledDrawWidth - visibleWidth;
         }
-        return xOfs;
     }
     
     public static boolean isTinted() {
@@ -164,13 +180,11 @@ public class Minimap {
         //}
         int alpha = (color & 0xff000000) >>> 24;
         int sum = 0;
-        for (int i = 0; i < 3; i++, color >>= 8) {
-            sum += (color & 0xff);
+        for (int i = 0; i < 3; i++) {
+            sum += ((color >> (8 * i)) & 0xff);
         }
         sum /= 3; // mean value
-        //if (sum != 0) {
-            sum += 0x60; // make lighter
-        //}
+        sum += 0x60; // make lighter
         if (sum > 0xff) {
             sum = 0xff;
         }

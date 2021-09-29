@@ -1,5 +1,6 @@
 package lemmini.game;
 
+import java.awt.Image;
 import java.awt.MediaTracker;
 import java.awt.Toolkit;
 import java.awt.Transparency;
@@ -9,12 +10,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
+import lemmini.LemminiFrame;
 import lemmini.extract.Extract;
 import lemmini.extract.ExtractException;
-import lemmini.graphics.Image;
-import lemmini.gui.LegalDialog;
+import lemmini.graphics.LemmImage;
+import lemmini.gui.LegalFrame;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 
@@ -70,8 +71,6 @@ public class Core {
     /** current player */
     public static Player player;
     
-    /** parent component (main frame) */
-    private static JFrame cmp;
     /** name of program properties file */
     private static Path programPropsFilePath;
     /** name of player properties file */
@@ -81,7 +80,7 @@ public class Core {
     /** list of all players */
     private static List<String> players;
     /** Zoom scale */
-    private static double scale;
+    private static double scale = 1.0;
     private static boolean bilinear;
     /** draw width */
     private static int drawWidth;
@@ -91,62 +90,28 @@ public class Core {
     
     /**
      * Initialize some core elements.
-     * @param frame parent frame
-     * @param isWebstartApp true if this was started via Webstart, false otherwise
      * @param createPatches
      * @return 
      * @throws LemmException
+     * @throws IOException
      */
-    public static boolean init(final JFrame frame, final boolean isWebstartApp, final boolean createPatches) throws LemmException, IOException  {
+    public static boolean init(final boolean createPatches) throws LemmException, IOException  {
         // get ini path
-        //if (isWebstartApp) {
-            programPropsFilePath = Paths.get(System.getProperty("user.home"));
-        //} else {
-            /*
-            String s = frame.getClass().getName().replace('.', '/') + ".class";
-            URL url = frame.getClass().getClassLoader().getResource(s);
-            int pos;
-            try {
-                programPropsFilePath = URLDecoder.decode(url.getPath(), "UTF-8");
-            } catch (UnsupportedEncodingException ex) {
-            }
-            // special handling for JAR
-            pos = programPropsFilePath.toLowerCase(Locale.ROOT).indexOf("file:");
-            if (pos != -1) {
-                programPropsFilePath = programPropsFilePath.substring(pos + 5);
-            }
-            pos = programPropsFilePath.toLowerCase(Locale.ROOT).indexOf(s.toLowerCase(Locale.ROOT));
-            if (pos != -1) {
-                programPropsFilePath = programPropsFilePath.substring(0, pos);
-            }
-            /*
-            
-            /** @todo doesn't work if JAR is renamed...
-             *  Maybe it would be a better idea to search only for ".JAR" and then
-             *  for the first path separator...
-             */
-            
-            /*
-            s = (frame.getClass().getName().replace('.', '/') + ".jar").toLowerCase(Locale.ROOT);
-            pos = programPropsFilePath.toLowerCase().indexOf(s);
-            if (pos != -1) {
-                programPropsFilePath = programPropsFilePath.substring(0, pos);
-            }
-            */
-        //}
+        programPropsFilePath = Paths.get(System.getProperty("user.home"));
         programPropsFilePath = programPropsFilePath.resolve(INI_NAME);
         // read main ini file
         programProps = new Props();
 
         if (!programProps.load(programPropsFilePath)) { // might exist or not - if not, it's created
-            LegalDialog ld = new LegalDialog(null, true);
+            LegalFrame ld = new LegalFrame();
             ld.setVisible(true);
+            ld.waitUntilClosed();
             if (!ld.isOK()) {
                 return false;
             }
         }
 
-        scale = Core.programProps.getDouble("scale", 1.0);
+        //scale = Core.programProps.getDouble("scale", 1.0);
         bilinear = Core.programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", "");
         resourcePath = Paths.get(resourcePathStr);
@@ -160,12 +125,14 @@ public class Core {
         gain = programProps.getDouble("soundGain", 1.0);
         GameController.setSoundGain(gain);
         GameController.setAdvancedSelect(programProps.getBoolean("advancedSelect", true));
+        GameController.setClassicCursor(programProps.getBoolean("classicalCursor", false));
         GameController.setSwapButtons(programProps.getBoolean("swapButtons", false));
         GameController.setFasterFastForward(programProps.getBoolean("fasterFastForward", false));
+        GameController.setNoPercentages(programProps.getBoolean("noPercentages", false));
         if (resourcePathStr.isEmpty() || !REVISION.equalsIgnoreCase(rev) || createPatches) {
             // extract resources
             try {
-                Extract.extract(null, sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
+                Extract.extract(sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
                 resourcePath = Extract.getResourcePath();
                 programProps.set("revision", REVISION);
             } catch (ExtractException ex) {
@@ -203,18 +170,8 @@ public class Core {
             playerProps.set("player_0", "default");
         }
         player = new Player(defaultPlayer);
-
-        cmp = frame;
         
         return true;
-    }
-
-    /**
-     * Get parent component (main frame).
-     * @return parent component
-     */
-    public static JFrame getCmp() {
-        return cmp;
     }
     
     public static String appendBeforeExtension(String fname, String suffix) {
@@ -292,14 +249,14 @@ public class Core {
      * @param title
      */
     public static void setTitle(String title) {
-        cmp.setTitle(title);
+        LemminiFrame.getFrame().setTitle(title);
     }
     
     /**
      * Store program properties.
      */
     public static void saveProgramProps() {
-        programProps.setDouble("scale", scale);
+        //programProps.setDouble("scale", scale);
         programProps.save(programPropsFilePath);
         playerProps.set("defaultPlayer", player.getName());
         playerProps.save(playerPropsFilePath);
@@ -311,6 +268,7 @@ public class Core {
      * @param rsrc name missing of resource.
      */
     public static void resourceError(final String rsrc) {
+        
         String out = String.format("The resource %s is missing.%n"
                 + "Please restart to extract all resources.", rsrc);
         JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
@@ -327,7 +285,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    private static java.awt.Image loadImage(final MediaTracker tracker, final Path fName) throws ResourceException {
+    private static Image loadImage(final MediaTracker tracker, final Path fName) throws ResourceException {
         //String fileLoc = findResource(fName);
         if (fName == null) {
             return null;
@@ -343,8 +301,8 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    private static java.awt.Image loadImage(final MediaTracker tracker, final String fName, final boolean jar) throws ResourceException {
-        java.awt.Image image;
+    private static Image loadImage(final MediaTracker tracker, final String fName, final boolean jar) throws ResourceException {
+        Image image;
         if (jar) {
             image = Toolkit.getDefaultToolkit().createImage(ToolBox.findFile(fName));
         } else {
@@ -373,9 +331,9 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static java.awt.Image loadImage(final Path fname) throws ResourceException {
-        MediaTracker tracker = new MediaTracker(getCmp());
-        java.awt.Image img = loadImage(tracker, fname);
+    public static Image loadImage(final Path fname) throws ResourceException {
+        MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
+        Image img = loadImage(tracker, fname);
         if (img == null) {
             throw new ResourceException(fname.toString());
         }
@@ -388,7 +346,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadOpaqueImage(final Path fname) throws ResourceException {
+    public static LemmImage loadOpaqueImage(final Path fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImage(fname), Transparency.OPAQUE);
     }
 
@@ -398,7 +356,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadBitmaskImage(final Path fname) throws ResourceException {
+    public static LemmImage loadBitmaskImage(final Path fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImage(fname), Transparency.BITMASK);
     }
 
@@ -408,7 +366,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadTranslucentImage(final Path fname) throws ResourceException {
+    public static LemmImage loadTranslucentImage(final Path fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImage(fname), Transparency.TRANSLUCENT);
     }
 
@@ -418,9 +376,9 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static java.awt.Image loadImageJar(final String fname) throws ResourceException {
-        MediaTracker tracker = new MediaTracker(getCmp());
-        java.awt.Image img = loadImage(tracker, fname, true);
+    public static Image loadImageJar(final String fname) throws ResourceException {
+        MediaTracker tracker = new MediaTracker(LemminiFrame.getFrame());
+        Image img = loadImage(tracker, fname, true);
         if (img == null) {
             throw new ResourceException(fname);
         }
@@ -433,7 +391,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadOpaqueImageJar(final String fname) throws ResourceException {
+    public static LemmImage loadOpaqueImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.OPAQUE);
     }
 
@@ -443,7 +401,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadBitmaskImageJar(final String fname) throws ResourceException {
+    public static LemmImage loadBitmaskImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.BITMASK);
     }
 
@@ -453,7 +411,7 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static Image loadTranslucentImageJar(final String fname) throws ResourceException {
+    public static LemmImage loadTranslucentImageJar(final String fname) throws ResourceException {
         return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.TRANSLUCENT);
     }
 
@@ -495,7 +453,7 @@ public class Core {
     }
     
     /**
-     * Get internal Draw Width
+     * Get internal draw width
      * @return internal draw width
      */
     public static int getDrawWidth() {
@@ -503,15 +461,15 @@ public class Core {
     }
     
     /**
-     * Set internal Draw Width
-     * @param w draw width
+     * Get scaled internal draw width
+     * @return scaled internal draw width
      */
-    public static void setDrawWidth(int w) {
-        drawWidth = w;
+    public static int getScaledDrawWidth() {
+        return (scale == 1.0) ? drawWidth : (int) Math.ceil(drawWidth * scale);
     }
     
     /**
-     * Get internal Draw Height
+     * Get internal draw height
      * @return internal draw width
      */
     public static int getDrawHeight() {
@@ -519,15 +477,25 @@ public class Core {
     }
     
     /**
-     * Set internal Draw Width
-     * @param w draw width
+     * Get scaled internal draw height
+     * @return scaled internal draw width
      */
-    public static void setDrawHeight(int h) {
+    public static int getScaledDrawHeight() {
+        return (scale == 1.0) ? drawHeight : (int) Math.ceil(drawHeight * scale);
+    }
+    
+    /**
+     * Set internal draw size
+     * @param w draw width
+     * @param h draw height
+     */
+    public static void setDrawSize(int w, int h) {
+        drawWidth = w;
         drawHeight = h;
     }
     
     /**
-     * Get Zoom scale
+     * Get zoom scale
      * @return zoom scale
      */
     public static double getScale() {

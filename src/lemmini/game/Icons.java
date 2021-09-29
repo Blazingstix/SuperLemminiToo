@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -105,18 +105,21 @@ public class Icons {
     }
 
     /** 1st radio button */
-    private static final int FIRST_RADIO = Type.CLIMB.ordinal();
+    static final int FIRST_RADIO = Type.CLIMB.ordinal();
     /** last radio button */
-    private static final int LAST_RADIO = Type.DIG.ordinal();
+    static final int LAST_RADIO = Type.DIG.ordinal();
+    /** number of radio buttons */
+    static final int NUM_RADIO = LAST_RADIO - FIRST_RADIO + 1;
     /** last icon to be drawn */
-    private static final int LAST_DRAWN = Type.VLOCK.ordinal();
+    static final int LAST_DRAWN = Type.VLOCK.ordinal();
 
     /** array of Sprites that contains the icons */
     private static Sprite[] icons;
     /** buffered image that contains the whole icon bar in its current state */
-    private static Image iconImg;
+    private static LemmImage iconImg;
     /** graphics object used to draw on iconImg */
     private static GraphicsContext iconGfx = null;
+    private static Type pressedIcon = null;
 
 
     /**
@@ -134,14 +137,14 @@ public class Icons {
         for (int i = 0; i <= LAST_DRAWN; i++) {
             Path fn = Core.findResource(Paths.get(
                     "gfx", "icons", "icon_" + iconTypes[i].name().toLowerCase() + ".png"), Core.IMAGE_EXTENSIONS);
-            Image sourceImg = Core.loadTranslucentImage(fn);
+            LemmImage sourceImg = Core.loadTranslucentImage(fn);
             icons[i] = new Sprite(sourceImg, 2);
             iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
         }
     }
 
     /**
-     * Get Icon type by x position.
+     * Get icon type by x position.
      * @param x x position inside bar in pixels
      * @return Icon type
      */
@@ -156,12 +159,12 @@ public class Icons {
      * Get buffered image that contains the whole icon bar in its current state.
      * @return image of icon bar
      */
-    public static Image getImg() {
+    public static LemmImage getImg() {
         return iconImg;
     }
 
     /**
-     * Get pressed state of the given Icon
+     * Get pressed state of the given icon
      * @param type
      * @return
      */
@@ -202,6 +205,7 @@ public class Icons {
                         iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
                     }
                 }
+                pressedIcon = type;
                 /* falls through */
             case MINUS:
             case PLUS:
@@ -217,7 +221,7 @@ public class Icons {
     }
 
     /**
-     * Release Icon.
+     * Release icon.
      * @param type Icon Type
      */
     static void release(final Type type) {
@@ -242,14 +246,45 @@ public class Icons {
                 break;
         }
     }
+    
+    /**
+     * Get the selected skill icon.
+     * @return the selected skill icon if one is pressed, or null if none is pressed
+     */
+    static Type getPressedIcon() {
+        return pressedIcon;
+    }
+    
+    static Type getNextRadioIcon(Type type) {
+        int ordinal = type.ordinal();
+        if (ordinal >= FIRST_RADIO && ordinal < LAST_RADIO) {
+            return Type.get(ordinal + 1);
+        } else if (ordinal == LAST_RADIO) {
+            return Type.get(FIRST_RADIO);
+        } else {
+            return null;
+        }
+    }
+    
+    static Type getPreviousRadioIcon(Type type) {
+        int ordinal = type.ordinal();
+        if (ordinal > FIRST_RADIO && ordinal <= LAST_RADIO) {
+            return Type.get(ordinal - 1);
+        } else if (ordinal == FIRST_RADIO) {
+            return Type.get(LAST_RADIO);
+        } else {
+            return null;
+        }
+    }
 
     /**
-     * Reset Icon bar.
+     * Reset icon bar.
      */
     static void reset() {
         for (int i = 0; i <= LAST_DRAWN; i++) {
             icons[i].setFrameIdx(0);
             iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);
         }
+        pressedIcon = null;
     }
 }

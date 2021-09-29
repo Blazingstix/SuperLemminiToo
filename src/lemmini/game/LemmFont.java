@@ -6,7 +6,7 @@ import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 
@@ -102,8 +102,8 @@ public class LemmFont {
             
             String name = ToolBox.removeExtension(fileNameStr);
             
-            Image sourceImg = Core.loadTranslucentImage(fn);
-            Image[] glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
+            LemmImage sourceImg = Core.loadTranslucentImage(fn);
+            LemmImage[] glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
             Glyph[] glyphs = new Glyph[numChars];
             for (int c = 0; c < numChars; c++) {
                 glyphs[c] = new Glyph(glyphImg[c]);
@@ -115,15 +115,21 @@ public class LemmFont {
             subsets.put(name, new Subset(glyphs));
         }
         
-        Image img = ToolBox.createTranslucentImage(width, height);
-        GraphicsContext g = img.createGraphicsContext();
-        g.setColor(java.awt.Color.GREEN);
-        g.drawRect(1, 1, width - 3, height - 3);
-        g.dispose();
+        LemmImage img = ToolBox.createTranslucentImage(width, height);
+        GraphicsContext g = null;
+        try {
+            g = img.createGraphicsContext();
+            g.setColor(java.awt.Color.GREEN);
+            g.drawRect(1, 1, width - 3, height - 3);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
         missingChar = new Glyph(img);
         
         img = Core.loadTranslucentImageJar("missing_char_font.png");
-        Image[] missingGlyphFontImg = ToolBox.getAnimation(img, 16);
+        LemmImage[] missingGlyphFontImg = ToolBox.getAnimation(img, 16);
         missingCharFont = new Glyph[missingGlyphFontImg.length];
         for (int i = 0; i < missingGlyphFontImg.length; i++) {
             missingCharFont[i] = new Glyph(missingGlyphFontImg[i]);
@@ -180,11 +186,17 @@ public class LemmFont {
      * @param color Color
      * @return a buffered image of the needed size that contains an image of the given string
      */
-    public static Image strImage(final String s, final Color color) {
-        Image image = ToolBox.createTranslucentImage(getCharCount(s) * width, height);
+    public static LemmImage strImage(final String s, final Color color) {
+        LemmImage image = ToolBox.createTranslucentImage(getCharCount(s) * width, height);
         GraphicsContext g = image.createGraphicsContext();
-        strImage(g, s, 0, 0, color);
-        g.dispose();
+        try {
+            g = image.createGraphicsContext();
+            strImage(g, s, 0, 0, color);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
         return image;
     }
 
@@ -193,7 +205,7 @@ public class LemmFont {
      * @param s string to draw
      * @return a buffered image of the needed size that contains an image of the given string
      */
-    public static Image strImage(final String s) {
+    public static LemmImage strImage(final String s) {
         return strImage(s, Color.GREEN);
     }
 
@@ -221,7 +233,7 @@ public class LemmFont {
         int digitsPerRow = (bmpCodePoint ? 2 : 3);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < digitsPerRow; j++) {
-                Image hexDigit = missingCharFont[(c >>> ((digitsPerRow * 2 - 1 - (i * digitsPerRow + j)) * 4)) & 0xF].getColor(color);
+                LemmImage hexDigit = missingCharFont[(c >>> ((digitsPerRow * 2 - 1 - (i * digitsPerRow + j)) * 4)) & 0xF].getColor(color);
                 g.drawImage(hexDigit,
                         x + (width / 2 + (j - 1) * hexDigit.getWidth()) - (bmpCodePoint ? 0 : hexDigit.getWidth() / 2),
                         y + (height / 2 + (i - 1) * hexDigit.getHeight()));
@@ -276,10 +288,10 @@ public class LemmFont {
     
     private static class Glyph {
         
-        private final Image[] glyphColors;
+        private final LemmImage[] glyphColors;
         
-        Glyph(Image glyph) {
-            glyphColors = new Image[6];
+        Glyph(LemmImage glyph) {
+            glyphColors = new LemmImage[6];
             
             glyphColors[0] = glyph;
             
@@ -318,7 +330,7 @@ public class LemmFont {
             }
         }
         
-        Image getColor(Color color) {
+        LemmImage getColor(Color color) {
             return glyphColors[color.ordinal()];
         }
     }

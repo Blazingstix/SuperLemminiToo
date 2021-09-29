@@ -19,9 +19,11 @@
 
 package lemmini.gui;
 
+import java.awt.Toolkit;
 import java.util.List;
 import java.util.Vector;
 import javax.swing.JOptionPane;
+import lemmini.LemminiFrame;
 import lemmini.game.Core;
 
 /**
@@ -38,6 +40,8 @@ public class PlayerDialog extends javax.swing.JDialog {
     public PlayerDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        setMinimumSize(getSize());
+        setLocationRelativeTo(parent);
     }
 
     /**
@@ -55,6 +59,7 @@ public class PlayerDialog extends javax.swing.JDialog {
             players.add(Core.getPlayer(i));
         }
         jListPlayers = new javax.swing.JList(players);
+        jListPlayers.setSelectedValue(Core.player.getName(), true);
         jButtonNew = new javax.swing.JButton();
         jButtonDelete = new javax.swing.JButton();
         jButtonOK = new javax.swing.JButton();
@@ -62,7 +67,12 @@ public class PlayerDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Manage Players");
-        setResizable(false);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosing(java.awt.event.WindowEvent evt) {
+                formWindowClosing(evt);
+            }
+        });
 
         jScrollPanePlayers.setViewportView(jListPlayers);
 
@@ -127,15 +137,14 @@ public class PlayerDialog extends javax.swing.JDialog {
         );
 
         pack();
-        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonNewActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonNewActionPerformed
         String player = JOptionPane.showInputDialog(
-                Core.getCmp(), "Enter Player Name", "Input", JOptionPane.QUESTION_MESSAGE);
+                LemminiFrame.getFrame(), "Enter Player Name", "Input", JOptionPane.QUESTION_MESSAGE);
         if (player != null) {
             // check if this player already exists
-            // it it alread exists, reset the existing profile
+            // if it already exists, reset the existing profile
             boolean found = false;
             for (String p : players) {
                 if (p.equalsIgnoreCase(player)) {
@@ -174,6 +183,11 @@ public class PlayerDialog extends javax.swing.JDialog {
         players = null;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        players.clear();
+        players = null;
+    }//GEN-LAST:event_formWindowClosing
 
     /**
      * Get list of players.

@@ -15,7 +15,7 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.GraphicsOperation;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -56,12 +56,12 @@ public class ToolBox {
     /**
      * Creates a custom cursor from the image
      * @param image
-     * @param width
-     * @param height
+     * @param centerX
+     * @param centerY
      * @return the cursor
      */
-    public static Cursor createCursor(Image image, int width, int height) {
-        return Toolkit.getDefaultToolkit().createCustomCursor(image.getImage(), new Point(width, height), "");
+    public static Cursor createCursor(LemmImage image, int centerX, int centerY) {
+        return Toolkit.getDefaultToolkit().createCustomCursor(image.getImage(), new Point(centerX, centerY), "");
     }
     
     /**
@@ -72,8 +72,7 @@ public class ToolBox {
      * @return compatible buffered image
      */
     public static BufferedImage createImage(final int width, final int height, final int transparency) {
-        BufferedImage b = gc.createCompatibleImage(width, height, transparency);
-        return b;
+        return gc.createCompatibleImage(width, height, transparency);
     }
 
     /**
@@ -82,8 +81,8 @@ public class ToolBox {
      * @param height height of image in pixels
      * @return compatible buffered image
      */
-    public static Image createBitmaskImage(final int width, final int height) {
-        return new Image(createImage(width, height, Transparency.BITMASK));
+    public static LemmImage createBitmaskImage(final int width, final int height) {
+        return new LemmImage(createImage(width, height, Transparency.BITMASK));
     }
 
     /**
@@ -92,8 +91,8 @@ public class ToolBox {
      * @param height height of image in pixels
      * @return compatible buffered image
      */
-    public static Image createOpaqueImage(final int width, final int height) {
-        return new Image(createImage(width, height, Transparency.OPAQUE));
+    public static LemmImage createOpaqueImage(final int width, final int height) {
+        return new LemmImage(createImage(width, height, Transparency.OPAQUE));
     }
 
     /**
@@ -102,8 +101,8 @@ public class ToolBox {
      * @param height height of image in pixels
      * @return compatible buffered image
      */
-    public static Image createTranslucentImage(final int width, final int height) {
-        return new Image(createImage(width, height, Transparency.TRANSLUCENT));
+    public static LemmImage createTranslucentImage(final int width, final int height) {
+        return new LemmImage(createImage(width, height, Transparency.TRANSLUCENT));
     }
 
     /**
@@ -112,12 +111,18 @@ public class ToolBox {
      * @param transparency {@link java.awt.Transparency}
      * @return compatible buffered image
      */
-    public static Image imageToBuffered(final java.awt.Image img, final int transparency) {
+    public static LemmImage imageToBuffered(final Image img, final int transparency) {
         BufferedImage bImg = createImage(img.getWidth(null), img.getHeight(null), transparency);
-        Graphics2D g = bImg.createGraphics();
-        g.drawImage(img, 0, 0, null);
-        g.dispose();
-        return new Image(bImg);
+        Graphics2D g = null;
+        try {
+            g = bImg.createGraphics();
+            g.drawImage(img, 0, 0, null);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
+        return new LemmImage(bImg);
     }
 
     /**
@@ -126,7 +131,7 @@ public class ToolBox {
      * @param frames number of frames
      * @return an array of buffered images which contain an animation
      */
-    public static Image[] getAnimation(final Image img, final int frames) {
+    public static LemmImage[] getAnimation(final LemmImage img, final int frames) {
         return getAnimation(img, frames, img.getWidth());
     }
 
@@ -137,7 +142,7 @@ public class ToolBox {
      * @param width image width
      * @return an array of buffered images which contain an animation
      */
-    public static Image[] getAnimation(final Image img, final int frames, final int width) {
+    public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int width) {
         return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), width);
     }
 
@@ -149,17 +154,23 @@ public class ToolBox {
      * @param width image width
      * @return an array of buffered images which contain an animation
      */
-    public static Image[] getAnimation(final Image img, final int frames, final int transparency, final int width) {
+    public static LemmImage[] getAnimation(final LemmImage img, final int frames, final int transparency, final int width) {
         int height = img.getHeight() / frames;
         // characters stored one above the other - now separate them into single images
-        Image[] arrImg = new Image[frames];
+        LemmImage[] arrImg = new LemmImage[frames];
         int y0 = 0;
         for (int i = 0; i < frames; i++, y0 += height) {
-            Image frame = new Image(createImage(width, height, transparency));
-            GraphicsContext g = frame.createGraphicsContext();
-            g.drawImage(img, 0, 0, width, height, 0, y0, width, y0 + height);
+            LemmImage frame = new LemmImage(createImage(width, height, transparency));
+            GraphicsContext g = null;
+            try {
+                g = frame.createGraphicsContext();
+                g.drawImage(img, 0, 0, width, height, 0, y0, width, y0 + height);
+            } finally {
+                if (g != null) {
+                    g.dispose();
+                }
+            }
             arrImg[i] = frame;
-            g.dispose();
         }
         return arrImg;
     }
@@ -169,10 +180,10 @@ public class ToolBox {
      * @param source image to flip
      * @return flipped image
      */
-    public static Image flipImageX(final Image source) {
-        Image target = createBitmaskImage(source.getWidth(), source.getHeight());
+    public static LemmImage flipImageX(final LemmImage source) {
+        LemmImage target = createBitmaskImage(source.getWidth(), source.getHeight());
         GraphicsOperation operation = createGraphicsOperation();
-        operation.setScale(-1, 1);
+        operation.setToScale(-1, 1);
         operation.translate(-source.getWidth(), 0);
         operation.execute(source, target);
         return target;
@@ -183,10 +194,10 @@ public class ToolBox {
      * @param source image to flip
      * @return flipped image
      */
-    public static Image flipImageXTranslucent(final Image source) {
-        Image target = createTranslucentImage(source.getWidth(), source.getHeight());
+    public static LemmImage flipImageXTranslucent(final LemmImage source) {
+        LemmImage target = createTranslucentImage(source.getWidth(), source.getHeight());
         GraphicsOperation operation = createGraphicsOperation();
-        operation.setScale(-1, 1);
+        operation.setToScale(-1, 1);
         operation.translate(-source.getWidth(), 0);
         operation.execute(source, target);
         return target;
@@ -356,37 +367,46 @@ public class ToolBox {
     
     private static BufferedReader getBufferedReader(final InputStream in) throws IOException {
         Charset encoding = StandardCharsets.UTF_8;
-        PushbackInputStream pin = new PushbackInputStream(in, 4);
         byte[] b = new byte[4];
-        int count = pin.read(b);
-        pin.unread(b, 0, count);
+        InputStream in2;
+        int count;
+        if (in.markSupported()) {
+            in2 = in;
+            in2.mark(b.length);
+            count = in2.read(b);
+            in2.reset();
+        } else {
+            in2 = new PushbackInputStream(in, b.length);
+            count = in2.read(b);
+            ((PushbackInputStream) in2).unread(b, 0, count);
+        }
         switch (count) {
             case 4:
                 if ((b[0] & 0xFF) == 0x00 && (b[1] & 0xFF) == 0x00 && (b[2] & 0xFF) == 0xFE && (b[3] & 0xFF) == 0xFF) {
                     encoding = Charset.forName("UTF-32BE");
-                    pin.skip(4);
+                    in2.skip(4);
                     break;
                 } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE && (b[2] & 0xFF) == 0x00 && (b[3] & 0xFF) == 0x00) {
                     encoding = Charset.forName("UTF-32LE");
-                    pin.skip(4);
+                    in2.skip(4);
                     break;
                 }
                 /* falls through */
             case 3:
                 if ((b[0] & 0xFF) == 0xEF && (b[1] & 0xFF) == 0xBB && (b[2] & 0xFF) == 0xBF) {
                     // Skip the UTF-8 BOM since Java doesn't do this automatically
-                    pin.skip(3);
+                    in2.skip(3);
                     break;
                 }
                 /* falls through */
             case 2:
                 if ((b[0] & 0xFF) == 0xFE && (b[1] & 0xFF) == 0xFF) {
                     encoding = StandardCharsets.UTF_16BE;
-                    pin.skip(2);
+                    in2.skip(2);
                     break;
                 } else if ((b[0] & 0xFF) == 0xFF && (b[1] & 0xFF) == 0xFE) {
                     encoding = StandardCharsets.UTF_16LE;
-                    pin.skip(2);
+                    in2.skip(2);
                     break;
                 }
                 break;
@@ -394,7 +414,7 @@ public class ToolBox {
                 break;
         }
         
-        BufferedReader r = new BufferedReader(new InputStreamReader(pin, encoding));
+        BufferedReader r = new BufferedReader(new InputStreamReader(in2, encoding));
         return r;
     }
 

@@ -22,15 +22,15 @@ import java.awt.image.BufferedImage;
  * limitations under the License.
  */
 
-public class Image {
+public class LemmImage {
 
     private final BufferedImage image;
     
-    public Image(BufferedImage image) {
+    public LemmImage(BufferedImage image) {
         this.image = image;
     }
     
-    public Image(Image image) {
+    public LemmImage(LemmImage image) {
         this.image = new BufferedImage(image.getWidth(), image.getHeight(), image.getImage().getType());
         this.image.setData(image.getImage().getData());
     }
@@ -41,6 +41,10 @@ public class Image {
     
     public GraphicsContext createGraphicsContext() {
         return new GraphicsContext(image.createGraphics());
+    }
+    
+    public LemmImage getSubimage(int x, int y, int w, int h) {
+        return new LemmImage(image.getSubimage(x, y, w, h));
     }
 
     public int getWidth() {

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Set;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 
@@ -120,10 +120,10 @@ public class Level {
     /** objects like doors - originally 32 objects where each consists of 8 bytes */
     private final List<LvlObject> objects;
     /** foreground tiles - every pixel in them is interpreted as brick in the stencil */
-    private Image[] tiles;
-    private Image[] tileMasks;
-    private Image special;
-    private Image specialMask;
+    private LemmImage[] tiles;
+    private LemmImage[] tileMasks;
+    private LemmImage special;
+    private LemmImage specialMask;
     private final Set<Integer> steelTiles;
     /** sprite objects of all sprite objects available in this style */
     private SpriteObject[] sprObjAvailable;
@@ -444,7 +444,7 @@ public class Level {
      * @param s stencil to reuse
      * @return stencil of this level
      */
-    Stencil paintLevel(final Image fgImage, final List<Image> bgImages, final Stencil s) {
+    Stencil paintLevel(final LemmImage fgImage, final List<LemmImage> bgImages, final Stencil s) {
         // flush all resources
         sprObjFront = null;
         sprObjBehind = null;
@@ -468,8 +468,8 @@ public class Level {
             if (t.id < 0) {
                 continue;
             }
-            Image i;
-            Image mask;
+            LemmImage i;
+            LemmImage mask;
             if (t.specialGraphic) {
                 i = special;
                 mask = specialMask;
@@ -486,12 +486,21 @@ public class Level {
             
             int[] source = new int[width * height];
             int[] sourceMask = new int[maskWidth * maskHeight];
-            GraphicsContext graphicsContext = i.createGraphicsContext();
-            GraphicsContext graphicsContextMask = mask.createGraphicsContext();
-            graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
-            graphicsContextMask.grabPixels(mask, 0, 0, width, height, sourceMask, 0, width);
-            graphicsContext.dispose();
-            graphicsContextMask.dispose();
+            GraphicsContext graphicsContext = null;
+            GraphicsContext graphicsContextMask = null;
+            try {
+                graphicsContext = i.createGraphicsContext();
+                graphicsContextMask = mask.createGraphicsContext();
+                graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
+                graphicsContextMask.grabPixels(mask, 0, 0, width, height, sourceMask, 0, width);
+            } finally {
+                if (graphicsContext != null) {
+                    graphicsContext.dispose();
+                }
+                if (graphicsContextMask != null) {
+                    graphicsContextMask.dispose();
+                }
+            }
             int tx = t.xPos;
             int ty = t.yPos;
             boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
@@ -727,7 +736,7 @@ public class Level {
             List<SpriteObject> bgOBehind = new ArrayList<>(32);
             for (int m = 0; m < numBackgrounds; m++) {
                 Background bg = backgrounds.get(m);
-                Image targetBg = bgImages.get(m);
+                LemmImage targetBg = bgImages.get(m);
                 bgOCombined.clear();
                 bgOBehind.clear();
                 bgOFront.clear();
@@ -736,15 +745,21 @@ public class Level {
                     if (t.id < 0 || (t.modifier & Terrain.MODE_INVISIBLE) != 0) {
                         continue;
                     }
-                    Image i;
+                    LemmImage i;
                     i = tiles[t.id];
                     int width = i.getWidth();
                     int height = i.getHeight();
                     
                     int[] source = new int[width * height];
-                    GraphicsContext graphicsContext = i.createGraphicsContext();
-                    graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
-                    graphicsContext.dispose();
+                    GraphicsContext graphicsContext = null;
+                    try {
+                        graphicsContext = i.createGraphicsContext();
+                        graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
+                    } finally {
+                        if (graphicsContext != null) {
+                            graphicsContext.dispose();
+                        }
+                    }
                     int tx = t.xPos;
                     int ty = t.yPos;
                     boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
@@ -872,7 +887,7 @@ public class Level {
         if (sprObjBehind != null) {
             for (int n = sprObjBehind.length - 1; n >= 0; n--) {
                 SpriteObject spr = sprObjBehind[n];
-                Image img = spr.getImage();
+                LemmImage img = spr.getImage();
                 if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width
                         && spr.getY() + spr.getHeight() > yOfs && spr.getY() < yOfs + height) {
                     g.drawImage(img, spr.getX() - xOfs, spr.getY() - yOfs);
@@ -894,7 +909,7 @@ public class Level {
         // draw "in front" objects
         if (sprObjFront != null) {
             for (SpriteObject spr : sprObjFront) {
-                Image img = spr.getImage();
+                LemmImage img = spr.getImage();
                 if (spr.getX() + spr.getWidth() > xOfs && spr.getX() < xOfs + width
                         && spr.getY() + spr.getHeight() > yOfs && spr.getY() < yOfs + height) {
                     g.drawImage(img, spr.getX() - xOfs, spr.getY() - yOfs);
@@ -905,7 +920,7 @@ public class Level {
     
     public void drawBackground(final GraphicsContext g, final int width, final int height,
             final int xOfs, final int yOfs, final int scaleX, final int scaleY) {
-        List<Image> bgImages = GameController.getBgImages();
+        List<LemmImage> bgImages = GameController.getBgImages();
         if (bgImages == null || scaleX == 0 || scaleY == 0) {
             return;
         }
@@ -913,7 +928,7 @@ public class Level {
         int numBackgrounds = Math.min(bgImages.size(), backgrounds.size());
         
         for (int i = numBackgrounds - 1; i >= 0; i--) {
-            Image bgImage = bgImages.get(i);
+            LemmImage bgImage = bgImages.get(i);
             Background bg = backgrounds.get(i);
             
             int bgImageWidth = bgImage.getWidth();
@@ -934,27 +949,21 @@ public class Level {
                     if (bg.sprObjBehind != null) {
                         for (int n = bg.sprObjBehind.length - 1; n >= 0; n--) {
                             SpriteObject spr = bg.sprObjBehind[n];
-                            Image img = spr.getImage();
+                            LemmImage img = spr.getImage();
                             g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
-                                    (x + spr.getX() + img.getWidth()) / scaleX,
-                                    (y + spr.getY() + img.getHeight()) / scaleY,
-                                    0, 0, img.getWidth(), img.getHeight());
+                                    img.getWidth() / scaleX, img.getHeight() / scaleY);
                         }
                     }
                     
                     g.drawImage(bgImage, x / scaleX, y / scaleY,
-                            (x + bgImageWidth) / scaleX,
-                            (y + bgImageHeight) / scaleY,
-                            0, 0, bgImageWidth, bgImageHeight);
+                            bgImageWidth / scaleX, bgImageHeight / scaleY);
                     
                     // draw "in front" objects
                     if (bg.sprObjFront != null) {
                         for (SpriteObject spr : bg.sprObjFront) {
-                            Image img = spr.getImage();
+                            LemmImage img = spr.getImage();
                             g.drawImage(img, (x + spr.getX()) / scaleX, (y + spr.getY()) / scaleY,
-                                    (x + spr.getX() + img.getWidth()) / scaleX,
-                                    (y + spr.getY() + img.getHeight()) / scaleY,
-                                    0, 0, img.getWidth(), img.getHeight());
+                                    img.getWidth() / scaleX, img.getHeight() / scaleY);
                         }
                     }
                     
@@ -1004,8 +1013,8 @@ public class Level {
      * @return array of images where each image contains one tile
      * @throws ResourceException
      */
-    private Image[] loadTileSet(final String set) throws ResourceException {
-        List<Image> images = new ArrayList<>(64);
+    private LemmImage[] loadTileSet(final String set) throws ResourceException {
+        List<LemmImage> images = new ArrayList<>(64);
         int tiles = props.getInt("tiles", 0);
         for (int n = 0; n < tiles; n++) {
             Path fName = Core.findResource(
@@ -1013,7 +1022,7 @@ public class Level {
                     Core.IMAGE_EXTENSIONS);
             images.add(Core.loadTranslucentImage(fName));
         }
-        Image[] ret = new Image[images.size()];
+        LemmImage[] ret = new LemmImage[images.size()];
         ret = images.toArray(ret);
         return ret;
     }
@@ -1024,8 +1033,8 @@ public class Level {
      * @return array of images where each image contains one tile mask
      * @throws ResourceException
      */
-    private Image[] loadTileMaskSet(final String set) throws ResourceException {
-        List<Image> images = new ArrayList<>(64);
+    private LemmImage[] loadTileMaskSet(final String set) throws ResourceException {
+        List<LemmImage> images = new ArrayList<>(64);
         int tileMasks = props.getInt("tiles", 0);
         for (int n = 0; n < tileMasks; n++) {
             Path fName;
@@ -1040,7 +1049,7 @@ public class Level {
             }
             images.add(Core.loadBitmaskImage(fName));
         }
-        Image[] ret = new Image[images.size()];
+        LemmImage[] ret = new LemmImage[images.size()];
         ret = images.toArray(ret);
         return ret;
     }
@@ -1051,7 +1060,7 @@ public class Level {
      * @return array of images where each image contains one tile
      * @throws ResourceException
      */
-    private Image loadSpecialSet(final String specialSet) throws ResourceException {
+    private LemmImage loadSpecialSet(final String specialSet) throws ResourceException {
         Path fName = Core.findResource(
                 Paths.get("styles/special", specialSet, specialSet + ".png"),
                 Core.IMAGE_EXTENSIONS);
@@ -1064,7 +1073,7 @@ public class Level {
      * @return array of images where each image contains one tile
      * @throws ResourceException
      */
-    private Image loadSpecialMaskSet(final String specialSet) throws ResourceException {
+    private LemmImage loadSpecialMaskSet(final String specialSet) throws ResourceException {
         Path fName;
         try {
             fName = Core.findResource(
@@ -1110,7 +1119,7 @@ public class Level {
             Path fName = Core.findResource(
                     Paths.get("styles", set, set + "o_" + idx + ".png"),
                     Core.IMAGE_EXTENSIONS);
-            Image img = Core.loadTranslucentImage(fName);
+            LemmImage img = Core.loadTranslucentImage(fName);
             // load sprite
             int anim = props.getInt("anim_" + sIdx, -1);
             if (anim < 0) {
@@ -1195,50 +1204,56 @@ public class Level {
      * @param drawBackground
      * @return image with minimap
      */
-    public Image createMinimap(final Image image, final Image fgImage, final int scaleX, final int scaleY,
+    public LemmImage createMinimap(final LemmImage image, final LemmImage fgImage, final int scaleX, final int scaleY,
             final boolean tint, final boolean drawBackground) {
         Level level = GameController.getLevel();
         int width = fgImage.getWidth() / scaleX;
         int height = fgImage.getHeight() / scaleY;
-        Image img;
+        LemmImage img;
 
         if (image == null || image.getWidth() != width || image.getHeight() != height) {
             img = ToolBox.createTranslucentImage(width, height);
         } else {
             img = image;
         }
-        GraphicsContext gx = img.createGraphicsContext();
-        // clear background
-        if (tint) {
-            gx.setBackground(GameController.BLANK_COLOR);
-        } else {
-            gx.setBackground(bgColor);
-        }
-        gx.clearRect(0, 0, width, height);
-        // draw background image
-        if (drawBackground) {
-            drawBackground(gx, fgImage.getWidth(), fgImage.getHeight(), 0, 0, scaleX, scaleY);
-        }
-        // draw "behind" objects
-        if (level != null && level.sprObjBehind != null) {
-            for (int n = level.sprObjBehind.length - 1; n >= 0; n--) {
-                SpriteObject spr = level.sprObjBehind[n];
-                Image sprImg = spr.getImage();
-                gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
-                        spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+        GraphicsContext gx = null;
+        try {
+            gx = img.createGraphicsContext();
+            // clear background
+            if (tint) {
+                gx.setBackground(GameController.BLANK_COLOR);
+            } else {
+                gx.setBackground(bgColor);
+            }
+            gx.clearRect(0, 0, width, height);
+            // draw background image
+            if (drawBackground) {
+                drawBackground(gx, fgImage.getWidth(), fgImage.getHeight(), 0, 0, scaleX, scaleY);
+            }
+            // draw "behind" objects
+            if (level != null && level.sprObjBehind != null) {
+                for (int n = level.sprObjBehind.length - 1; n >= 0; n--) {
+                    SpriteObject spr = level.sprObjBehind[n];
+                    LemmImage sprImg = spr.getImage();
+                    gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
+                            spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+                }
+            }
+
+            gx.drawImage(fgImage, 0, 0, width, height);
+            // draw "in front" objects
+            if (level != null && level.sprObjFront != null) {
+                for (SpriteObject spr : level.sprObjFront) {
+                    LemmImage sprImg = spr.getImage();
+                    gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
+                            spr.getWidth() / scaleX, spr.getHeight() / scaleY);
+                }
+            }
+        } finally {
+            if (gx != null) {
+                gx.dispose();
             }
         }
-        
-        gx.drawImage(fgImage, 0, 0, width, height, 0, 0, fgImage.getWidth(), fgImage.getHeight());
-        // draw "in front" objects
-        if (level != null && level.sprObjFront != null) {
-            for (SpriteObject spr : level.sprObjFront) {
-                Image sprImg = spr.getImage();
-                gx.drawImage(sprImg, spr.getX() / scaleX, spr.getY() / scaleY,
-                        spr.getWidth() / scaleX, spr.getHeight() / scaleY);
-            }
-        }
-        gx.dispose();
         // now tint in green
         if (tint) {
             for (int y = 0; y < img.getHeight(); y++) {

@@ -3,7 +3,7 @@ package lemmini.game;
 import java.awt.Cursor;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -72,44 +72,6 @@ public class LemmCursor  {
             return walkerOnly;
         }
     }
-    
-    /** box type */
-    public enum BoxType {
-        /** normal cursor with selection box */
-        NORMAL (false, false, false),
-        /** select left cursor with selection box */
-        LEFT (true, false, false),
-        /** select right cursor with selection box */
-        RIGHT (false, true, false),
-        /** select walkers cursor with selection box */
-        WALKER (false, false, true),
-        /** select left walkers cursor with selection box */
-        WALKER_LEFT (true, false, true),
-        /** select right walkers cursor with selection box */
-        WALKER_RIGHT (false, true, true);
-        
-        private final boolean leftOnly;
-        private final boolean rightOnly;
-        private final boolean walkerOnly;
-        
-        BoxType(boolean leftOnly, boolean rightOnly, boolean walkerOnly) {
-            this.leftOnly = leftOnly;
-            this.rightOnly = rightOnly;
-            this.walkerOnly = walkerOnly;
-        }
-        
-        public boolean isLeftOnly() {
-            return leftOnly;
-        }
-        
-        public boolean isRightOnly() {
-            return rightOnly;
-        }
-        
-        public boolean isWalkerOnly() {
-            return walkerOnly;
-        }
-    }
 
     /** x position in pixels */
     private static int x;
@@ -118,32 +80,36 @@ public class LemmCursor  {
     /** current cursor type */
     private static CursorType type;
     /** array of images - one for each cursor type */
-    private static Image[] cursorImg;
+    private static LemmImage[] cursorImg;
     /** array of images - one for each box type */
-    private static Image[] boxImg;
+    private static LemmImage[] boxImg;
     /** array of AWT cursor Objects */
     private static Cursor[] cursor;
+    /** array of AWT box cursor Objects */
+    private static Cursor[] boxCursor;
+    private static boolean box;
 
     /**
      * Initialization.
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
+        CursorType[] cursorTypes = CursorType.values();
         Path fn = Core.findResource(Paths.get("gfx/misc/cursor.png"), Core.IMAGE_EXTENSIONS);
-        cursorImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 6);
+        cursorImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), cursorTypes.length);
         fn = Core.findResource(Paths.get("gfx/misc/box.png"), Core.IMAGE_EXTENSIONS);
-        boxImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 6);
-        cursor = new Cursor[6];
-        int w = getImage(CursorType.NORMAL).getWidth() / 2;
-        int h = getImage(CursorType.NORMAL).getHeight() / 2;
-        cursor[CursorType.NORMAL.ordinal()] = ToolBox.createCursor(getImage(CursorType.NORMAL), w, h);
-        cursor[CursorType.LEFT.ordinal()] = ToolBox.createCursor(getImage(CursorType.LEFT), w, h);
-        cursor[CursorType.RIGHT.ordinal()] = ToolBox.createCursor(getImage(CursorType.RIGHT), w, h);
-        cursor[CursorType.WALKER.ordinal()] = ToolBox.createCursor(getImage(CursorType.WALKER), w, h);
-        cursor[CursorType.WALKER_LEFT.ordinal()] = ToolBox.createCursor(getImage(CursorType.WALKER_LEFT), w, h);
-        cursor[CursorType.WALKER_RIGHT.ordinal()] = ToolBox.createCursor(getImage(CursorType.WALKER_RIGHT), w, h);
+        boxImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), cursorTypes.length);
+        int cx = cursorImg[0].getWidth() / 2;
+        int cy = cursorImg[0].getHeight() / 2;
+        cursor = new Cursor[cursorTypes.length];
+        boxCursor = new Cursor[cursorTypes.length];
+        for (int i = 0; i < cursorTypes.length; i++) {
+            cursor[i] = ToolBox.createCursor(cursorImg[i], cx, cy);
+            boxCursor[i] = ToolBox.createCursor(boxImg[i], cx, cy);
+        }
 
         type = CursorType.NORMAL;
+        box = false;
         setX(0);
         setY(0);
     }
@@ -153,57 +119,33 @@ public class LemmCursor  {
      * @param t cursor type
      * @return image for the given cursor type
      */
-    public static Image getImage(final CursorType t) {
+    public static LemmImage getImage(final CursorType t) {
         return cursorImg[t.ordinal()];
-    }
-    
-    /**
-     * Get image for a certain cursor type.
-     * @param t cursor type
-     * @return image for the given cursor type
-     */
-    public static Image getImage(final BoxType t) {
-        return boxImg[t.ordinal()];
     }
 
     /**
      * Get image for current cursor type.
      * @return image for current cursor type
      */
-    public static Image getImage() {
+    public static LemmImage getImage() {
         return getImage(type);
     }
-
+    
     /**
-     * Get boxed version of image for the current cursor type.
-     * @return boxed version of image for the current cursor type
+     * Get box image for a certain cursor type.
+     * @param t cursor type
+     * @return box image for the given cursor type
      */
-    public static Image getBoxImage() {
-        BoxType t;
-        switch (type) {
-            case NORMAL:
-                t = BoxType.NORMAL;
-                break;
-            case LEFT:
-                t = BoxType.LEFT;
-                break;
-            case RIGHT:
-                t = BoxType.RIGHT;
-                break;
-            case WALKER:
-                t = BoxType.WALKER;
-                break;
-            case WALKER_LEFT:
-                t = BoxType.WALKER_LEFT;
-                break;
-            case WALKER_RIGHT:
-                t = BoxType.WALKER_RIGHT;
-                break;
-            default:
-                t = BoxType.NORMAL; // should never happen
-                break;
-        }
-        return getImage(t);
+    public static LemmImage getBoxImage(final CursorType t) {
+        return boxImg[t.ordinal()];
+    }
+    
+    /**
+     * Get box image for current cursor type.
+     * @return box image for current cursor type
+     */
+    public static LemmImage getBoxImage() {
+        return getBoxImage(type);
     }
 
     /**
@@ -211,7 +153,11 @@ public class LemmCursor  {
      * @return current cursor as AWT cursor object
      */
     public static Cursor getCursor() {
-        return cursor[type.ordinal()];
+        if (box) {
+            return boxCursor[type.ordinal()];
+        } else {
+            return cursor[type.ordinal()];
+        }
     }
 
     /**
@@ -228,6 +174,22 @@ public class LemmCursor  {
      */
     public static void setType(final CursorType t) {
         type = t;
+    }
+    
+    /**
+     * Returns whether the box version of the cursor is in use.
+     * @param b true if the box version of the cursor is in use, false otherwise
+     */
+    public static boolean isBox() {
+        return box;
+    }
+    
+    /**
+     * Sets whether the box version of the cursor should be used.
+     * @param b whether the box version of the cursor should be used
+     */
+    public static void setBox(final boolean b) {
+        box = b;
     }
 
     /**

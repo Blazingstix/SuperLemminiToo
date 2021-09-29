@@ -4,7 +4,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -59,8 +59,8 @@ public class MiscGfx {
     }
 
     /** array of images */
-    private static Image[] image;
-    private static Image minimap;
+    private static LemmImage[] image;
+    private static LemmImage minimap;
     private static int minimapWidth;
 
     /**
@@ -69,10 +69,10 @@ public class MiscGfx {
      * @throws ResourceException
      */
     public static void init(int mmWidth) throws ResourceException {
-        List<Image> images = new ArrayList<>(16);
+        List<LemmImage> images = new ArrayList<>(16);
         /* 0: MINIMAP_LEFT */
         Path fn = Core.findResource(Paths.get("gfx/misc/minimap_left.png"), Core.IMAGE_EXTENSIONS);
-        Image img = Core.loadTranslucentImage(fn);
+        LemmImage img = Core.loadTranslucentImage(fn);
         images.add(img);
         /* 1: MINIMAP_CENTER */
         fn = Core.findResource(Paths.get("gfx/misc/minimap_center.png"), Core.IMAGE_EXTENSIONS);
@@ -84,7 +84,7 @@ public class MiscGfx {
         images.add(img);
         /* 3: MINIMAP_ARROW_LEFT */
         fn = Core.findResource(Paths.get("gfx/misc/minimap_arrows.png"), Core.IMAGE_EXTENSIONS);
-        Image[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 4);
+        LemmImage[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 4);
         images.add(anim[0]);
         /* 4: MINIMAP_ARROW_UP */
         images.add(anim[1]);
@@ -114,7 +114,7 @@ public class MiscGfx {
         img = Core.loadTranslucentImage(fn);
         images.add(img);
 
-        image = new Image[images.size()];
+        image = new LemmImage[images.size()];
         image = images.toArray(image);
         
         /* Assemble minimap */
@@ -127,11 +127,11 @@ public class MiscGfx {
      * @param idx Index
      * @return image of the given index
      */
-    public static Image getImage(Index idx) {
+    public static LemmImage getImage(Index idx) {
         return image[idx.ordinal()];
     }
     
-    public static Image getMinimapImage() {
+    public static LemmImage getMinimapImage() {
         return minimap;
     }
     
@@ -144,15 +144,15 @@ public class MiscGfx {
             return;
         }
         
-        Image minimapLeft = image[Index.MINIMAP_LEFT.ordinal()];
-        Image minimapCenter = image[Index.MINIMAP_CENTER.ordinal()];
-        Image minimapRight = image[Index.MINIMAP_RIGHT.ordinal()];
+        LemmImage minimapLeft = image[Index.MINIMAP_LEFT.ordinal()];
+        LemmImage minimapCenter = image[Index.MINIMAP_CENTER.ordinal()];
+        LemmImage minimapRight = image[Index.MINIMAP_RIGHT.ordinal()];
         
         int leftWidth = Math.min(minimapLeft.getWidth(), 4 + width);
         int centerWidth = width + 4 - leftWidth;
         int rightWidth = minimapRight.getWidth();
         
-        Image tempMinimap = ToolBox.createTranslucentImage(leftWidth + centerWidth + rightWidth,
+        LemmImage tempMinimap = ToolBox.createTranslucentImage(leftWidth + centerWidth + rightWidth,
                 Math.max(Math.max(minimapLeft.getHeight(), minimapCenter.getHeight()), minimapRight.getHeight()));
         
         for (int y = 0; y < minimapLeft.getHeight(); y++) {

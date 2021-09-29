@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.util.*;
 import java.util.zip.Adler32;
-import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
@@ -59,7 +58,7 @@ public class Extract implements Runnable {
     /** array of extensions to be ignored - read from INI */
     private static String[] ignoreExt = {};
     /** output dialog */
-    private static OutputDialog outputDiag;
+    private static OutputFrame outputFrame;
     /** monitor the files created without erasing the target dir */
     private static Set<Path> createdFiles;
     /** source path (WINLEMM) for extraction */
@@ -98,7 +97,7 @@ public class Extract implements Runnable {
     }
 
     /* (non-Javadoc)
-     * @see java.lang.Thread#run()
+     * @see java.lang.Runnable#run()
      *
      * Extraction running in a Thread.
      */
@@ -387,7 +386,7 @@ public class Extract implements Runnable {
             showException(ex);
             System.exit(1);
         }
-        outputDiag.enableOK();
+        outputFrame.enableOK();
     }
 
     /**
@@ -408,7 +407,6 @@ public class Extract implements Runnable {
 
     /**
      * Extract all resources and create patch.ini if referencePath is not null
-     * @param frame parent frame
      * @param srcPath WINLEMM directory
      * @param dstPath target (installation) directory. May also be a relative path inside JAR
      * @param refPath the reference path with the original (wanted) files
@@ -416,7 +414,7 @@ public class Extract implements Runnable {
      * @param createPatches create patches if true
      * @throws ExtractException
      */
-    public static void extract(final JFrame frame, final Path srcPath, final Path dstPath,
+    public static void extract(final Path srcPath, final Path dstPath,
             final Path refPath, final Path pPath, final boolean createPatches) throws ExtractException {
 
         doCreatePatches = createPatches;
@@ -430,32 +428,34 @@ public class Extract implements Runnable {
 
         loader = Extract.class.getClassLoader();
 
-        FolderDialog fDiag;
+        FolderFrame fFrame;
         do {
-            fDiag = new FolderDialog(frame, true);
-            fDiag.setParameters(sourcePath, destinationPath);
-            fDiag.setVisible(true);
-            if (!fDiag.getSuccess()) {
+            fFrame = new FolderFrame();
+            fFrame.setParameters(sourcePath, destinationPath);
+            fFrame.setVisible(true);
+            fFrame.waitUntilClosed();
+            if (!fFrame.getSuccess()) {
                 throw new ExtractException("Extraction canceled by user.", true);
             }
-            sourcePath = fDiag.getSource();
-            destinationPath = fDiag.getTarget();
+            sourcePath = fFrame.getSource();
+            destinationPath = fFrame.getTarget();
             // check if source path exists
             if (Files.isDirectory(sourcePath)) {
                 break;
             }
-            JOptionPane.showMessageDialog(frame, String.format("Source path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(fFrame, String.format("Source path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
         } while (true);
 
         // open output dialog
-        outputDiag = new OutputDialog(frame, true);
+        outputFrame = new OutputFrame();
 
         // start thread
         threadException = null;
         thisThread = new Thread(new Extract());
         thisThread.start();
 
-        outputDiag.setVisible(true);
+        outputFrame.setVisible(true);
+        outputFrame.waitUntilClosed();
         try {
             thisThread.join();
         } catch (InterruptedException ex) {
@@ -788,8 +788,8 @@ public class Extract implements Runnable {
      */
     private static void out(final String s) {
         // System.out.println(s);
-        if (outputDiag != null) {
-            outputDiag.print(String.format("%s%n", s));
+        if (outputFrame != null) {
+            outputFrame.print(String.format("%s%n", s));
         }
     }
 
@@ -798,7 +798,7 @@ public class Extract implements Runnable {
      * @throws ExtractException
      */
     private static void checkCancel() throws ExtractException {
-        if (outputDiag.isCanceled()) {
+        if (outputFrame.isCanceled()) {
             throw new ExtractException("Extraction canceled by user.", true);
         }
     }

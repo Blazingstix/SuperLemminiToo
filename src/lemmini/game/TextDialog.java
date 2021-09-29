@@ -1,11 +1,8 @@
 package lemmini.game;
 
-import java.awt.Color;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
-import lemmini.tools.ToolBox;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -33,243 +30,213 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class TextDialog {
+    
+    /** list of images */
+    private final Map<String, List<TextDialogImage>> images;
     /** list of buttons */
-    private final List<Button> buttons;
-    /** image used as screen buffer */
-    private final Image screenBuffer;
-    /** graphics object to draw in screen buffer */
-    private final GraphicsContext gScreen;
-    /** image used as 2nd screen buffer for offscreen drawing */
-    private final Image backBuffer;
-    /** graphics object to draw in 2nd (offscreen) screen buffer */
-    private final GraphicsContext gBack;
-    /** width of screen in pixels */
-    private final int width;
-    /** height of screen in pixels */
-    private final int height;
-    /** horizontal center of the screen in pixels */
-    private final int centerX;
-    /** vertical center of the screen in pixels */
-    private final int centerY;
+    private final Map<String, List<Button>> buttons;
+    
+    private LemmImage backgroundImage;
+    private boolean tileBackground;
 
     /**
      * Create dialog text screen.
-     * @param w Width of screen to create
-     * @param h Height of screen to create
      */
-    public TextDialog(final int w, final int h) {
-        width = w;
-        height = h;
-        centerX = width / 2;
-        centerY = height / 2;
-        screenBuffer = ToolBox.createOpaqueImage(w, h);
-        gScreen = screenBuffer.createGraphicsContext();
-        gScreen.setClip(0, 0, width, height);
-        backBuffer = ToolBox.createOpaqueImage(w, h);
-        gBack = backBuffer.createGraphicsContext();
-        gBack.setClip(0, 0, width, height);
-        buttons = new ArrayList<>(8);
+    public TextDialog() {
+        buttons = new HashMap<>();
+        images = new HashMap<>();
     }
 
     /**
-     * Initialize/reset the text screen.
+     * Clear the text screen.
      */
-    public void init() {
+    public void clear() {
+        images.clear();
         buttons.clear();
-        gScreen.setBackground(Color.BLACK);
-        gScreen.clearRect(0, 0, width, height);
+        backgroundImage = null;
     }
-
+    
     /**
-     * Get image containing current (on-screen) screen buffer.
-     * @return image containing current (on-screen) screen buffer
+     * Draw the text screen to the given graphics object.
+     * @param g graphics object to draw the text screen to
+     * @param x
+     * @param y
+     * @param width
+     * @param height
      */
-    public Image getScreen() {
-        return screenBuffer;
-    }
-
-    /**
-     * Fill background with tiles.
-     * @param tile Image used as tile
-     */
-    public void fillBackground(final Image tile) {
-        for (int x = 0; x < width; x += tile.getWidth()) {
-            for (int y = 0; y < width; y += tile.getHeight()) {
-                gBack.drawImage(tile, x, y);
+    public void drawScreen(GraphicsContext g, int x, int y, int width, int height) {
+        int centerX = width / 2 + x;
+        int centerY = height / 2 + y;
+        
+        if (backgroundImage != null) {
+            if (tileBackground) {
+                for (int xa = x; xa < x + width; xa += backgroundImage.getWidth()) {
+                    for (int ya = y; ya < y + width; ya += backgroundImage.getHeight()) {
+                        g.drawImage(backgroundImage, xa, ya);
+                    }
+                }
+            } else {
+                int xa = x + (width - backgroundImage.getWidth()) / 2;
+                int ya = y + (height - backgroundImage.getHeight()) / 2;
+                g.drawImage(backgroundImage, xa, ya);
             }
         }
-        gScreen.drawImage(backBuffer, 0, 0);
+        for (String s : images.keySet()) {
+            for (TextDialogImage img : images.get(s)) {
+                img.draw(g, centerX, centerY);
+            }
+        }
+        for (String s : buttons.keySet()) {
+            for (Button b : buttons.get(s)) {
+                b.draw(g, centerX, centerY);
+            }
+        }
     }
 
     /**
-     * Copy back buffer to front buffer.
-     */
-    public void copyToBackBuffer() {
-        gBack.drawImage(screenBuffer, 0, 0);
-    }
-
-    /**
-     * Set Image as background. The image will appear centered.
+     * Set Image as background.
      * @param image Image to use as background
+     * @param tiled If true, the image will be tiled. Otherwise, the image will
+     *              be centered.
      */
-    public void setBackground(final Image image) {
-        int x = (width - image.getWidth()) / 2;
-        int y = (height - image.getHeight()) / 2;
-        gBack.setBackground(Color.BLACK);
-        gBack.clearRect(0, 0, width, height);
-        gBack.drawImage(image, x, y);
-        gScreen.drawImage(backBuffer, 0, 0);
-    }
-
-    /**
-     * Restore whole background from back buffer.
-     */
-    public void restore() {
-        gScreen.drawImage(backBuffer, 0, 0);
-    }
-
-    /**
-     * Restore a rectangle of the background from back buffer.
-     * @param x x position of upper left corner of rectangle
-     * @param y y position of upper left corner of rectangle
-     * @param width width of rectangle
-     * @param height height of rectangle
-     */
-    public void restoreRect(final int x, final int y, final int width, final int height) {
-        gScreen.drawImage(backBuffer, x, y, x + width, y + height, x, y, x + width, y + height);
-    }
-
-    /**
-     * Restore a rectangle of the background from back buffer that might be invalidated by
-     * a text starting at x,y and having a length of len characters.
-     * @param x0 x position of upper left corner of rectangle expressed in character widths
-     * @param y0 y position of upper left corner of rectangle expressed in character heights
-     * @param l Length of text
-     */
-    public void restoreText(final int x0, final int y0, final int l) {
-        int x = x0 * LemmFont.getWidth();
-        int y = y0 * (LemmFont.getHeight() + 4);
-        int len = l * LemmFont.getWidth();
-        int h = LemmFont.getHeight() + 4;
-        gScreen.drawImage(backBuffer, x, y, x + len, y + h, x, y, x + len, y + h);
+    public void setBackground(final LemmImage image, final boolean tiled) {
+        backgroundImage = image;
+        tileBackground = true;
     }
 
     /**
      * Draw string.
      * @param s String
+     * @param group Image group
      * @param x0 X position relative to center expressed in character widths
      * @param y0 Y position relative to center expressed in character heights
      * @param col LemmFont color
      */
-    public void print(final String s, final int x0, final int y0, final LemmFont.Color col) {
+    public void addString(final String s, final String group,
+            final int x0, final int y0, final LemmFont.Color col) {
         int x = x0 * LemmFont.getWidth();
         int y = y0 * (LemmFont.getHeight() + 4);
-        LemmFont.strImage(gScreen, s, centerX + x, centerY + y, col);
+        addImageGroup(group);
+        images.get(group).add(new TextDialogImage(s, x, y, col));
     }
 
     /**
      * Draw string.
      * @param s String
+     * @param group Image group
      * @param x X position relative to center expressed in character widths
      * @param y Y position relative to center expressed in character heights
      */
-    public void print(final String s, final int x, final int y) {
-        print(s, x, y, LemmFont.Color.GREEN);
+    public void addString(final String s, final String group, final int x, final int y) {
+        addString(s, group, x, y, LemmFont.Color.GREEN);
     }
 
     /**
      * Draw string horizontally centered.
      * @param s String
+     * @param group Image group
      * @param y0 Y position relative to center expressed in character heights
      * @param col LemmFont color
-     * @return Absolute x position
      */
-    public int printCentered(final String s, final int y0, final LemmFont.Color col) {
+    public void addStringCentered(final String s, final String group,
+            final int y0, final LemmFont.Color col) {
         int charCount = LemmFont.getCharCount(s);
         if (charCount % 2 > 0) {
             charCount = (charCount + 2) - charCount % 2;
         }
         int y = y0 * (LemmFont.getHeight() + 4);
-        int x = centerX - charCount * LemmFont.getWidth() / 2;
-        LemmFont.strImage(gScreen, s, x, centerY + y, col);
-        return x;
+        int x = -(charCount * LemmFont.getWidth() / 2);
+        addImageGroup(group);
+        images.get(group).add(new TextDialogImage(s, x, y, col));
     }
 
     /**
      * Draw string horizontally centered.
      * @param s String
+     * @param group Image group
      * @param y Y position relative to center expressed in character heights
-     * @return Absolute x position
      */
-    public int printCentered(final String s, final int y) {
-        return printCentered(s, y, LemmFont.Color.GREEN);
+    public void addStringCentered(final String s, final String group, final int y) {
+        addStringCentered(s, group, y, LemmFont.Color.GREEN);
     }
 
     /**
-     * Draw Image.
+     * Add an image.
      * @param img Image
+     * @param group Image group
      * @param x X position relative to center
      * @param y Y position relative to center
      */
-    public void drawImage(final Image img, final int x, final int y) {
-        gScreen.drawImage(img, centerX + x, centerY + y);
+    public void addImage(final LemmImage img, final String group, final int x, final int y) {
+        addImageGroup(group);
+        images.get(group).add(new TextDialogImage(img, x, y));
     }
 
     /**
-     * Draw Image horizontally centered.
+     * Add a horizontally centered image.
      * @param img Image
+     * @param group Image group
      * @param y Y position relative to center
      */
-    public void drawImage(final Image img, final int y) {
-        int x = centerX - img.getWidth() / 2;
-        gScreen.drawImage(img, x, centerY + y);
+    public void addImage(final LemmImage img, final String group, final int y) {
+        int x = -(img.getWidth() / 2);
+        addImageGroup(group);
+        images.get(group).add(new TextDialogImage(img, x, y));
     }
 
     /**
      * Add Button.
+     * @param img Button image
+     * @param imgSelected Button selected image
+     * @param group Button group
      * @param x X position relative to center in pixels
      * @param y Y position relative to center in pixels
-     * @param img  Button image
-     * @param imgSelected Button selected image
      * @param type Button type
      */
-    public void addButton(final int x, final int y, final Image img, final Image imgSelected, final TextScreen.Button type) {
-        Button b = new Button(centerX + x, centerY + y, type);
+    public void addButton(final LemmImage img, final LemmImage imgSelected, final String group,
+            final int x, final int y, final TextScreen.Button type) {
+        Button b = new Button(x, y, type);
         b.SetImage(img);
         b.SetImageSelected(imgSelected);
-        buttons.add(b);
+        addButtonGroup(group);
+        buttons.get(group).add(b);
     }
 
     /**
      * Add text button.
+     * @param type Button type
+     * @param t Button text
+     * @param group Button group
      * @param x0 X position relative to center (in characters)
      * @param y0 Y position relative to center (in characters)
-     * @param type Button type
-     * @param t  Button text
      * @param ts Button selected text
      * @param col Button text color
      * @param cols Button selected text color
      */
-    public void addTextButton(final int x0, final int y0, final TextScreen.Button type,
-            final String t, final String ts, final LemmFont.Color col, final LemmFont.Color cols) {
+    public void addTextButton(final String t, final String ts, final String group,
+            final int x0, final int y0, final TextScreen.Button type,
+            final LemmFont.Color col, final LemmFont.Color cols) {
         int x = x0 * LemmFont.getWidth();
         int y = y0 * (LemmFont.getHeight() + 4);
-        TextButton b = new TextButton(centerX + x, centerY + y, type);
+        TextButton b = new TextButton(x, y, type);
         b.setText(t, col);
         b.setTextSelected(ts, cols);
-        buttons.add(b);
+        addButtonGroup(group);
+        buttons.get(group).add(b);
     }
 
     /**
      * React on left click.
-     * @param x Absolute x position in pixels
-     * @param y Absolute y position in pixels
+     * @param x X position in pixels relative to center
+     * @param y Y position in pixels relative to center
      * @return Button type if button clicked, else NONE
      */
     public TextScreen.Button handleLeftClick(final int x, final int y) {
-        for (Button b : buttons) {
-            if (b.inside(x, y)) {
-                return b.type;
+        for (String s : buttons.keySet()) {
+            for (Button b : buttons.get(s)) {
+                if (b.inside(x, y)) {
+                    return b.type;
+                }
             }
         }
         return TextScreen.Button.NONE;
@@ -277,39 +244,37 @@ public class TextDialog {
 
     /**
      * React on mouse hover.
-     * @param x Absolute x position
-     * @param y Absolute y position
+     * @param x X position relative to center
+     * @param y Y position relative to center
      */
     public void handleMouseMove(final int x, final int y) {
-        for (Button b : buttons) {
-            b.selected = b.inside(x, y);
-        }
-    }
-
-    /**
-     * Draw buttons on screen.
-     */
-    public void drawButtons() {
-        for (Button b : buttons) {
-            b.draw(gScreen);
-        }
-    }
-
-    /**
-     * React on right click.
-     * @param x Absolute x position
-     * @param y Absolute y position
-     * @return Button type if button clicked, else NONE
-     */
-    public TextScreen.Button handleRightClick(final int x, final int y) {
-        for (Button b : buttons) {
-            if (b.inside(x, y)) {
-                return b.type;
+        for (String s : buttons.keySet()) {
+            for (Button b : buttons.get(s)) {
+                b.selected = b.inside(x, y);
             }
         }
-        return TextScreen.Button.NONE;
     }
-
+    
+    public void clearGroup(String group) {
+        if (images.containsKey(group)) {
+            images.get(group).clear();
+        }
+        if (buttons.containsKey(group)) {
+            buttons.get(group).clear();
+        }
+    }
+    
+    private void addImageGroup(String group) {
+        if (!images.containsKey(group)) {
+            images.put(group, new ArrayList<TextDialogImage>(16));
+        }
+    }
+    
+    private void addButtonGroup(String group) {
+        if (!buttons.containsKey(group)) {
+            buttons.put(group, new ArrayList<Button>(16));
+        }
+    }
 }
 
 /**
@@ -330,9 +295,9 @@ class Button {
     /** true if button is selected */
     protected boolean selected;
     /** normal button image */
-    protected Image image;
+    protected LemmImage image;
     /** selected button image */
-    protected Image imgSelected;
+    protected LemmImage imgSelected;
 
     /**
      * Constructor
@@ -350,7 +315,7 @@ class Button {
      * Set normal button image.
      * @param img image
      */
-    void SetImage(final Image img) {
+    void SetImage(final LemmImage img) {
         image = img;
         if (image.getHeight() > height) {
             height = image.getHeight();
@@ -364,7 +329,7 @@ class Button {
      * Set selected button image.
      * @param img image
      */
-    void SetImageSelected(final Image img) {
+    void SetImageSelected(final LemmImage img) {
         imgSelected = img;
         if (imgSelected.getHeight() > height) {
             height = imgSelected.getHeight();
@@ -378,7 +343,7 @@ class Button {
      * Return current button image (normal or selected, depending on state).
      * @return current button image
      */
-    Image getImage() {
+    LemmImage getImage() {
         if (selected) {
             return imgSelected;
         } else {
@@ -389,9 +354,11 @@ class Button {
     /**
      * Draw the button.
      * @param g graphics object to draw on
+     * @param cx
+     * @param cy
      */
-    void draw(final GraphicsContext g) {
-        g.drawImage(getImage(), x, y);
+    void draw(final GraphicsContext g, final int cx, final int cy) {
+        g.drawImage(getImage(), cx + x, cy + y);
     }
 
     /**
@@ -449,5 +416,37 @@ class TextButton extends Button {
         if (imgSelected.getWidth() > width) {
             width = imgSelected.getWidth();
         }
+    }
+}
+
+class TextDialogImage {
+    
+    /** x coordinate in pixels */
+    private final int x;
+    /** y coordinate in pixels */
+    private final int y;
+    /** string image */
+    protected LemmImage image;
+    
+    TextDialogImage(final LemmImage img, final int xi, final int yi) {
+        x = xi;
+        y = yi;
+        image = img;
+    }
+    
+    TextDialogImage(final String text, final int xi, final int yi, final LemmFont.Color col) {
+        x = xi;
+        y = yi;
+        image = LemmFont.strImage(text, col);
+    }
+
+    /**
+     * Draw the image.
+     * @param g graphics object to draw on
+     * @param cx
+     * @param cy
+     */
+    void draw(final GraphicsContext g, final int cx, final int cy) {
+        g.drawImage(image, cx + x, cy + y);
     }
 }

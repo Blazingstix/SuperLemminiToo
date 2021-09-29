@@ -350,7 +350,7 @@ public class Sound {
      * Set mixer to be used for sound output.
      * @param idx index of mixer
      */
-    public synchronized void setMixer(final int idx) {
+    public synchronized void setMixerIdx(final int idx) {
         int oldMixerIdx = mixerIdx;
         
         if (idx > mixers.length) {
@@ -363,13 +363,21 @@ public class Sound {
             Deque<LineHandler> tempLineHandlers = new LinkedList<>();
             for (int i = 0; i < lineHandlers.length; i++) {
                 lineHandlers[i].close();
-                lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), availableLineHandlers);
-                availableLineHandlers.add(lineHandlers[i]);
+                lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), tempLineHandlers);
+                tempLineHandlers.add(lineHandlers[i]);
                 lineHandlers[i].setGain(gain);
                 lineHandlers[i].start();
             }
             availableLineHandlers = tempLineHandlers;
         }
+    }
+    
+    /**
+     * Set the current mixer index.
+     * @return index of current mixer
+     */
+    public synchronized int getMixerIdx() {
+        return mixerIdx;
     }
 
     /**

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.JOptionPane;
+import lemmini.LemminiFrame;
 import lemmini.tools.ToolBox;
 
 /*
@@ -220,7 +221,7 @@ public class ReplayStream {
             }
             events = ev;
             if (!revision.equals(CURRENT_REVISION)) {
-                JOptionPane.showMessageDialog(Core.getCmp(),
+                JOptionPane.showMessageDialog(LemminiFrame.getFrame(),
                         "This replay was created with a potentially incompatible version of SuperLemmini. "
                         + "For this reason, the replay might not play properly.",
                         "Load Replay",

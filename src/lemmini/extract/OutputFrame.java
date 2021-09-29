@@ -16,24 +16,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package lemmini.extract;
 
+import java.awt.Toolkit;
+import lemmini.LemminiFrame;
+
 /**
- * Dialog used to output extraction progress information.
+ * Frame used to output extraction progress information.
  * @author Volker Oth
  */
-public class OutputDialog extends javax.swing.JDialog {
+public class OutputFrame extends javax.swing.JFrame {
     
     /** Extraction canceled? */
     private boolean cancel = false;
 
     /**
-     * Creates new form OutputDialog
+     * Creates new form OutputFrame
      */
-    public OutputDialog(java.awt.Frame parent, boolean modal) {
-        super(parent, modal);
+    public OutputFrame() {
         initComponents();
+        setMinimumSize(getSize());
     }
 
     /**
@@ -52,8 +54,11 @@ public class OutputDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("SuperLemmini Resource Extractor");
-        setResizable(false);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
         addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
+            }
             public void windowClosing(java.awt.event.WindowEvent evt) {
                 formWindowClosing(evt);
             }
@@ -84,11 +89,11 @@ public class OutputDialog extends javax.swing.JDialog {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPaneOutput)
-                    .addGroup(layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 352, Short.MAX_VALUE)
                         .addComponent(jButtonOK)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -111,19 +116,25 @@ public class OutputDialog extends javax.swing.JDialog {
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
-    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
-        cancel = true;
-    }//GEN-LAST:event_formWindowClosing
+    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
+        cancel = false;
+        dispose();
+    }//GEN-LAST:event_jButtonOKActionPerformed
 
     private void jButtonCancelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCancelActionPerformed
         cancel = true;
         dispose();
     }//GEN-LAST:event_jButtonCancelActionPerformed
 
-    private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
-        cancel = false;
-        dispose();
-    }//GEN-LAST:event_jButtonOKActionPerformed
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        synchronized (this) {
+            notifyAll();
+        }
+    }//GEN-LAST:event_formWindowClosed
+
+    private void formWindowClosing(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosing
+        cancel = true;
+    }//GEN-LAST:event_formWindowClosing
     
     /**
      * Print text to output console.
@@ -147,6 +158,19 @@ public class OutputDialog extends javax.swing.JDialog {
      */
     public void enableOK() {
         jButtonOK.setEnabled(true);
+    }
+    
+    /**
+     * Blocks until the window is closed. If this window is already closed,
+     * then this method returns immediately.
+     */
+    public synchronized void waitUntilClosed() {
+        while (isVisible()) {
+            try {
+                wait();
+            } catch (InterruptedException ex) {
+            }
+        }
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables

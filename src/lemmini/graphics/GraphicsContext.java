@@ -57,15 +57,15 @@ public class GraphicsContext {
         graphics.setColor(color);
     }
 
-    public void drawImage(Image image, int x, int y) {
+    public void drawImage(LemmImage image, int x, int y) {
         graphics.drawImage(image.getImage(), x, y, null);
     }
 
-    public void drawImage(Image image, int x, int y, int width, int height) {
+    public void drawImage(LemmImage image, int x, int y, int width, int height) {
         graphics.drawImage(image.getImage(), x, y, width, height, null);
     }
 
-    public void drawImage(Image image, int dx1, int dy1, int dx2, int dy2, int sx1, int sy1, int sx2, int sy2) {
+    public void drawImage(LemmImage image, int dx1, int dy1, int dx2, int dy2, int sx1, int sy1, int sx2, int sy2) {
         graphics.drawImage(image.getImage(), dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
     }
     
@@ -73,7 +73,7 @@ public class GraphicsContext {
         graphics.setRenderingHint(hintKey, hintValue);
     }
 
-    public void grabPixels(Image image, int x, int y, int w, int h, int[] pix, int off, int scanSize) {
+    public void grabPixels(LemmImage image, int x, int y, int w, int h, int[] pix, int off, int scanSize) {
         PixelGrabber pixelgrabber = new PixelGrabber(image.getImage(), x, y, w, h, pix, off, scanSize);
         try {
             pixelgrabber.grabPixels();
@@ -81,7 +81,7 @@ public class GraphicsContext {
         }
     }
 
-    public void copy(Image source, Image target) {
+    public void copy(LemmImage source, LemmImage target) {
         WritableRaster rImgSpr = target.getImage().getRaster();
         rImgSpr.setRect(source.getImage().getRaster()); // just copy
     }

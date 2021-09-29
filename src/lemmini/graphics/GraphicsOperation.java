@@ -27,7 +27,7 @@ public class GraphicsOperation {
 
     private final AffineTransform affineTransform = new AffineTransform();
 
-    public void setScale(double sx, double sy) {
+    public void setToScale(double sx, double sy) {
         affineTransform.setToScale(sx, sy);
     }
 
@@ -35,7 +35,7 @@ public class GraphicsOperation {
         affineTransform.translate(tx, ty);
     }
 
-    public void execute(Image source, Image destination) {
+    public void execute(LemmImage source, LemmImage destination) {
         AffineTransformOp op = new AffineTransformOp(affineTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
         op.filter(source.getImage(), destination.getImage());
     }

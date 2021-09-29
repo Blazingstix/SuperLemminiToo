@@ -8,12 +8,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import javax.swing.JOptionPane;
-import lemmini.Lemmini;
+import lemmini.LemminiFrame;
 import lemmini.gameutil.Fader;
 import lemmini.gameutil.KeyRepeat;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.sound.Music;
 import lemmini.sound.Sound;
 import lemmini.tools.NanosecondTimer;
@@ -109,15 +109,17 @@ public class GameController {
     /** the foreground stencil */
     private static Stencil stencil;
     /** the foreground image */
-    private static Image fgImage;
+    private static LemmImage fgImage;
     /** the background images */
-    private static List<Image> bgImages;
+    private static List<LemmImage> bgImages;
     /** flag: play music */
     private static boolean musicOn;
     /** flag: play sounds */
     private static boolean soundOn;
     /** flag: use advanced mouse selection methods */
     private static boolean advancedSelect;
+    /** flag: use classic mouse cursor behavior */
+    private static boolean classicCursor;
     private static boolean swapButtons;
     private static boolean fasterFastForward;
     private static boolean noPercentages;
@@ -183,7 +185,7 @@ public class GameController {
     /** array of available level packs */
     private static LevelPack[] levelPack;
     /** small preview version of level used in briefing screen */
-    private static Image mapPreview;
+    private static LemmImage mapPreview;
     /** timer used for nuking */
     private static NanosecondTimer timerNuke;
     /** key repeat object for plus key/icon */
@@ -324,12 +326,13 @@ public class GameController {
         Lemming.loadLemmings();
         lemmSkillRequest = null;
 
+        MiscGfx.init(width / 16);
         LemmFont.init();
+        TextScreen.init();
         NumFont.init();
         LemmCursor.init();
         Music.init();
         Music.setGain(musicGain);
-        MiscGfx.init(width / 16);
         
         timesFailed = 0;
         numSkillsUsed = 0;
@@ -501,7 +504,7 @@ public class GameController {
         releaseRate = StrictMath.min(StrictMath.max(level.getReleaseRate(), 0), MAX_RELEASE_RATE);
         numLemmingsMax = level.getNumLemmings();
         numLemmingsOut = 0;
-        numToRescue  = level.getNumToRescue();
+        numToRescue = level.getNumToRescue();
         time = level.getTimeLimitSeconds();
         numClimbers = level.getNumClimbers();
         numFloaters = level.getNumFloaters();
@@ -539,11 +542,17 @@ public class GameController {
         bgImages.clear();
         int numBackgrounds = Math.min(bgWidths.length, bgHeights.length);
         for (int i = 0; i < numBackgrounds; i++) {
-            Image bgImage = ToolBox.createTranslucentImage(bgWidths[i], bgHeights[i]);
-            GraphicsContext bgGfx = bgImage.createGraphicsContext();
-            bgGfx.setBackground(BLANK_COLOR);
-            bgGfx.clearRect(0, 0, bgImage.getWidth(), bgImage.getHeight());
-            bgGfx.dispose();
+            LemmImage bgImage = ToolBox.createTranslucentImage(bgWidths[i], bgHeights[i]);
+            GraphicsContext bgGfx = null;
+            try {
+                bgGfx = bgImage.createGraphicsContext();
+                bgGfx.setBackground(BLANK_COLOR);
+                bgGfx.clearRect(0, 0, bgImage.getWidth(), bgImage.getHeight());
+            } finally {
+                if (bgGfx != null) {
+                    bgGfx.dispose();
+                }
+            }
             bgImages.add(bgImage);
         }
         
@@ -590,7 +599,6 @@ public class GameController {
         releaseRateOld = releaseRate;
         lemmSkillOld = lemmSkill;
         nukeOld = false;
-        //xPosOld = level.getXPos();
         
         try {
             Music.load(Paths.get("music").resolve(GameController.levelPack[GameController.curLevelPack]
@@ -668,9 +676,9 @@ public class GameController {
             Icons.init();
             Explosion.init();
             LemmFont.init();
+            TextScreen.init();
             NumFont.init();
             LemmCursor.init();
-            MiscGfx.init(width / 16);
         }
         
         Path lvlPath = levelPack[curLevelPack].getInfo(curRating, curLevelNumber).getFileName();
@@ -709,7 +717,7 @@ public class GameController {
      * Get current replay image.
      * @return current replay image
      */
-    public static synchronized Image getReplayImage() {
+    public static synchronized LemmImage getReplayImage() {
         if (!replayMode) {
             return null;
         }
@@ -962,7 +970,7 @@ public class GameController {
                 }
                 // replay: position changed?
                 if (getXPos() != xPosOld || getYPos() != yPosOld) {
-                    replay.addPosEvent(replayFrame, getXPos() + Core.unscale(Lemmini.getPaneWidth()) / 2, getYPos() + Lemmini.LEVEL_HEIGHT / 2, 0);
+                    replay.addPosEvent(replayFrame, getXPos() + Core.getDrawWidth() / 2, getYPos() + LemminiFrame.LEVEL_HEIGHT / 2, 0);
                     xPosOld = getXPos();
                     yPosOld = getYPos();
                 }
@@ -1041,8 +1049,8 @@ public class GameController {
                     case ReplayStream.MOVE_POS: {
                         ReplayMovePosEvent rx = (ReplayMovePosEvent) r;
                         if (rx.player == 0) {
-                            setXPos(rx.xPos - Core.unscale(Lemmini.getPaneWidth()) / 2);
-                            setYPos(rx.yPos - Lemmini.LEVEL_HEIGHT / 2);
+                            setXPos(rx.xPos - Core.getDrawWidth() / 2);
+                            setYPos(rx.yPos - LemminiFrame.LEVEL_HEIGHT / 2);
                             xPosOld = xPos;
                             yPosOld = yPos;
                         }
@@ -1401,107 +1409,167 @@ public class GameController {
     public static synchronized void handleIconButton(final Icons.Type type) {
         Lemming.Type lemmSkillOld = lemmSkill;
         boolean ok = false;
-        switch (type) {
-            case PLUS:
-                ok = true; // supress sound
-                plus.pressed(KEYREPEAT_ICON);
-                stopReplayMode();
-                break;
-            case MINUS:
-                ok = true; // supress sound
-                minus.pressed(KEYREPEAT_ICON);
-                stopReplayMode();
-                break;
-            case CLIMB:
-                if (isCheat() || numClimbers > 0) {
-                    lemmSkill = Lemming.Type.CLIMBER;
-                }
-                stopReplayMode();
-                break;
-            case FLOAT:
-                if (isCheat() || numFloaters > 0) {
-                    lemmSkill = Lemming.Type.FLOATER;
-                }
-                stopReplayMode();
-                break;
-            case BOMB:
-                if (isCheat() || numBombers > 0) {
-                    lemmSkill = Lemming.Type.FLAPPER;
-                }
-                stopReplayMode();
-                break;
-            case BLOCK:
-                if (isCheat() || numBlockers > 0) {
-                    lemmSkill = Lemming.Type.BLOCKER;
-                }
-                stopReplayMode();
-                break;
-            case BUILD:
-                if (isCheat() || numBuilders > 0) {
-                    lemmSkill = Lemming.Type.BUILDER;
-                }
-                stopReplayMode();
-                break;
-            case BASH:
-                if (isCheat() || numBashers > 0) {
-                    lemmSkill = Lemming.Type.BASHER;
-                }
-                stopReplayMode();
-                break;
-            case MINE:
-                if (isCheat() || numMiners > 0) {
-                    lemmSkill = Lemming.Type.MINER;
-                }
-                stopReplayMode();
-                break;
-            case DIG:
-                if (isCheat() || numDiggers > 0) {
-                    lemmSkill = Lemming.Type.DIGGER;
-                }
-                stopReplayMode();
-                break;
-            case PAUSE:
-                setPaused(!isPaused());
-                ok = true;
-                break;
-            case NUKE:
-                {
-                    if (!nuke) {
-                        ok = true;
-                    }
-                    stopReplayMode();
-                    if (timerNuke.delta() < NANOSEC_NUKE_DOUBLE_CLICK) {
-                        if (!nuke) {
-                            nuke();
-                        }
-                    } else {
-                        timerNuke.deltaUpdate();
-                    }
-                    break;
-                }
-            case FFWD:
-                setFastForward(!isFastForward());
-                ok = true;
-                break;
-            case VLOCK:
-                setVerticalLock(!isVerticalLock());
-                ok = true;
-                break;
-            default:
-                break;
-        }
-        if (ok || lemmSkill != lemmSkillOld) {
+        if (testIcon(type)) {
             switch (type) {
                 case PLUS:
+                    plus.pressed(KEYREPEAT_ICON);
+                    stopReplayMode();
+                    break;
                 case MINUS:
-                    break; // supress sound
+                    minus.pressed(KEYREPEAT_ICON);
+                    stopReplayMode();
+                    break;
+                case CLIMB:
+                    lemmSkill = Lemming.Type.CLIMBER;
+                    stopReplayMode();
+                    break;
+                case FLOAT:
+                    lemmSkill = Lemming.Type.FLOATER;
+                    stopReplayMode();
+                    break;
+                case BOMB:
+                    lemmSkill = Lemming.Type.FLAPPER;
+                    stopReplayMode();
+                    break;
+                case BLOCK:
+                    lemmSkill = Lemming.Type.BLOCKER;
+                    stopReplayMode();
+                    break;
+                case BUILD:
+                    lemmSkill = Lemming.Type.BUILDER;
+                    stopReplayMode();
+                    break;
+                case BASH:
+                    lemmSkill = Lemming.Type.BASHER;
+                    stopReplayMode();
+                    break;
+                case MINE:
+                    lemmSkill = Lemming.Type.MINER;
+                    stopReplayMode();
+                    break;
+                case DIG:
+                    lemmSkill = Lemming.Type.DIGGER;
+                    stopReplayMode();
+                    break;
+                case PAUSE:
+                    setPaused(!isPaused());
+                    break;
+                case NUKE:
+                    {
+                        stopReplayMode();
+                        if (timerNuke.delta() < NANOSEC_NUKE_DOUBLE_CLICK) {
+                            if (!nuke) {
+                                nuke();
+                            }
+                        } else {
+                            timerNuke.deltaUpdate();
+                        }
+                        break;
+                    }
+                case FFWD:
+                    setFastForward(!isFastForward());
+                    break;
+                case VLOCK:
+                    setVerticalLock(!isVerticalLock());
+                    break;
                 default:
+                    break;
+            }
+            switch (type) {
+                case CLIMB:
+                case FLOAT:
+                case BOMB:
+                case BLOCK:
+                case BUILD:
+                case BASH:
+                case MINE:
+                case DIG:
+                case PAUSE:
+                case NUKE:
+                case FFWD:
+                case VLOCK:
                     sound.playPitched(Sound.PitchedEffect.SKILL, type.getPitch());
                     break;
+                default:
+                    break; // supress sound
             }
             Icons.press(type);
         } else {
             sound.play(Sound.Effect.INVALID);
+        }
+    }
+    
+    /**
+     * Selects the next skill.
+     */
+    public static synchronized void nextSkill() {
+        Icons.Type pressedIcon = Icons.getPressedIcon();
+        Icons.Type testIcon;
+        if (pressedIcon == null) {
+            testIcon = Icons.Type.get(Icons.FIRST_RADIO);
+        } else {
+            testIcon = Icons.getNextRadioIcon(pressedIcon);
+        }
+        for ( ; testIcon != pressedIcon; testIcon = Icons.getNextRadioIcon(testIcon)) {
+            if (testIcon(testIcon)) {
+                break;
+            }
+        }
+        handleIconButton(testIcon);
+    }
+    
+    /**
+     * Selects the previous skill.
+     */
+    public static synchronized void previousSkill() {
+        Icons.Type pressedIcon = Icons.getPressedIcon();
+        Icons.Type testIcon;
+        if (pressedIcon == null) {
+            testIcon = Icons.Type.get(Icons.LAST_RADIO);
+        } else {
+            testIcon = Icons.getPreviousRadioIcon(pressedIcon);
+        }
+        for ( ; testIcon != pressedIcon; testIcon = Icons.getPreviousRadioIcon(testIcon)) {
+            if (testIcon(testIcon)) {
+                break;
+            }
+        }
+        handleIconButton(testIcon);
+    }
+    
+    /**
+     * Checks whether the given icon button can be pressed.
+     * @param type icon type
+     * @return true if the icon button can be pressed, false otherwise
+     */
+    private static boolean testIcon(final Icons.Type type) {
+        switch (type) {
+            case PLUS:
+            case MINUS:
+            case PAUSE:
+            case FFWD:
+            case VLOCK:
+                return true;
+            case CLIMB:
+                return (isCheat() || numClimbers > 0) && Icons.getPressedIcon() != type;
+            case FLOAT:
+                return (isCheat() || numFloaters > 0) && Icons.getPressedIcon() != type;
+            case BOMB:
+                return (isCheat() || numBombers > 0) && Icons.getPressedIcon() != type;
+            case BLOCK:
+                return (isCheat() || numBlockers > 0) && Icons.getPressedIcon() != type;
+            case BUILD:
+                return (isCheat() || numBuilders > 0) && Icons.getPressedIcon() != type;
+            case BASH:
+                return (isCheat() || numBashers > 0) && Icons.getPressedIcon() != type;
+            case MINE:
+                return (isCheat() || numMiners > 0) && Icons.getPressedIcon() != type;
+            case DIG:
+                return (isCheat() || numDiggers > 0) && Icons.getPressedIcon() != type;
+            case NUKE:
+                return !nuke;
+            default:
+                return false;
         }
     }
     
@@ -1523,7 +1591,8 @@ public class GameController {
             switch (transitionState) {
                 case END_LEVEL:
                     finishLevel();
-                    Lemmini.setCursor(LemmCursor.CursorType.NORMAL);
+                    LemmCursor.setBox(false);
+                    LemminiFrame.getFrame().setCursor(LemmCursor.CursorType.NORMAL);
                     break;
                 case TO_BRIEFING:
                     gameState = State.BRIEFING;
@@ -1535,8 +1604,8 @@ public class GameController {
                     gameState = State.INTRO;
                     break;
                 case TO_LEVEL:
-                    setXPos(xPosCenter - Core.unscale(Lemmini.getPaneWidth()) / 2);
-                    setYPos(yPosCenter - Lemmini.LEVEL_HEIGHT / 2);
+                    setXPos(xPosCenter - Core.getDrawWidth() / 2);
+                    setYPos(yPosCenter - LemminiFrame.LEVEL_HEIGHT / 2);
                     xPosOld = xPos;
                     yPosOld = yPos;
                     gameState = State.LEVEL;
@@ -1546,10 +1615,11 @@ public class GameController {
                     try {
                         restartLevel(transitionState == TransitionState.REPLAY_LEVEL);
                     } catch (LemmException ex) {
-                        JOptionPane.showMessageDialog(Core.getCmp(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(LemminiFrame.getFrame(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         System.exit(1);
                     }
-                    Lemmini.setCursor(LemmCursor.CursorType.NORMAL);
+                    LemmCursor.setBox(false);
+                    LemminiFrame.getFrame().setCursor(LemmCursor.CursorType.NORMAL);
                     break;
                 case LOAD_LEVEL:
                 case LOAD_REPLAY:
@@ -1558,11 +1628,11 @@ public class GameController {
                     } catch (ResourceException ex) {
                         Core.resourceError(ex.getMessage());
                     } catch (LemmException ex) {
-                        JOptionPane.showMessageDialog(Core.getCmp(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(LemminiFrame.getFrame(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         System.exit(1);
                     }
                     setTitle();
-                    Lemmini.setCursor(LemmCursor.CursorType.NORMAL);
+                    LemminiFrame.getFrame().setCursor(LemmCursor.CursorType.NORMAL);
                     break;
                 default:
                     break;
@@ -1630,27 +1700,27 @@ public class GameController {
             int lx = l.screenX();
             int ly = l.screenY();
             int mx = l.midX();
-            if (lx + l.width() > xPos && lx < xPos + Core.unscale(Lemmini.getPaneWidth())
-                    && ly + l.height() > yPos && ly < yPos + Lemmini.LEVEL_HEIGHT) {
+            if (lx + l.width() > xPos && lx < xPos + Core.getDrawWidth()
+                    && ly + l.height() > yPos && ly < yPos + LemminiFrame.LEVEL_HEIGHT) {
                 g.drawImage(l.getImage(), lx - xPos, ly - yPos);
             }
             
-            Image cd = l.getCountdown();
+            LemmImage cd = l.getCountdown();
             if (cd != null) {
                 int x = mx - xPos - cd.getWidth() / 2;
                 int y = ly - yPos - cd.getHeight();
-                if (x + cd.getHeight() > 0 && x < Core.unscale(Lemmini.getPaneWidth())
-                        && y + cd.getHeight() > 0 && y < Lemmini.LEVEL_HEIGHT) {
+                if (x + cd.getHeight() > 0 && x < Core.getDrawWidth()
+                        && y + cd.getHeight() > 0 && y < LemminiFrame.LEVEL_HEIGHT) {
                     g.drawImage(cd, x, y);
                 }
             }
 
-            Image sel = l.getSelectImg();
+            LemmImage sel = l.getSelectImg();
             if (sel != null) {
                 int x = mx - xPos - sel.getWidth() / 2;
                 int y = ly - yPos - sel.getHeight();
-                if (x + sel.getHeight() > 0 && x < Core.unscale(Lemmini.getPaneWidth())
-                        && y + sel.getHeight() > 0 && y < Lemmini.LEVEL_HEIGHT) {
+                if (x + sel.getHeight() > 0 && x < Core.getDrawWidth()
+                        && y + sel.getHeight() > 0 && y < LemminiFrame.LEVEL_HEIGHT) {
                     g.drawImage(sel, x, y);
                 }
             }
@@ -1726,7 +1796,7 @@ public class GameController {
             if (val < 0) {
                 val = 0;
             }
-            Image numImage = NumFont.numImage(val);
+            LemmImage numImage = NumFont.numImage(val);
             g.drawImage(numImage, x + Icons.WIDTH * i + Icons.WIDTH / 2 - numImage.getWidth() / 2, y);
         }
     }
@@ -1786,10 +1856,10 @@ public class GameController {
      * @param x horizontal scrolling offset in pixels
      */
     public static void setXPos(final int x) {
-        if (width < Core.unscale(Lemmini.getPaneWidth())) {
-            xPos = (width - Core.unscale(Lemmini.getPaneWidth())) / 2;
-        } else if (x >= width - Core.unscale(Lemmini.getPaneWidth())) {
-            xPos = width - Core.unscale(Lemmini.getPaneWidth());
+        if (width < Core.getDrawWidth()) {
+            xPos = (width - Core.getDrawWidth()) / 2;
+        } else if (x >= width - Core.getDrawWidth()) {
+            xPos = width - Core.getDrawWidth();
         } else if (x < 0) {
             xPos = 0;
         } else {
@@ -1802,10 +1872,10 @@ public class GameController {
      * @param y vertical scrolling offset in pixels
      */
     public static void setYPos(final int y) {
-        if (height < Lemmini.LEVEL_HEIGHT) {
-            yPos = (height - Lemmini.LEVEL_HEIGHT) / 2;
-        } else if (y >= height - Lemmini.LEVEL_HEIGHT) {
-            yPos = height - Lemmini.LEVEL_HEIGHT;
+        if (height < LemminiFrame.LEVEL_HEIGHT) {
+            yPos = height - LemminiFrame.LEVEL_HEIGHT;
+        } else if (y >= height - LemminiFrame.LEVEL_HEIGHT) {
+            yPos = height - LemminiFrame.LEVEL_HEIGHT;
         } else if (y < 0) {
             yPos = 0;
         } else {
@@ -2071,8 +2141,8 @@ public class GameController {
         for (Lemming l : lemmings) {
             int lx = l.screenX();
             int ly = l.screenY();
-            if (lx + l.width() >= xPos && lx < xPos + Core.unscale(Lemmini.getPaneWidth())
-                    && ly + l.height() >= yPos && ly < yPos + Lemmini.LEVEL_HEIGHT) {
+            if (lx + l.width() >= xPos && lx < xPos + Core.getDrawWidth()
+                    && ly + l.height() >= yPos && ly < yPos + LemminiFrame.LEVEL_HEIGHT) {
                 if (LemmCursor.doesCollide(l, xPos, yPos)) {
                     lemmsUnderCursor.addFirst(l);
                 }
@@ -2166,6 +2236,22 @@ public class GameController {
         return advancedSelect;
     }
     
+    /**
+     * Set classical cursor mode.
+     * @param sel true: classical cursor mode active, false otherwise
+     */
+    public static void setClassicCursor(final boolean sel) {
+        classicCursor = sel;
+    }
+
+    /**
+     * Get state of classic cursor mode.
+     * @return true if classic cursor mode activated, false otherwise
+     */
+    public static boolean isClassicCursor() {
+        return classicCursor;
+    }
+    
     public static void setSwapButtons(boolean sb) {
         swapButtons = sb;
     }
@@ -2184,15 +2270,17 @@ public class GameController {
     
     public static void setNoPercentages(boolean np) {
         noPercentages = np;
-        switch (gameState) {
-            case BRIEFING:
-            case LEVEL:
-            case DEBRIEFING:
-            case LEVEL_END:
-                setTitle();
-                break;
-            default:
-                break;
+        if (gameState != null) {
+            switch (gameState) {
+                case BRIEFING:
+                case LEVEL:
+                case DEBRIEFING:
+                case LEVEL_END:
+                    setTitle();
+                    break;
+                default:
+                    break;
+            }
         }
     }
     
@@ -2204,7 +2292,7 @@ public class GameController {
      * Get foreground image of level.
      * @return foreground image of level
      */
-    public static Image getFgImage() {
+    public static LemmImage getFgImage() {
         return fgImage;
     }
     
@@ -2212,7 +2300,7 @@ public class GameController {
      * Get background image of level.
      * @return foreground image of level
      */
-    public static List<Image> getBgImages() {
+    public static List<LemmImage> getBgImages() {
         return bgImages;
     }
 
@@ -2260,7 +2348,7 @@ public class GameController {
      * Get small preview image of level.
      * @return small preview image of level
      */
-    public static Image getMapPreview() {
+    public static LemmImage getMapPreview() {
         return mapPreview;
     }
 

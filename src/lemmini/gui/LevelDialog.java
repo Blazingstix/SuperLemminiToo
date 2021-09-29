@@ -16,6 +16,7 @@
 
 package lemmini.gui;
 
+import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -24,7 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.swing.JOptionPane;
 import javax.swing.tree.*;
-import lemmini.Lemmini;
+import lemmini.LemminiFrame;
 import lemmini.game.*;
 import lemmini.tools.ToolBox;
 
@@ -46,6 +47,8 @@ public class LevelDialog extends javax.swing.JDialog {
     public LevelDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        setMinimumSize(getSize());
+        setLocationRelativeTo(parent);
     }
 
     /**
@@ -107,7 +110,7 @@ public class LevelDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Select Level");
-        setResizable(false);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
 
         jTreeLevels.setModel(levelModel);
         jTreeLevels.setRootVisible(false);
@@ -146,12 +149,16 @@ public class LevelDialog extends javax.swing.JDialog {
         jLabelTimeLimit.setHorizontalTextPosition(javax.swing.SwingConstants.RIGHT);
 
         jTextFieldNumLemmings.setEditable(false);
+        jTextFieldNumLemmings.setHighlighter(null);
 
         jTextFieldNumToRescue.setEditable(false);
+        jTextFieldNumToRescue.setHighlighter(null);
 
         jTextFieldReleaseRate.setEditable(false);
+        jTextFieldReleaseRate.setHighlighter(null);
 
         jTextFieldTimeLimit.setEditable(false);
+        jTextFieldTimeLimit.setHighlighter(null);
 
         jLabelNumClimbers.setLabelFor(jTextFieldNumClimbers);
         jLabelNumClimbers.setText("Climbers:");
@@ -178,20 +185,28 @@ public class LevelDialog extends javax.swing.JDialog {
         jLabelNumDiggers.setText("Diggers:");
 
         jTextFieldNumClimbers.setEditable(false);
+        jTextFieldNumClimbers.setHighlighter(null);
 
         jTextFieldNumFloaters.setEditable(false);
+        jTextFieldNumFloaters.setHighlighter(null);
 
         jTextFieldNumBombers.setEditable(false);
+        jTextFieldNumBombers.setHighlighter(null);
 
         jTextFieldNumBlockers.setEditable(false);
+        jTextFieldNumBlockers.setHighlighter(null);
 
         jTextFieldNumBuilders.setEditable(false);
+        jTextFieldNumBuilders.setHighlighter(null);
 
         jTextFieldNumBashers.setEditable(false);
+        jTextFieldNumBashers.setHighlighter(null);
 
         jTextFieldNumMiners.setEditable(false);
+        jTextFieldNumMiners.setHighlighter(null);
 
         jTextFieldNumDiggers.setEditable(false);
+        jTextFieldNumDiggers.setHighlighter(null);
 
         jSeparator1.setOrientation(javax.swing.SwingConstants.VERTICAL);
 
@@ -211,12 +226,16 @@ public class LevelDialog extends javax.swing.JDialog {
         jLabelScore.setText("Highest score:");
 
         jTextFieldLemmingsSaved.setEditable(false);
+        jTextFieldLemmingsSaved.setHighlighter(null);
 
         jTextFieldSkillsUsed.setEditable(false);
+        jTextFieldSkillsUsed.setHighlighter(null);
 
         jTextFieldTimeElapsed.setEditable(false);
+        jTextFieldTimeElapsed.setHighlighter(null);
 
         jTextFieldScore.setEditable(false);
+        jTextFieldScore.setHighlighter(null);
 
         jButtonAddExternal.setText("Add External Levels...");
         jButtonAddExternal.addActionListener(new java.awt.event.ActionListener() {
@@ -247,67 +266,74 @@ public class LevelDialog extends javax.swing.JDialog {
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                    .addGroup(layout.createSequentialGroup()
                         .addComponent(jButtonAddExternal)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jButtonOK)
                         .addGap(6, 6, 6)
                         .addComponent(jButtonCancel)
                         .addGap(10, 10, 10))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                        .addComponent(jScrollPaneLevels, javax.swing.GroupLayout.DEFAULT_SIZE, 382, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jScrollPaneLevels, javax.swing.GroupLayout.DEFAULT_SIZE, 362, Short.MAX_VALUE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jLabelNumToRescue, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumLemmings, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelReleaseRate, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelTimeLimit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumClimbers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumFloaters, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumBombers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumBlockers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumBuilders, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumBashers, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumMiners, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelNumDiggers, javax.swing.GroupLayout.PREFERRED_SIZE, 110, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jLabelLevelStats, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jSeparatorSkills)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabelTimeLimit, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelReleaseRate, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelNumToRescue, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelNumLemmings, javax.swing.GroupLayout.Alignment.TRAILING))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jTextFieldNumLemmings)
-                                    .addComponent(jTextFieldNumToRescue)
+                                    .addComponent(jTextFieldTimeLimit, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
                                     .addComponent(jTextFieldReleaseRate)
-                                    .addComponent(jTextFieldTimeLimit)
-                                    .addComponent(jTextFieldNumClimbers)
-                                    .addComponent(jTextFieldNumFloaters)
-                                    .addComponent(jTextFieldNumBombers)
-                                    .addComponent(jTextFieldNumBlockers)
-                                    .addComponent(jTextFieldNumBuilders)
-                                    .addComponent(jTextFieldNumBashers)
+                                    .addComponent(jTextFieldNumLemmings)
+                                    .addComponent(jTextFieldNumToRescue)))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(layout.createSequentialGroup()
+                                        .addComponent(jLabelNumFloaters)
+                                        .addGap(1, 1, 1))
+                                    .addComponent(jLabelNumClimbers)
+                                    .addComponent(jLabelNumBombers)
+                                    .addComponent(jLabelNumBlockers)
+                                    .addComponent(jLabelNumBuilders)
+                                    .addComponent(jLabelNumBashers)
+                                    .addComponent(jLabelNumMiners)
+                                    .addComponent(jLabelNumDiggers))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.DEFAULT_SIZE, 50, Short.MAX_VALUE)
                                     .addComponent(jTextFieldNumMiners)
-                                    .addComponent(jTextFieldNumDiggers, javax.swing.GroupLayout.PREFERRED_SIZE, 40, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(0, 0, Short.MAX_VALUE))
-                            .addComponent(jLabelLevelStats, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addComponent(jSeparatorLevelStats)
-                            .addComponent(jSeparatorSkills))
+                                    .addComponent(jTextFieldNumBashers)
+                                    .addComponent(jTextFieldNumBuilders)
+                                    .addComponent(jTextFieldNumBlockers)
+                                    .addComponent(jTextFieldNumBombers)
+                                    .addComponent(jTextFieldNumFloaters)
+                                    .addComponent(jTextFieldNumClimbers))))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jSeparator1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jLabelLemmingsSaved, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelSkillsUsed, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelTimeElapsed, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(jLabelScore, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabelScore, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabelLemmingsSaved, javax.swing.GroupLayout.Alignment.TRAILING))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jTextFieldTimeElapsed)
-                                    .addComponent(jTextFieldSkillsUsed)
-                                    .addComponent(jTextFieldLemmingsSaved)
-                                    .addComponent(jTextFieldScore, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                            .addComponent(jLabelRecords, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jSeparatorRecords))
+                                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                            .addComponent(jTextFieldLemmingsSaved, javax.swing.GroupLayout.DEFAULT_SIZE, 60, Short.MAX_VALUE)
+                                            .addComponent(jTextFieldScore))
+                                        .addComponent(jTextFieldTimeElapsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jTextFieldSkillsUsed, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addComponent(jSeparatorRecords)
+                            .addComponent(jLabelRecords, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addContainerGap())))
         );
         layout.setVerticalGroup(
@@ -323,7 +349,7 @@ public class LevelDialog extends javax.swing.JDialog {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
-                                .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                     .addComponent(jLabelNumLemmings)
@@ -359,7 +385,7 @@ public class LevelDialog extends javax.swing.JDialog {
                                     .addComponent(jLabelScore)
                                     .addComponent(jTextFieldScore, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jSeparatorSkills, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addComponent(jSeparatorSkills, javax.swing.GroupLayout.PREFERRED_SIZE, 2, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabelNumClimbers)
@@ -402,7 +428,6 @@ public class LevelDialog extends javax.swing.JDialog {
         );
 
         pack();
-        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonOKActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonOKActionPerformed
@@ -511,7 +536,7 @@ public class LevelDialog extends javax.swing.JDialog {
                 if (Files.isDirectory(externLvl)) {
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, "*.{ini,lvl,dat}")) {
                         for (Path lvl : stream) {
-                            String lvlExt = Lemmini.addExternalLevel(lvl, false);
+                            String lvlExt = LemminiFrame.addExternalLevel(lvl, false);
                             if (lvlExt != null) {
                                 lastLvlExt = lvlExt;
                             }
@@ -519,7 +544,7 @@ public class LevelDialog extends javax.swing.JDialog {
                     } catch (IOException ex) {
                     }
                 } else {
-                    String lvlExt = Lemmini.addExternalLevel(externLvl, false);
+                    String lvlExt = LemminiFrame.addExternalLevel(externLvl, false);
                     if (lvlExt != null) {
                         lastLvlExt = lvlExt;
                     }

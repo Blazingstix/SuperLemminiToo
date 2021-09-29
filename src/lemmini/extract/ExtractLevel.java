@@ -556,7 +556,7 @@ public class ExtractLevel {
                     break;
                 case 1:
                 case 2:
-                    bytes = new byte[64][16];
+                    bytes = new byte[128][8];
                     break;
                 default:
                     throw new Exception(String.format("Unsupported level format: %d", format));

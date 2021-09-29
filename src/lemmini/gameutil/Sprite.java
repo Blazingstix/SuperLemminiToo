@@ -4,7 +4,7 @@ import java.util.Arrays;
 import lemmini.game.GameController;
 import lemmini.game.Lemming;
 import lemmini.graphics.GraphicsOperation;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -64,7 +64,7 @@ public class Sprite {
     private boolean triggered;
     private int counter;
     /** array of animation frames */
-    private Image[] frames;
+    private LemmImage[] frames;
     private int[][] origColors;
     private Lemming lemming;
 
@@ -73,7 +73,7 @@ public class Sprite {
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
      */
-    public Sprite(final Image sourceImg, final int animFrames) {
+    public Sprite(final LemmImage sourceImg, final int animFrames) {
         init(sourceImg, animFrames);
     }
 
@@ -99,7 +99,7 @@ public class Sprite {
         triggered = false;
         frames = src.frames.clone();
         for (int i = 0; i < frames.length; i++) {
-            frames[i] = new Image(frames[i]);
+            frames[i] = new LemmImage(frames[i]);
         }
         origColors = src.origColors.clone();
         for (int i = 0; i < origColors.length; i++) {
@@ -112,7 +112,7 @@ public class Sprite {
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
      */
-    private void init(final Image sourceImg, final int animFrames) {
+    private void init(final LemmImage sourceImg, final int animFrames) {
         numFrames = animFrames;
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / numFrames;
@@ -133,7 +133,7 @@ public class Sprite {
      * @param idx index of animation frame
      * @return animation frame at position idx.
      */
-    public Image getImage(final int idx) {
+    public LemmImage getImage(final int idx) {
         return frames[idx];
     }
 
@@ -141,7 +141,7 @@ public class Sprite {
      * Get current animation frame.
      * @return current animation frame.
      */
-    public Image getImage() {
+    public LemmImage getImage() {
         return frames[frameIdx];
     }
 
@@ -151,7 +151,7 @@ public class Sprite {
      * @param idx index of frame to replace
      * @param img image to use for this animation frame
      */
-    public void setImage(final int idx, final Image img) {
+    public void setImage(final int idx, final LemmImage img) {
         frames[idx] = img;
     }
 
@@ -159,8 +159,8 @@ public class Sprite {
      * Get current animation frame and animate.
      * @return current animation frame (before increasing the animation step).
      */
-    public Image getImageAnim() {
-        Image i = frames[frameIdx];
+    public LemmImage getImageAnim() {
+        LemmImage i = frames[frameIdx];
         switch (animMode) {
             case LOOP:
                 if (++frameIdx >= numFrames) {
@@ -233,10 +233,10 @@ public class Sprite {
             return;
         }
         GraphicsOperation go = ToolBox.createGraphicsOperation();
-        go.setScale(horizontal ? -1 : 1, vertical ? -1 : 1);
+        go.setToScale(horizontal ? -1 : 1, vertical ? -1 : 1);
         go.translate(horizontal ? -width : 0, vertical ? -height : 0);
         for (int frame = 0; frame < frames.length; frame++) {
-            Image imgSpr = ToolBox.createTranslucentImage(width, height);
+            LemmImage imgSpr = ToolBox.createTranslucentImage(width, height);
             go.execute(frames[frame], imgSpr);
             frames[frame] = imgSpr;
             

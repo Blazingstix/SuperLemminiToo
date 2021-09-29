@@ -25,7 +25,8 @@ package lemmini.game;
  * @author Volker Oth
  */
 public class LemmException extends Exception {
-    private static final long serialVersionUID = 0x000000001;
+    
+    private static final long serialVersionUID = 0x00000001L;
 
     /**
      * Constructor.

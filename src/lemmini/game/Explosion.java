@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -64,7 +64,7 @@ public class Explosion {
     /** flag: explosion is finished */
     private boolean finished;
     /** explosion image used for the first few frames */
-    private static Image expImg;
+    private static LemmImage expImg;
 
     /**
      * Load explosion image as static resource.

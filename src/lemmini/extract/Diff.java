@@ -548,7 +548,6 @@ public class Diff {
  * @author Volker Oth
  */
 class DiffException extends Exception {
-    private static final long serialVersionUID = 0x000000001;
 
     /**
      * Constructor.

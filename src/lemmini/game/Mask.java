@@ -1,6 +1,6 @@
 package lemmini.game;
 
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -43,7 +43,7 @@ public class Mask {
      * @param img image which may contain several animation frames one above each other
      * @param frames number of animation frames
      */
-    public Mask(final Image img, final int frames) {
+    public Mask(final LemmImage img, final int frames) {
         width = img.getWidth();
         height = img.getHeight() / frames;
         mask = new byte[frames][];
@@ -85,8 +85,8 @@ public class Mask {
      */
     public boolean eraseMask(final int x0, final int y0, final int maskNum, final int eraseMask, final int checkMask) {
         int ctrIndestructible = 0;
-        Image fgImage = GameController.getFgImage();
-        Image fgImageSmall = Minimap.getImage();
+        LemmImage fgImage = GameController.getFgImage();
+        LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
         byte[] m = mask[maskNum];
         int sPos = y0 * fgImage.getWidth();
@@ -149,8 +149,8 @@ public class Mask {
      * @param color Color to use to paint the step in the foreground image
      */
     public void paintStep(final int x0, final int y0, final int maskNum, final int color) {
-        Image fgImage = GameController.getFgImage();
-        Image fgImageSmall = Minimap.getImage();
+        LemmImage fgImage = GameController.getFgImage();
+        LemmImage fgImageSmall = Minimap.getImage();
         Stencil stencil = GameController.getStencil();
         byte[] m = mask[maskNum];
         int sPos = y0 * fgImage.getWidth();
@@ -215,7 +215,7 @@ public class Mask {
      * @param y0 y position in pixels
      */
     public void setBlockerMask(final int x0, final int y0) {
-        Image fgImage = GameController.getFgImage();
+        LemmImage fgImage = GameController.getFgImage();
         Stencil stencil = GameController.getStencil();
         //byte[] m = mask[0];
         //int sPos = y0 * fgImage.getWidth();
@@ -312,7 +312,7 @@ public class Mask {
      * @param type Stencil bitmask to erase (may contain several attributes)
      */
     public void clearType(final int x0, final int y0, final int maskNum, final int type) {
-        Image fgImage = GameController.getFgImage();
+        LemmImage fgImage = GameController.getFgImage();
         Stencil stencil = GameController.getStencil();
         byte[] m = mask[maskNum];
         int sPos = y0 * fgImage.getWidth();

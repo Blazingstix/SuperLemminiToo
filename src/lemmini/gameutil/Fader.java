@@ -1,8 +1,9 @@
 package lemmini.gameutil;
 
 import java.awt.Color;
+import lemmini.game.Core;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -63,12 +64,8 @@ public class Fader {
     private static int color = 0; // black
     /** alpha value of the fading rectangle */
     private static int alpha = 0x80; // half transparent
-    /** width of faded area */
-    private static int width;
-    /** height of faded area */
-    private static int height;
     /** the image used as fading rectangle */
-    private static Image alphaImg = null;
+    private static LemmImage alphaImg = null;
     /** the graphics used as fading rectangle (static to avoid multiple allocation) */
     private static GraphicsContext alphaGfx;
 
@@ -88,16 +85,6 @@ public class Fader {
     public static synchronized void setAlpha(final int a) {
         alpha = Math.min(Math.max(a, 0), 0xff);
         init();
-    }
-
-    /**
-     * Set bounds of fading area.
-     * @param w width in pixels
-     * @param h height pixels
-     */
-    public static synchronized void setBounds(final int w, final int h) {
-        width = w;
-        height = h;
     }
 
     /**
@@ -121,6 +108,8 @@ public class Fader {
      * @param g graphics to apply fader to
      */
     public static synchronized void apply(final GraphicsContext g) {
+        int width = Core.getDrawWidth();
+        int height = Core.getDrawHeight();
         for (int y = 0; y < height; y += HEIGHT) {
             for (int x = 0; x < width; x += WIDTH) {
                 g.drawImage(alphaImg, x, y);

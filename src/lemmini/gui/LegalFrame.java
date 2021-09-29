@@ -16,30 +16,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package lemmini.gui;
 
 import java.awt.Desktop;
+import java.awt.Toolkit;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import javax.swing.event.HyperlinkEvent;
+import lemmini.LemminiFrame;
 
 /**
- * Dialog with legal information.
+ * Frame with legal information.
  * @author Volker Oth
  */
-public class LegalDialog extends javax.swing.JDialog {
+public class LegalFrame extends javax.swing.JFrame {
     
     private boolean ok = false;
     private URL thisURL;
 
     /**
-     * Creates new form LegalDialog
+     * Creates new form LegalFrame
      */
-    public LegalDialog(java.awt.Frame parent, boolean modal) {
-        super(parent, modal);
+    public LegalFrame() {
         initComponents();
+        setMinimumSize(getSize());
     }
 
     /**
@@ -58,9 +59,14 @@ public class LegalDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("SuperLemmini - Disclaimer");
-        setResizable(false);
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            public void windowClosed(java.awt.event.WindowEvent evt) {
+                formWindowClosed(evt);
+            }
+        });
 
-        ClassLoader loader = LegalDialog.class.getClassLoader();
+        ClassLoader loader = LegalFrame.class.getClassLoader();
         thisURL = loader.getResource("disclaimer.htm");
         jEditorPaneLegal.setEditable(false);
         try {
@@ -93,11 +99,11 @@ public class LegalDialog extends javax.swing.JDialog {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPaneLegal, javax.swing.GroupLayout.PREFERRED_SIZE, 0, Short.MAX_VALUE)
-                    .addGroup(layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
                         .addGap(0, 466, Short.MAX_VALUE)
                         .addComponent(jButtonOK)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -106,7 +112,7 @@ public class LegalDialog extends javax.swing.JDialog {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+            .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jScrollPaneLegal, javax.swing.GroupLayout.DEFAULT_SIZE, 421, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -152,12 +158,31 @@ public class LegalDialog extends javax.swing.JDialog {
         }
     }//GEN-LAST:event_jEditorPaneLegalHyperlinkUpdate
 
+    private void formWindowClosed(java.awt.event.WindowEvent evt) {//GEN-FIRST:event_formWindowClosed
+        synchronized (this) {
+            notifyAll();
+        }
+    }//GEN-LAST:event_formWindowClosed
+    
     /**
      * OK button was pressed.
      * @return true: OK button was pressed.
      */
     public boolean isOK() {
         return ok;
+    }
+    
+    /**
+     * Blocks until the window is closed. If this window is already closed,
+     * then this method returns immediately.
+     */
+    public synchronized void waitUntilClosed() {
+        while (isVisible()) {
+            try {
+                wait();
+            } catch (InterruptedException ex) {
+            }
+        }
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables

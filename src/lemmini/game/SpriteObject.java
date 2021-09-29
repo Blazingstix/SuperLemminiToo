@@ -2,7 +2,7 @@ package lemmini.game;
 
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -116,7 +116,7 @@ public class SpriteObject extends Sprite {
      * @param sourceImg Image containing animation frames one above each other.
      * @param animFrames number of frames.
      */
-    public SpriteObject(final Image sourceImg, final int animFrames) {
+    public SpriteObject(final LemmImage sourceImg, final int animFrames) {
         super(sourceImg, animFrames);
         type = Type.PASSIVE;
         setX(0);
@@ -143,29 +143,41 @@ public class SpriteObject extends Sprite {
      * Set the collision mask.
      * @param imgMask image containing the collision mask.
      */
-    void setMask(final Image imgMask) {
+    void setMask(final LemmImage imgMask) {
         maskWidth = imgMask.getWidth();
         maskHeight = imgMask.getHeight();
         mask = new int[maskWidth * maskHeight];
         maskOffsetX = 0;
         maskOffsetY = 0;
-        GraphicsContext g = imgMask.createGraphicsContext();
-        g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
-        g.dispose();
+        GraphicsContext g = null;
+        try {
+            g = imgMask.createGraphicsContext();
+            g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
     }
     
     /**
      * Set the collision mask.
      * @param imgMask image containing the collision mask.
      */
-    void setMask(final Image imgMask, final int xOffset, final int yOffset) {
+    void setMask(final LemmImage imgMask, final int xOffset, final int yOffset) {
         if (imgMask != null) {
             maskWidth = imgMask.getWidth();
             maskHeight = imgMask.getHeight();
             mask = new int[maskWidth * maskHeight];
-            GraphicsContext g = imgMask.createGraphicsContext();
-            g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
-            g.dispose();
+            GraphicsContext g = null;
+            try {
+                g = imgMask.createGraphicsContext();
+                g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+            } finally {
+                if (g != null) {
+                    g.dispose();
+                }
+            }
         }
         maskOffsetX = xOffset;
         maskOffsetY = yOffset;

@@ -5,7 +5,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.Image;
+import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 
 /*
@@ -40,8 +40,8 @@ public class NumFont {
     /** height in pixels */
     private static int height;
     /** array of images - one for each digit 0-9 */
-    private static Image[] numImg;
-    private static final Map<Integer, Image> numImgMap = new HashMap<>();
+    private static LemmImage[] numImg;
+    private static final Map<Integer, LemmImage> numImgMap = new HashMap<>();
 
     /**
      * Load and initialize the font.
@@ -49,11 +49,11 @@ public class NumFont {
      */
     public static void init() throws ResourceException {
         Path fn = Core.findResource(Paths.get("gfx/misc/numfont.png"), Core.IMAGE_EXTENSIONS);
-        numImg = new Image[15];
-        Image sourceImg = Core.loadTranslucentImage(fn);
+        numImg = new LemmImage[15];
+        LemmImage sourceImg = Core.loadTranslucentImage(fn);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
-        Image[] numImgTemp = ToolBox.getAnimation(sourceImg, 10);
+        LemmImage[] numImgTemp = ToolBox.getAnimation(sourceImg, 10);
         System.arraycopy(numImgTemp, 0, numImg, 0, 10);
         fn = Core.findResource(Paths.get("gfx/misc/numfont2.png"), Core.IMAGE_EXTENSIONS);
         sourceImg = Core.loadTranslucentImage(fn);
@@ -61,29 +61,44 @@ public class NumFont {
         System.arraycopy(numImgTemp, 0, numImg, 10, 5);
         
         numImgMap.clear();
-        Image numImgTemp2;
-        GraphicsContext g;
+        LemmImage numImgTemp2;
+        GraphicsContext g = null;
         for (int i = 0; i < 100; i++) {
             numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
-            g = numImgTemp2.createGraphicsContext();
-            g.drawImage(numImg[i / 10], 0, 0);
-            g.drawImage(numImg[i % 10], width, 0);
-            g.dispose();
+            try {
+                g = numImgTemp2.createGraphicsContext();
+                g.drawImage(numImg[i / 10], 0, 0);
+                g.drawImage(numImg[i % 10], width, 0);
+            } finally {
+                if (g != null) {
+                    g.dispose();
+                }
+            }
             numImgMap.put(i, numImgTemp2);
         }
         numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
-        g = numImgTemp2.createGraphicsContext();
-        g.drawImage(numImg[13], 0, 0);
-        g.drawImage(numImg[14], width, 0);
+        try {
+            g = numImgTemp2.createGraphicsContext();
+            g.drawImage(numImg[13], 0, 0);
+            g.drawImage(numImg[14], width, 0);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
         numImgMap.put(Integer.MAX_VALUE, numImgTemp2);
         numImgTemp2 = ToolBox.createTranslucentImage(width * 3, height);
-        g.dispose();
-        g = numImgTemp2.createGraphicsContext();
-        g.drawImage(numImg[10], 0, 0);
-        g.drawImage(numImg[13], width, 0);
-        g.drawImage(numImg[14], width * 2, 0);
+        try {
+            g = numImgTemp2.createGraphicsContext();
+            g.drawImage(numImg[10], 0, 0);
+            g.drawImage(numImg[13], width, 0);
+            g.drawImage(numImg[14], width * 2, 0);
+        } finally {
+            if (g != null) {
+                g.dispose();
+            }
+        }
         numImgMap.put(Integer.MIN_VALUE, numImgTemp2);
-        g.dispose();
     }
 
     /**
@@ -91,56 +106,62 @@ public class NumFont {
      * @param n number
      * @return image of the number
      */
-    public static Image numImage(int n) {
-        Image numImgTemp = numImgMap.get(n);
+    public static LemmImage numImage(int n) {
+        LemmImage numImgTemp = numImgMap.get(n);
         if (numImgTemp != null) {
             return numImgTemp;
         } else {
             String numString = Integer.toString(n);
             numImgTemp = ToolBox.createTranslucentImage(width * numString.length(), height);
-            GraphicsContext g = numImgTemp.createGraphicsContext();
-            for (int i = 0; i < numString.length(); i++) {
-                int numIndex = -1;
-                switch (numString.charAt(i)) {
-                    case '-':
-                        numIndex = 10;
-                        break;
-                    case '0':
-                        numIndex = 0;
-                        break;
-                    case '1':
-                        numIndex = 1;
-                        break;
-                    case '2':
-                        numIndex = 2;
-                        break;
-                    case '3':
-                        numIndex = 3;
-                        break;
-                    case '4':
-                        numIndex = 4;
-                        break;
-                    case '5':
-                        numIndex = 5;
-                        break;
-                    case '6':
-                        numIndex = 6;
-                        break;
-                    case '7':
-                        numIndex = 7;
-                        break;
-                    case '8':
-                        numIndex = 8;
-                        break;
-                    case '9':
-                        numIndex = 9;
-                        break;
+            GraphicsContext g = null;
+            try {
+                g = numImgTemp.createGraphicsContext();
+                for (int i = 0; i < numString.length(); i++) {
+                    int numIndex = -1;
+                    switch (numString.charAt(i)) {
+                        case '-':
+                            numIndex = 10;
+                            break;
+                        case '0':
+                            numIndex = 0;
+                            break;
+                        case '1':
+                            numIndex = 1;
+                            break;
+                        case '2':
+                            numIndex = 2;
+                            break;
+                        case '3':
+                            numIndex = 3;
+                            break;
+                        case '4':
+                            numIndex = 4;
+                            break;
+                        case '5':
+                            numIndex = 5;
+                            break;
+                        case '6':
+                            numIndex = 6;
+                            break;
+                        case '7':
+                            numIndex = 7;
+                            break;
+                        case '8':
+                            numIndex = 8;
+                            break;
+                        case '9':
+                            numIndex = 9;
+                            break;
+                    }
+                    if (numIndex >= 0) {
+                        g.drawImage(numImg[numIndex], width * i, 0);
+                    }
                 }
-                if (numIndex >= 0) {
-                    g.drawImage(numImg[numIndex], width * i, 0);
+            } finally {
+                if (g != null) {
+                    g.dispose();
                 }
             }
-            g.dispose();
             numImgMap.put(n, numImgTemp);
             return numImgTemp;
         }

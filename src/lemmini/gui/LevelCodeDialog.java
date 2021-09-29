@@ -19,6 +19,8 @@
 
 package lemmini.gui;
 
+import java.awt.Toolkit;
+import lemmini.LemminiFrame;
 import lemmini.game.GameController;
 
 /**
@@ -37,6 +39,7 @@ public class LevelCodeDialog extends javax.swing.JDialog {
     public LevelCodeDialog(java.awt.Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
+        setLocationRelativeTo(parent);
     }
 
     /**
@@ -66,6 +69,7 @@ public class LevelCodeDialog extends javax.swing.JDialog {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setTitle("Enter Level Code");
+        setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
         setResizable(false);
         addWindowListener(new java.awt.event.WindowAdapter() {
             public void windowClosing(java.awt.event.WindowEvent evt) {
@@ -142,7 +146,6 @@ public class LevelCodeDialog extends javax.swing.JDialog {
         );
 
         pack();
-        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void jTextFieldCodeActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldCodeActionPerformed
