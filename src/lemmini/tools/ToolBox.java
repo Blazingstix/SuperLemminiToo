@@ -1,7 +1,6 @@
 package lemmini.tools;
 
 
-import com.ibm.icu.text.Normalizer2;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -11,6 +10,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
+import java.util.Locale;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -336,7 +337,7 @@ public class ToolBox {
         if (addBackslashesToAllSpaces) {
             s = s.replace(" ", "\\ ");
         } else {
-            if (s.charAt(0) == ' ') {
+            if (!s.isEmpty() && s.charAt(0) == ' ') {
                 s = "\\" + s;
             }
         }
@@ -366,32 +367,32 @@ public class ToolBox {
         if (min > max) {
             throw new IllegalArgumentException("max must be >= min");
         }
-        return StrictMath.max(min, StrictMath.min(value, max));
+        return Math.max(min, Math.min(value, max));
     }
     
     public static long cap(long min, long value, long max) {
         if (min > max) {
             throw new IllegalArgumentException("max must be >= min");
         }
-        return StrictMath.max(min, StrictMath.min(value, max));
+        return Math.max(min, Math.min(value, max));
     }
     
     public static float cap(float min, float value, float max) {
         if (min > max) {
             throw new IllegalArgumentException("max must be >= min");
         }
-        return StrictMath.max(min, StrictMath.min(value, max));
+        return Math.max(min, Math.min(value, max));
     }
     
     public static double cap(double min, double value, double max) {
         if (min > max) {
             throw new IllegalArgumentException("max must be >= min");
         }
-        return StrictMath.max(min, StrictMath.min(value, max));
+        return Math.max(min, Math.min(value, max));
     }
     
     public static int roundToInt(double a) {
-        return (int) cap(Integer.MIN_VALUE, StrictMath.round(a), Integer.MAX_VALUE);
+        return (int) cap(Integer.MIN_VALUE, Math.round(a), Integer.MAX_VALUE);
     }
     
     public static int scale(int n, double s) {
@@ -418,6 +419,7 @@ public class ToolBox {
     public static int parseInt(final String s) {
         switch (s) {
             case "Infinity":
+            case "+Infinity":
                 return Integer.MAX_VALUE;
             case "-Infinity":
                 return Integer.MIN_VALUE;
@@ -496,15 +498,19 @@ public class ToolBox {
         return c == '+' || c == '-';
     }
     
+    public static boolean isHexDigit(char c) {
+        return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'F') || (c >= 'a' && c <= 'f');
+    }
+    
     /**
-     * Checks whether two strings are equal after trimming and conversion to 
-     * NFKC_Casefold.
+     * Checks whether two strings are equal after trimming, converting to
+     * lowercase, and applying NFKC normalization.
      * @param s1 first string to check
      * @param s2 second string to check
      * @return True if s1 and s2 are equal after conversion, false otherwise
      */
     public static boolean looselyEquals(String s1, String s2) {
-        Normalizer2 normalizer = Normalizer2.getNFKCCasefoldInstance();
-        return normalizer.normalize(s1.trim()).equals(normalizer.normalize(s2.trim()));
+        return Normalizer.normalize(s1.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFKC)
+                .equals(Normalizer.normalize(s2.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFKC));
     }
 }

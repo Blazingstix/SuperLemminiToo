@@ -16,7 +16,6 @@
 
 package lemmini.gui;
 
-import com.ibm.icu.lang.UCharacter;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -272,7 +271,6 @@ public class LevelDialog extends javax.swing.JDialog {
         jTreeLevels.setModel(levelModel);
         jTreeLevels.setRootVisible(false);
         jTreeLevels.setShowsRootHandles(true);
-        selectCurrentLevel();
         jTreeLevels.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mousePressed(java.awt.event.MouseEvent evt) {
                 jTreeLevelsMousePressed(evt);
@@ -289,6 +287,7 @@ public class LevelDialog extends javax.swing.JDialog {
             }
         });
         jScrollPaneLevels.setViewportView(jTreeLevels);
+        selectCurrentLevel();
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -513,74 +512,7 @@ public class LevelDialog extends javax.swing.JDialog {
     }//GEN-LAST:event_jTreeLevelsMousePressed
 
     private void jTreeLevelsValueChanged(javax.swing.event.TreeSelectionEvent evt) {//GEN-FIRST:event_jTreeLevelsValueChanged
-        TreePath selPath = jTreeLevels.getSelectionPath();
-        if (selPath != null && selPath.getPathCount() >= 4) {
-            LevelItem lvlItem = (LevelItem) ((DefaultMutableTreeNode) selPath.getPath()[3]).getUserObject();
-            LevelPack lvlPack = GameController.getLevelPack(lvlItem.levelPack);
-            LevelInfo lvlInfo = lvlPack.getInfo(lvlItem.rating, lvlItem.levelIndex);
-            LevelRecord lvlRecord = Core.player.getLevelRecord(lvlPack.getName(), lvlPack.getRatings()[lvlItem.rating], lvlItem.levelIndex);
-            jTextFieldAuthor.setText(lvlInfo.getAuthor());
-            int numLemmings = lvlInfo.getNumLemmings();
-            int numToRescue = lvlInfo.getNumToRescue();
-            int timeLimit = lvlInfo.getTimeLimit();
-            jTextFieldNumLemmings.setText(Integer.toString(numLemmings));
-            if (GameController.isNoPercentages() || numLemmings > 100) {
-                jTextFieldNumToRescue.setText(Integer.toString(numToRescue));
-            } else {
-                jTextFieldNumToRescue.setText(Integer.toString(numToRescue * 100 / numLemmings) + "%");
-            }
-            jTextFieldReleaseRate.setText(Integer.toString(lvlInfo.getReleaseRate()));
-            if (timeLimit <= 0) {
-                jTextFieldTimeLimit.setText("None");
-            } else {
-                jTextFieldTimeLimit.setText(String.format("%d:%02d", timeLimit / 60, timeLimit % 60));
-            }
-            jTextFieldNumClimbers.setText(ToolBox.intToString(lvlInfo.getNumClimbers(), true));
-            jTextFieldNumFloaters.setText(ToolBox.intToString(lvlInfo.getNumFloaters(), true));
-            jTextFieldNumBombers.setText(ToolBox.intToString(lvlInfo.getNumBombers(), true));
-            jTextFieldNumBlockers.setText(ToolBox.intToString(lvlInfo.getNumBlockers(), true));
-            jTextFieldNumBuilders.setText(ToolBox.intToString(lvlInfo.getNumBuilders(), true));
-            jTextFieldNumBashers.setText(ToolBox.intToString(lvlInfo.getNumBashers(), true));
-            jTextFieldNumMiners.setText(ToolBox.intToString(lvlInfo.getNumMiners(), true));
-            jTextFieldNumDiggers.setText(ToolBox.intToString(lvlInfo.getNumDiggers(), true));
-            if (lvlRecord.isCompleted()) {
-                int lemmingsSaved = lvlRecord.getLemmingsSaved();
-                int timeElapsed = lvlRecord.getTimeElapsed();
-                if (GameController.isNoPercentages() || numLemmings > 100) {
-                    jTextFieldLemmingsSaved.setText(Integer.toString(lvlRecord.getLemmingsSaved()));
-                } else {
-                    jTextFieldLemmingsSaved.setText(Integer.toString(lemmingsSaved * 100 / numLemmings) + "%");
-                }
-                jTextFieldSkillsUsed.setText(Integer.toString(lvlRecord.getSkillsUsed()));
-                jTextFieldTimeElapsed.setText(String.format("%d:%02d", timeElapsed / 60, timeElapsed % 60));
-                jTextFieldScore.setText(Integer.toString(lvlRecord.getScore()));
-            } else {
-                jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
-                jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
-                jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
-                jTextFieldScore.setText(StringUtils.EMPTY);
-            }
-            jButtonOK.setEnabled(true);
-        } else {
-            jTextFieldAuthor.setText(StringUtils.EMPTY);
-            jTextFieldNumLemmings.setText(StringUtils.EMPTY);
-            jTextFieldNumToRescue.setText(StringUtils.EMPTY);
-            jTextFieldReleaseRate.setText(StringUtils.EMPTY);
-            jTextFieldTimeLimit.setText(StringUtils.EMPTY);
-            jTextFieldNumClimbers.setText(StringUtils.EMPTY);
-            jTextFieldNumFloaters.setText(StringUtils.EMPTY);
-            jTextFieldNumBombers.setText(StringUtils.EMPTY);
-            jTextFieldNumBlockers.setText(StringUtils.EMPTY);
-            jTextFieldNumBuilders.setText(StringUtils.EMPTY);
-            jTextFieldNumBashers.setText(StringUtils.EMPTY);
-            jTextFieldNumMiners.setText(StringUtils.EMPTY);
-            jTextFieldNumDiggers.setText(StringUtils.EMPTY);
-            jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
-            jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
-            jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
-            jTextFieldScore.setText(StringUtils.EMPTY);
-            jButtonOK.setEnabled(false);
-        }
+        fillInInfo();
     }//GEN-LAST:event_jTreeLevelsValueChanged
 
     private void jButtonAddExternalLevelsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAddExternalLevelsActionPerformed
@@ -595,7 +527,7 @@ public class LevelDialog extends javax.swing.JDialog {
                     try (DirectoryStream<Path> stream = Files.newDirectoryStream(externLvl, new DirectoryStream.Filter<Path>() {
                         @Override
                         public boolean accept(Path entry) throws IOException {
-                            String extension = UCharacter.toLowerCase(Locale.ROOT, FilenameUtils.getExtension(entry.toString()));
+                            String extension = FilenameUtils.getExtension(entry.toString()).toLowerCase(Locale.ROOT);
                             return extension.equals("ini") || extension.equals("lvl") || extension.equals("dat");
                         }
                     })) {
@@ -721,6 +653,9 @@ public class LevelDialog extends javax.swing.JDialog {
             selPathArray[3] = levelNode;
             jTreeLevels.setSelectionPath(new TreePath(selPathArray));
         }
+        
+        fillInInfo();
+        jTreeLevels.scrollPathToVisible(jTreeLevels.getSelectionPath());
     }
     
     private void selectCurrentLevel() {
@@ -729,6 +664,77 @@ public class LevelDialog extends javax.swing.JDialog {
                 || state == GameController.State.LEVEL_END || state == GameController.State.DEBRIEFING) {
             selectLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber());
             jButtonOK.setEnabled(true);
+        }
+    }
+    
+    private void fillInInfo() {
+        TreePath selPath = jTreeLevels.getSelectionPath();
+        if (selPath != null && selPath.getPathCount() >= 4) {
+            LevelItem lvlItem = (LevelItem) ((DefaultMutableTreeNode) selPath.getPath()[3]).getUserObject();
+            LevelPack lvlPack = GameController.getLevelPack(lvlItem.levelPack);
+            LevelInfo lvlInfo = lvlPack.getInfo(lvlItem.rating, lvlItem.levelIndex);
+            LevelRecord lvlRecord = Core.player.getLevelRecord(lvlPack.getName(), lvlPack.getRatings()[lvlItem.rating], lvlItem.levelIndex);
+            jTextFieldAuthor.setText(lvlInfo.getAuthor());
+            int numLemmings = lvlInfo.getNumLemmings();
+            int numToRescue = lvlInfo.getNumToRescue();
+            int timeLimit = lvlInfo.getTimeLimit();
+            jTextFieldNumLemmings.setText(Integer.toString(numLemmings));
+            if (GameController.isNoPercentages() || numLemmings > 100) {
+                jTextFieldNumToRescue.setText(Integer.toString(numToRescue));
+            } else {
+                jTextFieldNumToRescue.setText(Integer.toString(numToRescue * 100 / numLemmings) + "%");
+            }
+            jTextFieldReleaseRate.setText(Integer.toString(lvlInfo.getReleaseRate()));
+            if (timeLimit <= 0) {
+                jTextFieldTimeLimit.setText("None");
+            } else {
+                jTextFieldTimeLimit.setText(String.format("%d:%02d", timeLimit / 60, timeLimit % 60));
+            }
+            jTextFieldNumClimbers.setText(ToolBox.intToString(lvlInfo.getNumClimbers(), true));
+            jTextFieldNumFloaters.setText(ToolBox.intToString(lvlInfo.getNumFloaters(), true));
+            jTextFieldNumBombers.setText(ToolBox.intToString(lvlInfo.getNumBombers(), true));
+            jTextFieldNumBlockers.setText(ToolBox.intToString(lvlInfo.getNumBlockers(), true));
+            jTextFieldNumBuilders.setText(ToolBox.intToString(lvlInfo.getNumBuilders(), true));
+            jTextFieldNumBashers.setText(ToolBox.intToString(lvlInfo.getNumBashers(), true));
+            jTextFieldNumMiners.setText(ToolBox.intToString(lvlInfo.getNumMiners(), true));
+            jTextFieldNumDiggers.setText(ToolBox.intToString(lvlInfo.getNumDiggers(), true));
+            if (lvlRecord.isCompleted()) {
+                int lemmingsSaved = lvlRecord.getLemmingsSaved();
+                int timeElapsed = lvlRecord.getTimeElapsed();
+                if (GameController.isNoPercentages() || numLemmings > 100) {
+                    jTextFieldLemmingsSaved.setText(Integer.toString(lvlRecord.getLemmingsSaved()));
+                } else {
+                    jTextFieldLemmingsSaved.setText(Integer.toString(lemmingsSaved * 100 / numLemmings) + "%");
+                }
+                jTextFieldSkillsUsed.setText(Integer.toString(lvlRecord.getSkillsUsed()));
+                jTextFieldTimeElapsed.setText(String.format("%d:%02d", timeElapsed / 60, timeElapsed % 60));
+                jTextFieldScore.setText(Integer.toString(lvlRecord.getScore()));
+            } else {
+                jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
+                jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
+                jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
+                jTextFieldScore.setText(StringUtils.EMPTY);
+            }
+            jButtonOK.setEnabled(true);
+        } else {
+            jTextFieldAuthor.setText(StringUtils.EMPTY);
+            jTextFieldNumLemmings.setText(StringUtils.EMPTY);
+            jTextFieldNumToRescue.setText(StringUtils.EMPTY);
+            jTextFieldReleaseRate.setText(StringUtils.EMPTY);
+            jTextFieldTimeLimit.setText(StringUtils.EMPTY);
+            jTextFieldNumClimbers.setText(StringUtils.EMPTY);
+            jTextFieldNumFloaters.setText(StringUtils.EMPTY);
+            jTextFieldNumBombers.setText(StringUtils.EMPTY);
+            jTextFieldNumBlockers.setText(StringUtils.EMPTY);
+            jTextFieldNumBuilders.setText(StringUtils.EMPTY);
+            jTextFieldNumBashers.setText(StringUtils.EMPTY);
+            jTextFieldNumMiners.setText(StringUtils.EMPTY);
+            jTextFieldNumDiggers.setText(StringUtils.EMPTY);
+            jTextFieldLemmingsSaved.setText(StringUtils.EMPTY);
+            jTextFieldSkillsUsed.setText(StringUtils.EMPTY);
+            jTextFieldTimeElapsed.setText(StringUtils.EMPTY);
+            jTextFieldScore.setText(StringUtils.EMPTY);
+            jButtonOK.setEnabled(false);
         }
     }
     

@@ -86,14 +86,14 @@ public class Mask {
             }
             double scaledY = (y + 0.5) * scaleY % 1.0;
             boolean drawSmallY = (scaledY >= (0.5 - scaleYHalf) % 1.0 && scaledY < (0.5 + scaleYHalf) % 1.0)
-                    || StrictMath.abs(scaleY) >= 1.0;
+                    || Math.abs(scaleY) >= 1.0;
             for (int x = x0; x < xMax; x++) {
                 if (x < 0) {
                     continue;
                 }
                 double scaledX = (x + 0.5) * scaleX % 1.0;
                 boolean drawSmallX = (scaledX >= (0.5 - scaleXHalf) % 1.0 && scaledX < (0.5 + scaleXHalf) % 1.0)
-                        || StrictMath.abs(scaleX) >= 1.0;
+                        || Math.abs(scaleX) >= 1.0;
                 int maskAlpha = m.getRGB(x - x0, y - y0) >>> 24;
                 int s = stencil.getMask(x, y);
                 if (!BooleanUtils.toBoolean(s & checkMask)) {
@@ -154,7 +154,7 @@ public class Mask {
             double scaledY = (y + 0.5) * scaleY % 1.0;
             boolean drawSmallY = (scaledY >= (0.5 - scaleYHalf) % 1.0
                     && scaledY < (0.5 + scaleYHalf) % 1.0)
-                    || StrictMath.abs(scaleY) >= 1.0;
+                    || Math.abs(scaleY) >= 1.0;
             for (int x = x0; x < xMax; x++) {
                 if (x < 0) {
                     continue;
@@ -162,7 +162,7 @@ public class Mask {
                 double scaledX = (x + 0.5) * scaleX % 1.0;
                 boolean drawSmallX = (scaledX >= (0.5 - scaleXHalf) % 1.0
                         && scaledX < (0.5 + scaleXHalf) % 1.0)
-                        || StrictMath.abs(scaleX) >= 1.0;
+                        || Math.abs(scaleX) >= 1.0;
                 int color = m.getRGB(x - x0, y - y0);
                 int[] objects = stencil.getIDs(x, y);
                 fgImage.addRGB(x, y, color);

@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import com.ibm.icu.lang.UCharacter;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -186,7 +185,7 @@ public class GameController {
     /** list of all active explosions */
     private static final List<Explosion> explosions = new LinkedList<>();
     /** list of all Lemmings under the mouse cursor */
-    private static final Deque<Lemming> lemmsUnderCursor = new ArrayDeque<>(128);
+    private static final Queue<Lemming> lemmsUnderCursor = Collections.asLifoQueue(new ArrayDeque<Lemming>(128));
     /** array of available level packs */
     private static LevelPack[] levelPacks;
     private static Set<ExternalLevelEntry> externalLevelList;
@@ -1846,14 +1845,14 @@ public class GameController {
                 String fNameStr = name.getFileName().toString();
                 String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
                 try {
-                    LevelFormat format = LevelFormat.valueOf(UCharacter.toUpperCase(Locale.ROOT, FilenameUtils.getExtension(fNameStr)));
+                    LevelFormat format = LevelFormat.valueOf(FilenameUtils.getExtension(fNameStr).toUpperCase(Locale.ROOT));
                     ExternalLevelEntry entry = new ExternalLevelEntry(format, name);
                     if (externalLevelList.contains(entry)) {
                         switch (format) {
                             case DAT:
                                 String[] ratings = lp.getRatings();
                                 for (int i = 1; i < ratings.length; i++) {
-                                    if (UCharacter.toLowerCase(Locale.ROOT, ratings[i]).equals(UCharacter.toLowerCase(Locale.ROOT, fNameStrNoExt))) {
+                                    if (ratings[i].toLowerCase(Locale.ROOT).equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
                                         return new int[]{0, i, 0};
                                     }
                                 }
@@ -1862,8 +1861,8 @@ public class GameController {
                             case INI:
                                 int numLevels = lp.getLevelCount(0);
                                 for (int i = 0; i < numLevels; i++) {
-                                    if (UCharacter.toLowerCase(Locale.ROOT, FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString()))
-                                            .equals(UCharacter.toLowerCase(Locale.ROOT, fNameStrNoExt))) {
+                                    if (FilenameUtils.removeExtension(lp.getInfo(0, i).getFileName().getFileName().toString().toLowerCase(Locale.ROOT))
+                                            .equals(fNameStrNoExt.toLowerCase(Locale.ROOT))) {
                                         return new int[]{0, 0, i};
                                     }
                                 }
@@ -2234,7 +2233,7 @@ public class GameController {
             if (lx + l.width() >= xPos && lx < xPos + Core.getDrawWidth()
                     && ly + l.height() >= yPos && ly < yPos + LemminiFrame.LEVEL_HEIGHT) {
                 if (LemmCursor.doesCollide(l, xPos, yPos)) {
-                    lemmsUnderCursor.addFirst(l);
+                    lemmsUnderCursor.add(l);
                 }
             }
         }
@@ -2510,7 +2509,7 @@ class ExternalLevelEntry {
     
     @Override
     public String toString() {
-        return String.format(Locale.ROOT, "%s, %s", UCharacter.toLowerCase(Locale.ROOT, format.name()), lvlPath);
+        return String.format(Locale.ROOT, "%s, %s", format.name().toLowerCase(Locale.ROOT), lvlPath);
     }
     
     @Override

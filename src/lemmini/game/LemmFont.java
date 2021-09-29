@@ -1,10 +1,9 @@
 package lemmini.game;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.text.BreakIterator;
-import com.ibm.icu.text.Normalizer2;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.BreakIterator;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -116,7 +115,7 @@ public class LemmFont {
             for (int c = 0; c < numChars; c++) {
                 glyphs[c] = new Glyph(glyphImg[c]);
                 int codePoint = p.getInt("subset_" + i + "_char_" + c + "_codePoint", -1);
-                if (UCharacter.isValidCodePoint(codePoint)) {
+                if (Character.isValidCodePoint(codePoint)) {
                     chars.put(codePoint, new LemmChar(name, c));
                 }
             }
@@ -153,14 +152,14 @@ public class LemmFont {
      * @param color Color
      */
     public static void strImage(final GraphicsContext g, String s, int x, final int y, final Color color) {
-        s = Normalizer2.getNFCInstance().normalize(s);
+        s = Normalizer.normalize(s, Normalizer.Form.NFC);
         
-        for (int c, i = 0; i < s.length(); i += UCharacter.charCount(c)) {
+        for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
             c = s.codePointAt(i);
             
-            if (!UCharacter.isLegal(c) || UCharacter.isIdentifierIgnorable(c)) {
+            if (!isLegalChar(c) || Character.isIdentifierIgnorable(c)) {
                 // do nothing
-            } else if (UCharacter.isUWhiteSpace(c)) {
+            } else if (Character.isSpaceChar(c) || Character.isISOControl(c)) {
                 x += width;
             } else {
                 drawCharacter(g, c, x, y, color);
@@ -228,7 +227,7 @@ public class LemmFont {
     
     private static void drawMissingChar(GraphicsContext g, int c, int x, int y, Color color) {
         g.drawImage(missingChar.getColor(color), x, y);
-        boolean bmpCodePoint = UCharacter.isBMP(c);
+        boolean bmpCodePoint = Character.isBmpCodePoint(c);
         int digitsPerRow = (bmpCodePoint ? 2 : 3);
         for (int i = 0; i < 2; i++) {
             for (int j = 0; j < digitsPerRow; j++) {
@@ -261,11 +260,12 @@ public class LemmFont {
      * @param s string
      * @return number of displayable characters
      */
-    public static int getCharCount(final String s) {
+    public static int getCharCount(String s) {
+        s = Normalizer.normalize(s, Normalizer.Form.NFC);
         int charCount = 0;
-        for (int c, i = 0; i < s.length(); i += UCharacter.charCount(c)) {
+        for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
             c = s.codePointAt(i);
-            if (UCharacter.isLegal(c) && !UCharacter.isIdentifierIgnorable(c)) {
+            if (isLegalChar(c) && !Character.isIdentifierIgnorable(c)) {
                 charCount++;
             }
         }
@@ -284,7 +284,7 @@ public class LemmFont {
      * @return an array of strings, one string for each line
      */
     public static String[] split(String s, int maxLineLength) {
-        s = Normalizer2.getNFCInstance().normalize(s);
+        s = Normalizer.normalize(s, Normalizer.Form.NFC);
         
         boolean wordWrap = maxLineLength > 0;
         List<String> sl = new ArrayList<>(4);
@@ -295,16 +295,16 @@ public class LemmFont {
         int i = 0;
         for (int c; i < s.length(); ) {
             c = s.codePointAt(i);
-            int type = UCharacter.getType(c);
+            int type = Character.getType(c);
             boolean breakHere = false;
             int charsToSkip = 0;
             boolean replaceSoftHyphen = false;
             
             // break here if this character is a newline character
-            if (type == UCharacter.LINE_SEPARATOR || type == UCharacter.PARAGRAPH_SEPARATOR) {
+            if (type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR) {
                 breakHere = true;
                 charsToSkip = 1;
-            } else if (UCharacter.isISOControl(c)) {
+            } else if (Character.isISOControl(c)) {
                 switch (c) {
                     case '\r':
                         breakHere = true;
@@ -323,14 +323,14 @@ public class LemmFont {
                         charsToSkip = 1;
                         break;
                     default:
-                        if (UCharacter.isIdentifierIgnorable(c)) {
-                            i += UCharacter.charCount(c);
+                        if (Character.isIdentifierIgnorable(c)) {
+                            i += Character.charCount(c);
                             continue;
                         }
                         break;
                 }
-            } else if (UCharacter.isIdentifierIgnorable(c)) {
-                i += UCharacter.charCount(c);
+            } else if (Character.isIdentifierIgnorable(c)) {
+                i += Character.charCount(c);
                 continue;
             }
             if (!breakHere && wordWrap) {
@@ -368,12 +368,12 @@ public class LemmFont {
                     sl.add(s.substring(lastBreak, i));
                 }
                 for (int j = 0; j < charsToSkip; j++) {
-                    i = i + UCharacter.charCount(s.codePointAt(i));
+                    i = i + Character.charCount(s.codePointAt(i));
                 }
                 lastBreak = i;
                 lineLength = 0;
             } else {
-                i = i + UCharacter.charCount(s.codePointAt(i));
+                i = i + Character.charCount(s.codePointAt(i));
                 lineLength++;
             }
         }
@@ -382,6 +382,13 @@ public class LemmFont {
             sl.add(s.substring(lastBreak, i));
         }
         return sl.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
+    }
+    
+    private static boolean isLegalChar(int c) {
+        return Character.isValidCodePoint(c)
+                && Character.getType(c) != Character.SURROGATE
+                && (c & 0xffff) < 0xfffe
+                && (c < 0xfdd0 || c > 0xfdef);
     }
     
     private static class Subset {

@@ -69,7 +69,7 @@ public class Core {
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.100a";
+    private static final String REVISION = "0.101";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
     

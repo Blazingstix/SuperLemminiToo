@@ -313,10 +313,10 @@ class DATSection {
     private void copyBytes(byte[] data, int idx, int count, int offset) {
         if (offset >= count) {
             // Source and destination regions don't overlap; use
-            // System.arraycopy().
+            // System.arraycopy.
             System.arraycopy(data, idx + offset - (count - 1), data, idx - (count - 1), count);
         } else {
-            // Source and destination regions overlap; System.arraycopy() won't
+            // Source and destination regions overlap; System.arraycopy won't
             // give the correct result here, so copy one byte at a time.
             for (int i = 0; i < count; i++) {
                 data[idx] = data[idx + offset];

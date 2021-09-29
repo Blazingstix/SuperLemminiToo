@@ -1,15 +1,14 @@
 package lemmini.game;
 
-import com.ibm.icu.lang.UCharacter;
-import com.ibm.icu.lang.UProperty;
-import com.ibm.icu.text.Normalizer2;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.Normalizer;
 import java.util.*;
 import lemmini.tools.Props;
+import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
 
 /*
@@ -186,10 +185,10 @@ public class Player {
             if (oldRecord.isCompleted()) {
                 lg.levelRecords.put(num, new LevelRecord(
                         true,
-                        StrictMath.max(oldRecord.getLemmingsSaved(), record.getLemmingsSaved()),
-                        StrictMath.min(oldRecord.getSkillsUsed(), record.getSkillsUsed()),
-                        StrictMath.min(oldRecord.getTimeElapsed(), record.getTimeElapsed()),
-                        StrictMath.max(oldRecord.getScore(), record.getScore())));
+                        Math.max(oldRecord.getLemmingsSaved(), record.getLemmingsSaved()),
+                        Math.min(oldRecord.getSkillsUsed(), record.getSkillsUsed()),
+                        Math.min(oldRecord.getTimeElapsed(), record.getTimeElapsed()),
+                        Math.max(oldRecord.getScore(), record.getScore())));
             } else {
                 lg.levelRecords.put(num, record);
             }
@@ -253,9 +252,10 @@ public class Player {
      * @return 
      */
     public static String addEscapes(final String s) {
-        StringBuilder sb = new StringBuilder(s.length() * 2);
+        int length = s.length();
+        StringBuilder sb = null;
         boolean convertAllChars;
-        switch (UCharacter.toLowerCase(Locale.ROOT, s)) {
+        switch (s.toLowerCase(Locale.ROOT)) {
             // The file names below are illegal in Windows file systems, so
             // escape every character if the player name matches any of these.
             case "com0":
@@ -288,8 +288,8 @@ public class Player {
                 convertAllChars = false;
                 break;
         }
-        for (int i = 0; i < s.length(); i++) {
-            char c = s.charAt(i);
+        for (int c, i = 0; i < length; i += Character.charCount(c)) {
+            c = s.codePointAt(i);
             boolean convertChar;
             if (convertAllChars) {
                 convertChar = true;
@@ -320,35 +320,65 @@ public class Player {
                 }
             }
             if (convertChar) {
-                sb.append(String.format(Locale.ROOT, "_%04x", (int) c));
+                if (sb == null) {
+                    sb = new StringBuilder(length * 5);
+                    sb.append(s.substring(0, i));
+                }
+                if (Character.isBmpCodePoint(c)) {
+                    sb.append(String.format(Locale.ROOT, "_%04x", c));
+                } else {
+                    sb.append(String.format(Locale.ROOT, "__%06x", c));
+                }
             } else {
-                sb.append(c);
+                if (sb != null) {
+                    sb.appendCodePoint(c);
+                }
             }
         }
-        return sb.toString();
+        return (sb == null) ? s : sb.toString();
     }
     
     /**
-     * Converts every instance of _xxxx (where x is a hex digit) to the
-     * corresponding UTF-16 code unit.
+     * Converts every instance of _xxxx or __xxxxxx (where x is a hex digit) to
+     * the corresponding Unicode code point.
      * @param s 
      * @return 
      */
     public static String convertEscapes(final String s) {
-        StringBuilder sb = new StringBuilder(s.length());
-        for (int i = 0; i < s.length(); i++) {
-            if (i < s.length() - 5 && s.charAt(i) == '_'
-                    && UCharacter.hasBinaryProperty(s.charAt(i + 1), UProperty.ASCII_HEX_DIGIT)
-                    && UCharacter.hasBinaryProperty(s.charAt(i + 2), UProperty.ASCII_HEX_DIGIT)
-                    && UCharacter.hasBinaryProperty(s.charAt(i + 3), UProperty.ASCII_HEX_DIGIT)
-                    && UCharacter.hasBinaryProperty(s.charAt(i + 4), UProperty.ASCII_HEX_DIGIT)) {
+        int length = s.length();
+        StringBuilder sb = null;
+        for (int i = 0; i < length; i++) {
+            if (i < s.length() - 4 && s.charAt(i) == '_'
+                    && ToolBox.isHexDigit(s.charAt(i + 1))
+                    && ToolBox.isHexDigit(s.charAt(i + 2))
+                    && ToolBox.isHexDigit(s.charAt(i + 3))
+                    && ToolBox.isHexDigit(s.charAt(i + 4))) {
+                if (sb == null) {
+                    sb = new StringBuilder(length);
+                    sb.append(s.substring(0, i));
+                }
                 sb.append((char) Integer.parseInt(s.substring(i + 1, i + 5), 16));
                 i += 4;
+            } else if (i < s.length() - 7 && s.charAt(i) == '_' && s.charAt(i + 1) == '_'
+                    && ToolBox.isHexDigit(s.charAt(i + 2))
+                    && ToolBox.isHexDigit(s.charAt(i + 3))
+                    && ToolBox.isHexDigit(s.charAt(i + 4))
+                    && ToolBox.isHexDigit(s.charAt(i + 5))
+                    && ToolBox.isHexDigit(s.charAt(i + 6))
+                    && ToolBox.isHexDigit(s.charAt(i + 7))) {
+                if (sb == null) {
+                    sb = new StringBuilder(length);
+                    sb.append(s.substring(0, i));
+                }
+                sb.appendCodePoint(Integer.parseInt(s.substring(i + 2, i + 8), 16));
+                i += 7;
             } else {
-                sb.append(s.charAt(i));
+                if (sb != null) {
+                    sb.append(s.charAt(i));
+                }
             }
         }
-        return sb.toString();
+        return (sb == null) ? s : sb.toString();
     }
     
     private class LevelGroup {
@@ -375,7 +405,7 @@ class PlayerFilter implements DirectoryStream.Filter<Path> {
     private final String playerName;
 
     PlayerFilter(String playerName) {
-        this.playerName = Normalizer2.getNFKCCasefoldInstance().normalize(playerName);
+        this.playerName = playerName;
     }
 
     @Override
@@ -383,11 +413,13 @@ class PlayerFilter implements DirectoryStream.Filter<Path> {
         if (!Files.isRegularFile(entry)) {
             return false;
         }
-        String fileName = entry.getFileName().toString();
-        String convertedFileName = Player.convertEscapes(FilenameUtils.removeExtension(fileName))
-                + "." + FilenameUtils.getExtension(fileName);
-        String normalizedFileName = Normalizer2.getNFKCCasefoldInstance().normalize(convertedFileName);
-        return normalizedFileName.endsWith(".ini")
-                && FilenameUtils.removeExtension(normalizedFileName).equals(playerName);
+        String fileNameWithExtension = entry.getFileName().toString();
+        String fileName = FilenameUtils.removeExtension(fileNameWithExtension);
+        String extension = FilenameUtils.getExtension(fileName);
+        if (!extension.toLowerCase(Locale.ROOT).equals("ini")) {
+            return false;
+        }
+        String convertedFileName = Player.convertEscapes(fileName);
+        return convertedFileName.equals(playerName);
     }
 };

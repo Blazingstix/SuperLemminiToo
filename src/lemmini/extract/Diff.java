@@ -130,9 +130,9 @@ public class Diff {
             lend = checkDelete(src, trg);
             lenr = checkReplace(src, trg);
             lens = checkSubstitute(src, trg);
-            len = StrictMath.min(leni, lend);
-            len = StrictMath.min(len, lenr);
-            len = StrictMath.min(len, lens[1]);
+            len = Math.min(leni, lend);
+            len = Math.min(len, lenr);
+            len = Math.min(len, lens[1]);
             if (len > windowLength) {
                 // completely lost synchronisation
                 //int rs = src.capacity() - src.position();

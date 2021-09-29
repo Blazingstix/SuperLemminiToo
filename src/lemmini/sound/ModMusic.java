@@ -5,6 +5,7 @@ import ibxm.IBXM;
 import ibxm.Module;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.sound.sampled.AudioFormat;
@@ -65,15 +66,14 @@ public class ModMusic implements Runnable, MusicPlayer {
             close();
         }
         loopSong = loop;
-        byte[] songData;
-        try {
-            songData = Files.readAllBytes(fn);
+        Module module;
+        try (InputStream songInputStream = Files.newInputStream(fn)) {
+            module = new Module(songInputStream);
         } catch (FileNotFoundException ex) {
             throw new ResourceException(fn.toString());
         } catch (IOException ex) {
             throw new LemmException(fn + " (IO exception)");
         }
-        Module module = new Module(songData);
         int sampleRate = ToolBox.cap(8000, (int) GameController.sound.getSampleRate(), 128000);
         ibxm = new IBXM(module, sampleRate);
         switch (GameController.sound.getResamplingQuality()) {

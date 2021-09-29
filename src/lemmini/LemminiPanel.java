@@ -18,7 +18,6 @@
  */
 package lemmini;
 
-import com.ibm.icu.lang.UCharacter;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
@@ -997,11 +996,11 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
             for (int ya = y; ya < y + 2; ya++) {
                 double scaledY = (ya + 0.5) * scaleY % 1.0;
                 boolean drawSmallY = (scaledY >= (0.5 - scaleYHalf) % 1.0 && scaledY < (0.5 + scaleYHalf) % 1.0)
-                        || StrictMath.abs(scaleY) >= 1.0;
+                        || Math.abs(scaleY) >= 1.0;
                 for (int xa = x; xa < x + 2; xa++) {
                     double scaledX = (xa + 0.5) * scaleX % 1.0;
                     boolean drawSmallX = (scaledX >= (0.5 - scaleXHalf) % 1.0 && scaledX < (0.5 + scaleXHalf) % 1.0)
-                            || StrictMath.abs(scaleX) >= 1.0;
+                            || Math.abs(scaleX) >= 1.0;
                     if (xa + xOfs >= 0 && xa + xOfs < GameController.getWidth()
                             && ya + yOfs >= 0 && ya + yOfs < GameController.getHeight()) {
                         int[] objects = stencil.getIDs(xa + xOfs, ya + yOfs);
@@ -1124,14 +1123,14 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
         if (levelCode != null && !levelCode.isEmpty() && lvlPack > 0) {
             levelCode = levelCode.trim();
             // cheat mode
-            if (UCharacter.toLowerCase(levelCode).equals("0xdeadbeef")) {
+            if (levelCode.toLowerCase().equals("0xdeadbeef")) {
                 JOptionPane.showMessageDialog(getParent(), "All levels and debug mode enabled.", "Cheater!", JOptionPane.INFORMATION_MESSAGE);
                 Core.player.enableCheatMode();
                 return;
             }
 
             // real level code -> get absolute level
-            levelCode = UCharacter.toUpperCase(levelCode.toUpperCase());
+            levelCode = levelCode.toUpperCase();
             LevelPack lpack = GameController.getLevelPack(lvlPack);
             int[] codeInfo = LevelCode.getLevel(lpack.getCodeSeed(), levelCode, lpack.getCodeOffset());
             if (codeInfo != null) {

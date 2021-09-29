@@ -1,6 +1,5 @@
 package lemmini.extract;
 
-import com.ibm.icu.lang.UCharacter;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -12,6 +11,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import lemmini.tools.ToolBox;
@@ -43,7 +43,7 @@ import org.apache.commons.lang3.StringUtils;
 public class ExtractLevel {
     
     /** Scale (to convert lowres levels into hires levels) */
-    private static final int SCALE = 2;
+    private static final double DEFAULT_SCALE = 2.0;
     private static final int DEFAULT_WIDTH = 1584;
     private static final int DEFAULT_HEIGHT = 160;
     private static final int MINIMUM_WIDTH = 320;
@@ -139,8 +139,8 @@ public class ExtractLevel {
                 throw new Exception(String.format("File %s not found.", fnIn));
             }
             long fileSize = Files.size(fnIn);
-            if (fileSize != 2048L && fileSize != 10240L) {
-                throw new Exception("Lemmings level files must be 2,048 or 10,240 bytes in size!");
+            if (fileSize < 177L) {
+                throw new Exception("Lemmings level files must be at least 177 bytes in size!");
             }
             b = Files.readAllBytes(fnIn);
         } catch (IOException e) {
@@ -187,9 +187,10 @@ public class ExtractLevel {
         int numMiners = 0;
         /* number of diggers in this level : max 0xfa (250) */
         int numDiggers = 0;
+        double scale = DEFAULT_SCALE;
         /* start screen x pos : 0 - 0x04f0 (1264) rounded to modulo 8 */
-        int xPos = 0;
-        int yPos = 80 * SCALE;
+        long xPos = 0L;
+        long yPos = StrictMath.round((DEFAULT_HEIGHT / 2) * DEFAULT_SCALE);
         int optionFlags = 0;
         /*
          * 0x0000 is dirt,  <br>0x0001 is fire,   <br>0x0002 is marble,  <br>
@@ -202,25 +203,22 @@ public class ExtractLevel {
         /* special style */
         int specialStyle = -1;
         String specialStyleStr = null;
-        int specialStylePositionX = 0;
-        int specialStylePositionY = 0;
-        Integer music = 0;
+        long specialStylePositionX = 0L;
+        long specialStylePositionY = 0L;
+        int music = 0;
         String musicStr = null;
         int extra1 = 0;
         int extra2 = 0;
-        /* objects like doors - 32 objects each consists of 8 bytes */
-        LvlObject[] objects;
-        byte[][] objBytes;
-        /* terrain the Lemmings walk on etc. - 400 tiles, 4 bytes each */
-        Terrain[] terrain;
-        byte[][] terBytes;
-        /* steel areas which are indestructible - 32 objects, 4 bytes each */
-        Steel[] steel;
-        byte[][] stlBytes;
-        List<Integer> entranceOrder = new ArrayList<>(32);
-        List<Integer> remappedEntranceOrder = new ArrayList<>(32);
-        int width = DEFAULT_WIDTH * SCALE;
-        int height = DEFAULT_HEIGHT * SCALE;
+        /* objects like doors */
+        List<LvlObject> objects = new ArrayList<>(256);
+        /* terrain the Lemmings walk on etc. */
+        List<Terrain> terrain = new ArrayList<>(2048);
+        /* steel areas which are indestructible */
+        List<Steel> steel = new ArrayList<>(256);
+        List<Integer> entranceOrder = new ArrayList<>(64);
+        List<Integer> remappedEntranceOrder = new ArrayList<>(64);
+        long width = StrictMath.round(DEFAULT_WIDTH * DEFAULT_SCALE);
+        long height = StrictMath.round(DEFAULT_HEIGHT * DEFAULT_SCALE);
         String origLvlName = null;
         /* 32 byte level name - filled with whitespaces */
         String lvlName = StringUtils.EMPTY;
@@ -230,13 +228,13 @@ public class ExtractLevel {
         int greenFlagCount = 0;
         
         // read file into buffer
-        if (in.length != 2048 && in.length != 10240) {
-            throw new Exception("Lemmings level files must be 2,048 or 10,240 bytes in size!");
+        if (in.length < 177) {
+            throw new Exception("Lemmings level files must be at least 177 bytes in size!");
         }
         ByteBuffer b = ByteBuffer.wrap(in).asReadOnlyBuffer();
         // analyze buffer
         if (classic) {
-            if (in.length != 2048L) {
+            if (in.length != 2048) {
                 throw new Exception("Format 0 level files must be 2,048 bytes in size!");
             }
             // read configuration in big endian word
@@ -257,7 +255,8 @@ public class ExtractLevel {
             numDiggers = b.getShort() & 0xffff;
             xPos = b.getShort() & 0xffff;
             xPos += multi ? 72 : 160;
-            xPos *= SCALE;
+            xPos = StrictMath.round(xPos * scale);
+            yPos = StrictMath.round((DEFAULT_HEIGHT / 2) * scale);
             style = b.getShort() & 0xffff;
             styleStr = STYLES.get(style);
             if (styleStr == null) {
@@ -278,7 +277,7 @@ public class ExtractLevel {
             format = b.get();
             switch (format) {
                 case 0:
-                    if (in.length != 2048L) {
+                    if (in.length != 2048) {
                         throw new Exception("Format 0 level files must be 2,048 bytes in size!");
                     }
                     releaseRate = b.get();
@@ -317,7 +316,8 @@ public class ExtractLevel {
                     }
                     xPos = b.getShort() & 0xffff;
                     xPos += multi ? 72 : 160;
-                    xPos *= SCALE;
+                    xPos = Math.round(xPos * scale);
+                    yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
                     music = b.get() & 0xff;
                     if (music > 0 && music < 253) {
                         musicStr = MUSIC.get(music);
@@ -344,11 +344,12 @@ public class ExtractLevel {
                 case 1:
                 case 2:
                 case 3:
-                    if (in.length != 10240L) {
+                case 4:
+                    if (format <= 3 && in.length != 10240) {
                         throw new Exception("Format 1, 2, and 3 level files must be 10,240 bytes in size!");
                     }
                     b.order(ByteOrder.LITTLE_ENDIAN);
-                    if (format >= 3) {
+                    if (format >= 2) {
                         music = b.get() & 0xff;
                     } else {
                         b.get();
@@ -364,20 +365,33 @@ public class ExtractLevel {
                         releaseRate -= 256;
                     }
                     optionFlags = b.get();
-                    style = b.get() & 0xff;
-                    specialStyle = (b.get() & 0xff) - 1;
+                    if (format >= 4) {
+                        style = 255;
+                        specialStyle = 255;
+                        int scaleInt = b.get() & 0xff;
+                        if (scaleInt == 0) {
+                            scale = DEFAULT_SCALE;
+                        } else {
+                            scale = 16.0 / scaleInt;
+                        }
+                        b.get();
+                    } else {
+                        style = b.get() & 0xff;
+                        specialStyle = (b.get() & 0xff) - 1;
+                    }
                     if (format >= 2) {
                         xPos = b.getShort() & 0xffff;
                         xPos += multi ? 72 : 160;
-                        xPos *= SCALE;
+                        xPos = Math.round(xPos * scale);
                         yPos = (b.getShort() & 0xffff) + 80;
-                        yPos *= SCALE;
+                        yPos = Math.round(yPos * scale);
                     } else {
                         music = b.get() & 0xff;
                         b.get();
                         xPos = b.getShort() & 0xffff;
                         xPos += multi ? 72 : 160;
-                        xPos *= SCALE;
+                        xPos = Math.round(xPos * scale);
+                        yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
                     }
                     if (music > 0 && music < 253) {
                         musicStr = MUSIC.get(music);
@@ -411,26 +425,35 @@ public class ExtractLevel {
                     skillFlags = b.getShort() & 0xffff;
                     b.get();
                     b.get();
-                    width = StrictMath.max(DEFAULT_WIDTH + b.getShort(), MINIMUM_WIDTH) * SCALE;
-                    height = StrictMath.max(DEFAULT_HEIGHT + b.getShort(), MINIMUM_HEIGHT) * SCALE;
-                    specialStylePositionX = b.getShort() * SCALE;
-                    specialStylePositionY = b.getShort() * SCALE;
+                    if (format >= 4) {
+                        width = Math.round((b.getInt() & 0xffffffffL) * scale);
+                        height = Math.round((b.getInt() & 0xffffffffL) * scale);
+                        specialStylePositionX = Math.round(b.getInt() * scale);
+                        specialStylePositionY = Math.round(b.getInt() * scale);
+                        b.position(b.position() + 8);
+                    } else {
+                        width = Math.round(Math.max(DEFAULT_WIDTH + b.getShort(), MINIMUM_WIDTH) * scale);
+                        height = Math.round(Math.max(DEFAULT_HEIGHT + b.getShort(), MINIMUM_HEIGHT) * scale);
+                        specialStylePositionX = Math.round(b.getShort() * scale);
+                        specialStylePositionY = Math.round(b.getShort() * scale);
+                    }
                     byte[] bString = new byte[16];
                     b.get(bString);
                     author = new String(bString, StandardCharsets.US_ASCII).trim();
+                    author = ToolBox.addBackslashes(author, false);
                     bString = new byte[32];
                     b.get(bString);
                     lvlName = new String(bString, StandardCharsets.US_ASCII);
                     if (format >= 3) {
                         bString = new byte[16];
                         b.get(bString);
-                        String strTemp = UCharacter.toLowerCase(Locale.ROOT, new String(bString, StandardCharsets.US_ASCII).trim());
+                        String strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
                         if (!strTemp.isEmpty()) {
                             styleStr = strTemp;
                         }
                         bString = new byte[16];
                         b.get(bString);
-                        strTemp = UCharacter.toLowerCase(Locale.ROOT, new String(bString, StandardCharsets.US_ASCII).trim());
+                        strTemp = new String(bString, StandardCharsets.US_ASCII).trim().toLowerCase(Locale.ROOT);
                         if (strTemp.equals("none")) {
                             specialStyle = -1;
                             specialStyleStr = null;
@@ -446,20 +469,20 @@ public class ExtractLevel {
                             throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
                         }
                     }
-                    if (specialStyleStr == null && specialStyle != 255 && specialStyle > -1) {
+                    if (specialStyleStr == null && specialStyle != 254 && specialStyle > -1) {
                         specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                         if (specialStyleStr == null) {
                             throw new Exception(String.format("%s uses an invalid special style: %d", fName, specialStyle));
                         }
                     }
-                    if (format >= 3) {
+                    if (format == 3) {
                         for (int i = 0; i < 32; i++) {
                             int entranceIndex = b.get() & 0xff;
                             if (toBoolean(entranceIndex & 0x80)) {
                                 entranceOrder.add(entranceIndex & 0x7f);
                             }
                         }
-                    } else {
+                    } else if (format <= 2) {
                         b.position(b.position() + 32);
                     }
                     b.position(b.position() + 32);
@@ -479,6 +502,7 @@ public class ExtractLevel {
                         case 1:
                         case 2:
                         case 3:
+                        case 4:
                             skillCountIndex = skillCounts.length - 1 - skillIndex;
                             break;
                         default:
@@ -567,29 +591,85 @@ public class ExtractLevel {
                 numDiggers = skillCounts[7];
             }
         }
-        // read objects
-        switch (format) {
-            case 0:
-                objBytes = new byte[32][8];
-                break;
-            case 1:
-            case 2:
-                objBytes = new byte[64][16];
-                break;
-            case 3:
-                objBytes = new byte[128][8];
-                break;
-            default:
-                throw new Exception(String.format("Unsupported level format: %d", format));
-        }
-        objects = new LvlObject[objBytes.length];
-        int[] entranceLookup = new int[objBytes.length];
-        Arrays.fill(entranceLookup, -1);
-        for (int i = 0; i < objBytes.length; i++) {
-            for (int j = 0; j < objBytes[i].length; j++) {
-                objBytes[i][j] = b.get();
+        // read level items
+        if (format >= 4) {
+            boolean exitLoop = false;
+            do {
+                switch (b.get()) {
+                    case 0:
+                    default:
+                        // end-of-file marker or unsupported item reached; stop parsing here
+                        exitLoop = true;
+                        break;
+                    case 1:
+                        // read object
+                        objects.add(LvlObject.getObject(b, scale, classic, format));
+                        break;
+                    case 2:
+                        // read terrain
+                        terrain.add(Terrain.getTerrain(b, scale, classic, format));
+                        break;
+                    case 3:
+                        // read steel block
+                        steel.add(Steel.getSteel(b, scale, classic, format));
+                        break;
+                    case 4:
+                        // read entrance order
+                        entranceOrder.clear();
+                        int entranceIndex;
+                        while ((entranceIndex = b.getShort() & 0xffff) != 0xffff) {
+                            entranceOrder.add(entranceIndex);
+                        }
+                        break;
+                }
+            } while (!exitLoop);
+        } else {
+            int objectCount, terrainCount, steelCount;
+            switch (format) {
+                case 0:
+                    objectCount = 32;
+                    terrainCount = 400;
+                    steelCount = 32;
+                    break;
+                case 1:
+                case 2:
+                    objectCount = 64;
+                    terrainCount = 1000;
+                    steelCount = 128;
+                    break;
+                case 3:
+                    objectCount = 128;
+                    terrainCount = 1000;
+                    steelCount = 128;
+                    break;
+                case 4:
+                    // this should never be reached, but it's here just in case
+                    objectCount = 0;
+                    terrainCount = 0;
+                    steelCount = 0;
+                    break;
+                default:
+                    throw new Exception(String.format("Unsupported level format: %d", format));
             }
-            LvlObject obj = new LvlObject(objBytes[i], SCALE, classic, format);
+            // read objects
+            for (int i = 0; i < objectCount; i++) {
+                objects.add(LvlObject.getObject(b, scale, classic, format));
+            }
+            // read terrain
+            for (int i = 0; i < terrainCount; i++) {
+                terrain.add(Terrain.getTerrain(b, scale, classic, format));
+            }
+            // read steel blocks
+            for (int i = 0; i < steelCount; i++) {
+                steel.add(Steel.getSteel(b, scale, classic, format));
+            }
+        }
+        // perform some modifications to level items
+        int[] entranceLookup = new int[objects.size()];
+        Arrays.fill(entranceLookup, -1);
+        for (ListIterator<LvlObject> it = objects.listIterator(); it.hasNext(); ) {
+            int i = it.nextIndex();
+            LvlObject obj = it.next();
             if (obj.exists) {
                 if (classic) {
                     if (obj.id == LvlObject.ENTRANCE_ID) {
@@ -608,32 +688,8 @@ public class ExtractLevel {
                     entranceLookup[i] = activeEntranceCount++;
                 }
             }
-            objects[i] = obj;
         }
-        for (int entranceIndex : entranceOrder) {
-            if (entranceLookup[entranceIndex] >= 0) {
-                remappedEntranceOrder.add(entranceLookup[entranceIndex]);
-            }
-        }
-        // read terrain
-        switch (format) {
-            case 0:
-                terBytes = new byte[400][4];
-                break;
-            case 1:
-            case 2:
-            case 3:
-                terBytes = new byte[1000][8];
-                break;
-            default:
-                throw new Exception(String.format("Unsupported level format: %d", format));
-        }
-        terrain = new Terrain[terBytes.length];
-        for (int i = 0; i < terBytes.length; i++) {
-            for (int j = 0; j < terBytes[i].length; j++) {
-                terBytes[i][j] = b.get();
-            }
-            Terrain ter = new Terrain(terBytes[i], SCALE, classic, format);
+        for (Terrain ter : terrain) {
             if (toBoolean(optionFlags & OPTION_FLAG_INVERT_ONE_WAY)) {
                 if (toBoolean(ter.modifier & Terrain.FLAG_NO_ONE_WAY)) {
                     ter.modifier &= ~Terrain.FLAG_NO_ONE_WAY;
@@ -641,31 +697,19 @@ public class ExtractLevel {
                     ter.modifier |= Terrain.FLAG_NO_ONE_WAY;
                 }
             }
-            terrain[i] = ter;
         }
-        // read steel blocks
-        switch (format) {
-            case 0:
-                stlBytes = new byte[32][4];
-                break;
-            case 1:
-            case 2:
-            case 3:
-                stlBytes = new byte[128][8];
-                break;
-            default:
-                throw new Exception(String.format("Unsupported level format: %d", format));
-        }
-        steel = new Steel[stlBytes.length];
-        for (int i = 0; i < stlBytes.length; i++) {
-            for (int j = 0; j < stlBytes[i].length; j++) {
-                stlBytes[i][j] = b.get();
-            }
-            Steel stl = new Steel(stlBytes[i], SCALE, classic, format);
+        for (ListIterator<Steel> it = steel.listIterator(); it.hasNext(); ) {
+            int i = it.nextIndex();
+            Steel stl = it.next();
             if (format == 0 && toBoolean(optionFlags & OPTION_FLAG_NEGATIVE_STEEL) && i >= 16) {
                 stl.negative = true;
             }
-            steel[i] = stl;
+        }
+        // remap the entrance order
+        for (int entranceIndex : entranceOrder) {
+            if (entranceLookup[entranceIndex] >= 0) {
+                remappedEntranceOrder.add(entranceLookup[entranceIndex]);
+            }
         }
         // read name
         if (format == 0) {
@@ -791,14 +835,17 @@ public class ExtractLevel {
             w.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
             w.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask, 8 = horizontally flipped (combining allowed)\r\n");
             int maxObjectID = -1;
-            for (int i = objects.length - 1; i >= 0; i--) {
-                if (objects[i].exists) {
+            for (ListIterator<LvlObject> it = objects.listIterator(objects.size()); it.hasPrevious(); ) {
+                int i = it.previousIndex();
+                LvlObject obj = it.previous();
+                if (obj.exists) {
                     maxObjectID = i;
                     break;
                 }
             }
-            for (int i = 0; i <= maxObjectID; i++) {
-                LvlObject obj = objects[i];
+            for (ListIterator<LvlObject> it = objects.listIterator(); it.nextIndex() <= maxObjectID && it.hasNext(); ) {
+                int i = it.nextIndex();
+                LvlObject obj = it.next();
                 if (obj.exists) {
                     w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + obj.flags);
                     if (!classic) {
@@ -810,14 +857,14 @@ public class ExtractLevel {
                     }
                     w.write("\r\n");
                     if (classic) {
-                        if (toBoolean(objBytes[i][4] & 0x80)) {
-                            w.write("#object_" + i + "_byte4Value = " + objBytes[i][4] + "\r\n");
+                        if (toBoolean(obj.byte4Value & 0x80)) {
+                            w.write("#object_" + i + "_byte4Value = " + obj.byte4Value + "\r\n");
                         }
-                        if ((objBytes[i][6] & 0x3f) != 0) {
-                            w.write("#object_" + i + "_byte6Value = " + objBytes[i][6] + "\r\n");
+                        if ((obj.byte6Value & 0x3f) != 0) {
+                            w.write("#object_" + i + "_byte6Value = " + obj.byte6Value + "\r\n");
                         }
-                        if ((objBytes[i][7] & 0x7f) != 0x0f) {
-                            w.write("#object_" + i + "_byte7Value = " + objBytes[i][7] + "\r\n");
+                        if ((obj.byte7Value & 0x7f) != 0x0f) {
+                            w.write("#object_" + i + "_byte7Value = " + obj.byte7Value + "\r\n");
                         }
                     }
                 } else {
@@ -830,8 +877,10 @@ public class ExtractLevel {
             w.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite,\r\n");
             w.write("#           16 = fake, 32 = horizontally flipped, 64 = no one-way arrows (combining allowed)\r\n");
             int maxTerrainID = -1;
-            for (int i = terrain.length - 1; i >= 0; i--) {
-                if (terrain[i].exists) {
+            for (ListIterator<Terrain> it = terrain.listIterator(terrain.size()); it.hasPrevious(); ) {
+                int i = it.previousIndex();
+                Terrain ter = it.previous();
+                if (ter.exists) {
                     maxTerrainID = i;
                     break;
                 }
@@ -840,23 +889,26 @@ public class ExtractLevel {
             if (!classic) {
                 maxValidTerrainID = maxTerrainID;
             } else if (specialStyle < 0) {
-                for (int i = 0; i <= maxTerrainID; i++) {
-                    if (terrain[i].exists) {
+                for (ListIterator<Terrain> it = terrain.listIterator(); it.nextIndex() <= maxTerrainID && it.hasNext(); ) {
+                    int i = it.nextIndex();
+                    Terrain ter = it.next();
+                    if (ter.exists) {
                         maxValidTerrainID = i;
                     } else {
                         break;
                     }
                 }
             }
-            for (int i = 0; i <= maxTerrainID; i++) {
+            for (ListIterator<Terrain> it = terrain.listIterator(); it.nextIndex() <= maxTerrainID && it.hasNext(); ) {
+                int i = it.nextIndex();
                 if (i > maxValidTerrainID) {
                     w.write("#");
                 }
-                Terrain ter = terrain[i];
+                Terrain ter = it.next();
                 if (ter.exists) {
                     w.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier + "\r\n");
-                    if (classic && toBoolean(terBytes[i][3] & 0x40)) {
-                        w.write("#terrain_" + i + "_byte3Value = " + terBytes[i][3] + "\r\n");
+                    if (classic && toBoolean(ter.byte3Value & 0x40)) {
+                        w.write("#terrain_" + i + "_byte3Value = " + ter.byte3Value + "\r\n");
                     }
                 } else {
                     w.write("terrain_" + i + " = -1, 0, 0, 0\r\n");
@@ -868,23 +920,26 @@ public class ExtractLevel {
             w.write("# Flags: 1 = remove existing steel\r\n");
             int maxSteelID = -1;
             if (!toBoolean(optionFlags & OPTION_FLAG_IGNORE_STEEL)) {
-                for (int i = stlBytes.length - 1; i >= 0; i--) {
-                    if (steel[i].exists) {
+                for (ListIterator<Steel> it = steel.listIterator(steel.size()); it.hasPrevious(); ) {
+                    int i = it.previousIndex();
+                    Steel stl = it.previous();
+                    if (stl.exists) {
                         maxSteelID = i;
                         break;
                     }
                 }
             }
-            for (int i = 0; i <= maxSteelID; i++) {
-                Steel stl = steel[i];
+            for (ListIterator<Steel> it = steel.listIterator(); it.nextIndex() <= maxSteelID && it.hasNext(); ) {
+                int i = it.nextIndex();
+                Steel stl = it.next();
                 if (stl.exists) {
                     w.write("steel_" + i + " = " + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
                     if (!classic) {
                         w.write(", " + (stl.negative ? "1" : "0"));
                     }
                     w.write("\r\n");
-                    if (classic && stlBytes[i][3] != 0) {
-                        w.write("#steel_" + i + "_byte3Value = " + stlBytes[i][3] + "\r\n");
+                    if (classic && stl.byte3Value != 0) {
+                        w.write("#steel_" + i + "_byte3Value = " + stl.byte3Value + "\r\n");
                     }
                 } else {
                     w.write("steel_" + i + " = 0, 0, 0, 0\r\n");
@@ -925,9 +980,9 @@ class LvlObject {
     static final int GREEN_FLAG_ID = 2;
 
     /** x position in pixels */
-    int xPos;
+    long xPos;
     /** y position in pixels */
-    int yPos;
+    long yPos;
     /** identifier */
     int id;
     /** paint mode */
@@ -935,16 +990,25 @@ class LvlObject {
     int flags;
     boolean leftFacing;
     boolean exists;
+    byte byte4Value;
+    byte byte6Value;
+    byte byte7Value;
 
     /**
      * Constructor.
      * @param b buffer
      * @param classic
-     * @param scale Scale (to convert lowres levels into hires levels)
+     * @param scale Scale
      */
-    LvlObject(final byte[] b, final int scale, final boolean classic, final int format) throws Exception {
+    LvlObject(final byte[] b, final double scale, final boolean classic, final int format) throws Exception {
+        byte4Value = 0;
+        byte6Value = 0;
+        byte7Value = 0;
         switch (format) {
             case 0:
+                byte4Value = b[4];
+                byte6Value = b[6];
+                byte7Value = b[7];
                 int sum = 0;
                 for (byte b1 : b) {
                     sum += b1 & 0xff;
@@ -952,12 +1016,12 @@ class LvlObject {
                 exists = sum != 0;
                 // x pos  : min 0xFFF8, max 0x0638.  0xFFF8 = -24, 0x0000 = -16, 0x0008 = -8
                 // 0x0010 = 0, 0x0018 = 8, ... , 0x0638 = 1576    note: should be multiples of 8
-                xPos = ((b[0] << 8) | (b[1] & 0xff)) - 16;
-                xPos *= scale;
+                xPos = ((b[0] << 8L) | (b[1] & 0xffL)) - 16L;
+                xPos = StrictMath.round(xPos * scale);
                 // y pos  : min 0xFFD7, max 0x009F.  0xFFD7 = -41, 0xFFF8 = -8, 0xFFFF = -1
                 // 0x0000 = 0, ... , 0x009F = 159.  note: can be any value in the specified range
-                yPos = (b[2] << 8) | (b[3] & 0xff);
-                yPos *= scale;
+                yPos = (b[2] << 8L) | (b[3] & 0xffL);
+                yPos = StrictMath.round(yPos * scale);
                 // obj id : min 0x0000, max 0x000F.  the object id is different in each
                 // graphics set, however 0x0000 is always an exit and 0x0001 is always a start.
                 if (classic) {
@@ -989,10 +1053,13 @@ class LvlObject {
             case 1:
             case 2:
             case 3:
-                xPos = (b[0] & 0xff) | (b[1] << 8);
-                xPos *= scale;
-                yPos = (b[2] & 0xff) | (b[3] << 8);
-                yPos *= scale;
+                byte4Value = 0;
+                byte6Value = 0;
+                byte7Value = 0;
+                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Math.round(yPos * scale);
                 id = b[4] & 0xff;
                 paintMode = 0;
                 flags = 0;
@@ -1018,9 +1085,64 @@ class LvlObject {
                 }
                 exists = toBoolean(b[7] & 0x80);
                 break;
+            case 4:
+                byte4Value = 0;
+                byte6Value = 0;
+                byte7Value = 0;
+                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Math.round(yPos * scale);
+                id = (b[8] & 0xff) | ((b[9] & 0xff) << 8);
+                paintMode = 0;
+                flags = 0;
+                if (toBoolean(b[12] & 0x01)) {
+                    paintMode |= MODE_NO_OVERWRITE;
+                }
+                if (toBoolean(b[12] & 0x02)) {
+                    paintMode |= MODE_VIS_ON_TERRAIN;
+                }
+                if (toBoolean(b[12] & 0x04)) {
+                    flags |= FLAG_UPSIDE_DOWN;
+                    flags |= FLAG_UPSIDE_DOWN_MASK;
+                }
+                leftFacing = toBoolean(b[12] & 0x08);
+                if (toBoolean(b[12] & 0x10)) {
+                    flags |= FLAG_FAKE;
+                }
+                if (toBoolean(b[12] & 0x20)) {
+                    paintMode |= MODE_INVISIBLE;
+                }
+                if (toBoolean(b[12] & 0x40)) {
+                    flags |= FLAG_HORIZONTALLY_FLIPPED;
+                }
+                exists = toBoolean(b[12] & 0x80);
+                break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
         }
+    }
+    
+    static LvlObject getObject(ByteBuffer b, double scale, boolean classic, int format) throws Exception {
+        int byteCount;
+        switch (format) {
+            case 0:
+            case 3:
+                byteCount = 8;
+                break;
+            case 1:
+            case 2:
+                byteCount = 16;
+                break;
+            case 4:
+                byteCount = 20;
+                break;
+            default:
+                throw new Exception(String.format("Unsupported level format: %d", format));
+        }
+        byte[] bytes = new byte[byteCount];
+        b.get(bytes);
+        return new LvlObject(bytes, scale, classic, format);
     }
 }
 
@@ -1039,21 +1161,23 @@ class Terrain {
     /** identifier */
     int id;
     /** x position in pixels */
-    int xPos;
+    long xPos;
     /** y position in pixels */
-    int yPos;
+    long yPos;
     /** modifier - must be one of the above MODEs */
     int modifier;
     boolean exists;
+    byte byte3Value;
 
     /**
      * Constructor.
      * @param b buffer
-     * @param scale Scale (to convert lowres levels into hires levels)
+     * @param scale Scale
      */
-    Terrain(final byte[] b, final int scale, final boolean classic, final int format) throws Exception {
+    Terrain(final byte[] b, final double scale, final boolean classic, final int format) throws Exception {
         switch (format) {
             case 0:
+                byte3Value = b[3];
                 int mask = 0xff;
                 for (byte b1 : b) {
                     mask &= b1 & 0xff;
@@ -1066,17 +1190,17 @@ class Terrain {
                 // 0 indicates normal.
                 // eg: 0xC011 means draw at xpos=1, do not overwrite, upside-down.
                 modifier = (b[0] & 0xe0) >> 4;
-                xPos = (((b[0] & (classic ? 0x1f : 0x0f)) << 8) | (b[1] & 0xff)) - 16;
-                xPos *= scale;
+                xPos = (((b[0] & (classic ? 0x1fL : 0x0fL)) << 8L) | (b[1] & 0xffL)) - 16L;
+                xPos = StrictMath.round(xPos * scale);
                 // y pos : 9-bit value. min 0xEF0, max 0x518.  0xEF0 = -38, 0xEF8 = -37,
                 // 0x020 = 0, 0x028 = 1, 0x030 = 2, 0x038 = 3, ... , 0x518 = 159
                 // note: the ypos value bleeds into the next value since it is 9 bits.
-                yPos = ((b[2] & 0xff) << 1) | ((b[3] & 0x80) >> 7);
-                if (toBoolean(yPos & 256)) { // highest bit set -> negative
-                    yPos -= 512;
+                yPos = ((b[2] & 0xffL) << 1L) | ((b[3] & 0x80L) >> 7L);
+                if (toBoolean((int) yPos & 0x100)) { // highest bit set -> negative
+                    yPos -= 512L;
                 }
-                yPos -= 4;
-                yPos *= scale;
+                yPos -= 4L;
+                yPos = StrictMath.round(yPos * scale);
                 // terrain id: min 0x00, max 0x3F.  not all graphic sets have all 64 graphics.
                 id = b[3] & 0x3f;
                 if (!classic && toBoolean(b[0] & 0x10)) {
@@ -1086,10 +1210,11 @@ class Terrain {
             case 1:
             case 2:
             case 3:
-                xPos = (b[0] & 0xff) | (b[1] << 8);
-                xPos *= scale;
-                yPos = (b[2] & 0xff) | (b[3] << 8);
-                yPos *= scale;
+                byte3Value = 0;
+                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Math.round(yPos * scale);
                 id = b[4] & 0xff;
                 modifier = 0;
                 if (toBoolean(b[5] & 0x01)) {
@@ -1109,9 +1234,56 @@ class Terrain {
                 }
                 exists = toBoolean(b[5] & 0x80);
                 break;
+            case 4:
+                byte3Value = 0;
+                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Math.round(yPos * scale);
+                id = (b[8] & 0xff) | ((b[9] & 0xff) << 8);
+                modifier = 0;
+                if (toBoolean(b[10] & 0x01)) {
+                    modifier |= FLAG_NO_OVERWRITE;
+                }
+                if (toBoolean(b[10] & 0x02)) {
+                    modifier |= FLAG_ERASE;
+                }
+                if (toBoolean(b[10] & 0x04)) {
+                    modifier |= FLAG_UPSIDE_DOWN;
+                }
+                if (toBoolean(b[10] & 0x08)) {
+                    modifier |= FLAG_HORIZONTALLY_FLIPPED;
+                }
+                if (toBoolean(b[10] & 0x10)) {
+                    modifier |= FLAG_NO_ONE_WAY;
+                }
+                exists = toBoolean(b[10] & 0x80);
+                break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
         }
+    }
+    
+    static Terrain getTerrain(ByteBuffer b, double scale, boolean classic, int format) throws Exception {
+        int byteCount;
+        switch (format) {
+            case 0:
+                byteCount = 4;
+                break;
+            case 1:
+            case 2:
+            case 3:
+                byteCount = 8;
+                break;
+            case 4:
+                byteCount = 16;
+                break;
+            default:
+                throw new Exception(String.format("Unsupported level format: %d", format));
+        }
+        byte[] bytes = new byte[byteCount];
+        b.get(bytes);
+        return new Terrain(bytes, scale, classic, format);
     }
 }
 
@@ -1123,72 +1295,112 @@ class Terrain {
 class Steel {
 
     /** x position in pixels */
-    int xPos;
+    long xPos;
     /** y position in pixels */
-    int yPos;
+    long yPos;
     /** width in pixels */
-    int width;
+    long width;
     /** height in pixels */
-    int height;
+    long height;
     boolean negative;
     boolean exists;
+    byte byte3Value;
 
     /**
      * Constructor.
      * @param b buffer
-     * @param scale Scale (to convert lowres levels into hires levels)
+     * @param scale Scale
      */
-    Steel(final byte[] b, final int scale, final boolean classic, final int format) throws Exception {
+    Steel(final byte[] b, final double scale, final boolean classic, final int format) throws Exception {
+        int steelType;
         switch (format) {
             case 0:
+                byte3Value = b[3];
                 int sum = 0;
                 for (byte b1 : b) {
                     sum += b1 & 0xff;
                 }
                 exists = sum != 0;
                 // xpos: 9-bit value: 0x000-0x178).  0x000 = -16, 0x178 = 1580
-                xPos = (((b[0] & 0xff) << 1) | ((b[1] & 0x80) >> 7)) * 4 - 16;
+                xPos = (((b[0] & 0xffL) << 1L) | ((b[1] & 0x80L) >> 7L)) * 4L - 16L;
                 if (!classic) {
-                    xPos -= (b[3] & 0xc0) >>> 6;
+                    xPos -= (b[3] & 0xc0L) >>> 6L;
                 }
-                xPos *= scale;
+                xPos = StrictMath.round(xPos * scale);
                 // ypos: 0x00-0x27. 0x00 = 0, 0x27 = 156 - each hex value represents 4 pixels
-                yPos = (b[1] & 0x7f) * 4;
+                yPos = (b[1] & 0x7fL) * 4L;
                 if (!classic) {
-                    yPos -= (b[3] & 0x30) >>> 4;
+                    yPos -= (b[3] & 0x30L) >>> 4L;
                 }
-                yPos *= scale;
+                yPos = StrictMath.round(yPos * scale);
                 // area: 0x00-0xFF.  first nibble is the x-size, from 0-F (represents 4 pixels)
                 // second nibble is the y-size. 0x00 = (4,4), 0x11 = (8,8), 0x7F = (32,64)
-                width = ((b[2] & 0xf0) >> 4) * 4 + 4;
+                width = ((b[2] & 0xf0L) >> 4L) * 4L + 4L;
                 if (!classic) {
-                    width -= (b[3] & 0x0c) >>> 2;
+                    width -= (b[3] & 0x0cL) >>> 2L;
                 }
-                width *= scale;
-                height = (b[2] & 0xf) * 4 + 4;
+                width = StrictMath.round(width * scale);
+                height = (b[2] & 0xfL) * 4L + 4L;
                 if (!classic) {
-                    height -= b[3] & 0x03;
+                    height -= b[3] & 0x03L;
                 }
-                height *= scale;
+                height = StrictMath.round(height * scale);
                 negative = false;
                 break;
             case 1:
             case 2:
             case 3:
-                xPos = (b[0] & 0xff) | (b[1] << 8);
-                xPos *= scale;
-                yPos = (b[2] & 0xff) | (b[3] << 8);
-                yPos *= scale;
-                width = (b[4] & 0xff) + 1;
-                width *= scale;
-                height = (b[5] & 0xff) + 1;
-                height *= scale;
-                int steelType = b[6] & 0x7f;
+                byte3Value = 0;
+                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Math.round(yPos * scale);
+                width = (b[4] & 0xffL) + 1L;
+                width = Math.round(width * scale);
+                height = (b[5] & 0xffL) + 1L;
+                height = Math.round(height * scale);
+                steelType = b[6] & 0x7f;
                 negative = steelType == 1;
                 exists = toBoolean(b[6] & 0x80) && (steelType == 0 || steelType == 1);
+                break;
+            case 4:
+                byte3Value = 0;
+                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Math.round(xPos * scale);
+                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Math.round(yPos * scale);
+                width = ((b[8] & 0xffL) | ((b[9] & 0xffL) << 8L) | ((b[10] & 0xffL) << 16L) | (b[11] << 24L)) + 1L;
+                width = Math.round(width * scale);
+                height = ((b[12] & 0xffL) | ((b[13] & 0xffL) << 8L) | ((b[14] & 0xffL) << 16L) | (b[15] << 24L)) + 1L;
+                height = Math.round(height * scale);
+                steelType = b[16] & 0x7f;
+                negative = steelType == 1;
+                exists = toBoolean(b[16] & 0x80) && (steelType == 0 || steelType == 1);
                 break;
             default:
                 throw new Exception(String.format("Unsupported level format: %d", format));
         }
+    }
+    
+    static Steel getSteel(ByteBuffer b, double scale, boolean classic, int format) throws Exception {
+        int byteCount;
+        switch (format) {
+            case 0:
+                byteCount = 4;
+                break;
+            case 1:
+            case 2:
+            case 3:
+                byteCount = 8;
+                break;
+            case 4:
+                byteCount = 20;
+                break;
+            default:
+                throw new Exception(String.format("Unsupported level format: %d", format));
+        }
+        byte[] bytes = new byte[byteCount];
+        b.get(bytes);
+        return new Steel(bytes, scale, classic, format);
     }
 }

@@ -18,7 +18,6 @@
  */
 package lemmini;
 
-import com.ibm.icu.text.Normalizer2;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -26,6 +25,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Locale;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
@@ -49,7 +49,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.100a";
+    public static final String REVISION = "0.101";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -600,7 +600,7 @@ public class LemminiFrame extends javax.swing.JFrame {
     public static void main(String[] args) {
         Path level = null;
         for (int i = 0; i < args.length; i++) {
-            switch (Normalizer2.getNFKCCasefoldInstance().normalize(args[i])) {
+            switch (args[i].toLowerCase(Locale.ROOT)) {
                 case "-l":
                     i++;
                     if (i < args.length) {

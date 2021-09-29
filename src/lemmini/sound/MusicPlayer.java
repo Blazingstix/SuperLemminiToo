@@ -29,10 +29,10 @@ public interface MusicPlayer {
      * @throws ResourceException
      * @throws LemmException
      */
-    public void load(Path fn, boolean loop) throws ResourceException, LemmException;
+    void load(Path fn, boolean loop) throws ResourceException, LemmException;
     
-    public void stop();
-    public void play();
-    public void close();
-    public void setGain(double gain);
+    void stop();
+    void play();
+    void close();
+    void setGain(double gain);
 }
