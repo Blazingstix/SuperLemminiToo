@@ -5,6 +5,7 @@ import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 import lemmini.tools.Props;
@@ -51,7 +52,7 @@ public class Player {
      */
     public Player(final String n) {
         name = n;
-        lvlGroups = new HashMap<>();
+        lvlGroups = new LinkedHashMap<>();
         // read main ini file
         props = new Props();
         // create players directory if it doesn't exist

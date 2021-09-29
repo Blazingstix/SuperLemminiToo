@@ -19,7 +19,6 @@ import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.Image;
 import lemmini.gui.*;
 import lemmini.sound.Music;
-import lemmini.tools.NanosecondTimer;
 import lemmini.tools.ToolBox;
 
 /*
@@ -66,7 +65,7 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
     public static final int LEVEL_HEIGHT = Level.DEFAULT_HEIGHT;
     /** height of menu and icon bar in pixels */
     public static final int WIN_OFS = 120;
-    public static final String REVISION = "0.95";
+    public static final String REVISION = "0.95a";
     
     private static final long serialVersionUID = 0x01;
     
@@ -484,6 +483,10 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                 boolean selected = jMenuItemCursor.isSelected();
                 if (selected) {
                     GameController.setAdvancedSelect(true);
+                    gp.setLeftPressed(false);
+                    gp.setRightPressed(false);
+                    gp.setUpPressed(false);
+                    gp.setDownPressed(false);
                 } else {
                     GameController.setAdvancedSelect(false);
                     gp.setCursor(LemmCursor.CursorType.NORMAL);
@@ -982,8 +985,7 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                                 gp.setCursor(LemmCursor.CursorType.RIGHT);
                             }
                         } else {
-                            int xOfsTemp = GameController.getXPos() + ((gp.isShiftPressed()) ? GraphicsPane.X_STEP_FAST : GraphicsPane.X_STEP);
-                            GameController.setXPos(xOfsTemp);
+                            gp.setRightPressed(true);
                         }
                         break;
                     case KeyEvent.VK_LEFT /*37*/:
@@ -994,8 +996,7 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                                 gp.setCursor(LemmCursor.CursorType.LEFT);
                             }
                         } else {
-                            int xOfsTemp = GameController.getXPos() - ((gp.isShiftPressed()) ? GraphicsPane.X_STEP_FAST : GraphicsPane.X_STEP);
-                            GameController.setXPos(xOfsTemp);
+                            gp.setLeftPressed(true);
                         }
                         break;
                     case KeyEvent.VK_UP:
@@ -1008,14 +1009,12 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                                 gp.setCursor(LemmCursor.CursorType.WALKER);
                             }
                         } else {
-                            int yOfsTemp = GameController.getYPos() - ((gp.isShiftPressed()) ? GraphicsPane.X_STEP_FAST : GraphicsPane.X_STEP);
-                            GameController.setYPos(yOfsTemp);
+                            gp.setUpPressed(true);
                         }
                         break;
                     case KeyEvent.VK_DOWN:
                         if (!GameController.isAdvancedSelect()) {
-                            int yOfsTemp = GameController.getYPos() + ((gp.isShiftPressed()) ? GraphicsPane.X_STEP_FAST : GraphicsPane.X_STEP);
-                            GameController.setYPos(yOfsTemp);
+                            gp.setDownPressed(true);
                         }
                         break;
                     case KeyEvent.VK_SHIFT:
@@ -1049,6 +1048,7 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                     default:
                         break;
                 }
+                keyEvent.consume();
                 break;
             case BRIEFING:
             case DEBRIEFING:
@@ -1097,26 +1097,43 @@ public class Lemmini extends JFrame implements KeyListener, WindowFocusListener 
                     GameController.releaseIcon(Icons.Type.NUKE);
                     break;
                 case KeyEvent.VK_LEFT:
-                    if (LemmCursor.getType() == LemmCursor.CursorType.LEFT) {
-                        gp.setCursor(LemmCursor.CursorType.NORMAL);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
-                        gp.setCursor(LemmCursor.CursorType.WALKER);
+                    if (GameController.isAdvancedSelect()) {
+                        if (LemmCursor.getType() == LemmCursor.CursorType.LEFT) {
+                            gp.setCursor(LemmCursor.CursorType.NORMAL);
+                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
+                            gp.setCursor(LemmCursor.CursorType.WALKER);
+                        }
+                    } else {
+                        gp.setLeftPressed(false);
                     }
                     break;
                 case KeyEvent.VK_RIGHT:
-                    if (LemmCursor.getType() == LemmCursor.CursorType.RIGHT) {
-                        gp.setCursor(LemmCursor.CursorType.NORMAL);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
-                        gp.setCursor(LemmCursor.CursorType.WALKER);
+                    if (GameController.isAdvancedSelect()) {
+                        if (LemmCursor.getType() == LemmCursor.CursorType.RIGHT) {
+                            gp.setCursor(LemmCursor.CursorType.NORMAL);
+                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
+                            gp.setCursor(LemmCursor.CursorType.WALKER);
+                        }
+                    } else {
+                        gp.setRightPressed(false);
                     }
                     break;
                 case KeyEvent.VK_UP:
-                    if (LemmCursor.getType() == LemmCursor.CursorType.WALKER) {
-                        gp.setCursor(LemmCursor.CursorType.NORMAL);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
-                        gp.setCursor(LemmCursor.CursorType.LEFT);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
-                        gp.setCursor(LemmCursor.CursorType.RIGHT);
+                    if (GameController.isAdvancedSelect()) {
+                        if (LemmCursor.getType() == LemmCursor.CursorType.WALKER) {
+                            gp.setCursor(LemmCursor.CursorType.NORMAL);
+                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
+                            gp.setCursor(LemmCursor.CursorType.LEFT);
+                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
+                            gp.setCursor(LemmCursor.CursorType.RIGHT);
+                        }
+                    } else {
+                        gp.setUpPressed(false);
+                    }
+                    break;
+                case KeyEvent.VK_DOWN:
+                    if (!GameController.isAdvancedSelect()) {
+                        gp.setDownPressed(false);
                     }
                     break;
                 default:
@@ -1225,8 +1242,16 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
     private int mouseDx;
     /** mouse drag length in y direction (pixels) */
     private int mouseDy;
-    /** flag: Shift key is pressed */
+    /** flag: shift key is pressed */
     private boolean shiftPressed;
+    /** flag: left key is pressed */
+    private boolean leftPressed;
+    /** flag: right key is pressed */
+    private boolean rightPressed;
+    /** flag: up key is pressed */
+    private boolean upPressed;
+    /** flag: down key is pressed */
+    private boolean downPressed;
     /** flag: left mouse button is currently pressed */
     private boolean leftMousePressed = false;
     /** flag: middle mouse button is currently pressed */
@@ -1336,6 +1361,10 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
     
     void focusLost() {
         shiftPressed = false;
+        leftPressed = false;
+        rightPressed = false;
+        upPressed = false;
+        downPressed = false;
         leftMousePressed = false;
         middleMousePressed = false;
         rightMousePressed = false;
@@ -1562,6 +1591,20 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
                             } else if (yMouseScreen < Core.scale(AUTOSCROLL_RANGE)) {
                                 GameController.setYPos(GameController.getYPos() - (isShiftPressed() ? X_STEP_FAST : X_STEP));
                             }
+                        }
+                    }
+                    if (isRightPressed()) {
+                        GameController.setXPos(GameController.getXPos() + (isShiftPressed() ? X_STEP_FAST : X_STEP));
+                    }
+                    if (isLeftPressed()) {
+                        GameController.setXPos(GameController.getXPos() - (isShiftPressed() ? X_STEP_FAST : X_STEP));
+                    }
+                    if (!GameController.isVerticalLock()) {
+                        if (isDownPressed()) {
+                            GameController.setYPos(GameController.getYPos() + (isShiftPressed() ? X_STEP_FAST : X_STEP));
+                        }
+                        if (isUpPressed()) {
+                            GameController.setYPos(GameController.getYPos() - (isShiftPressed() ? X_STEP_FAST : X_STEP));
                         }
                     }
                     if (holdingMinimap && !GameController.isVerticalLock()) {
@@ -2095,7 +2138,7 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
 
     /**
      * Get flag: Shift key is pressed?
-     * @return true if Shift key is pressed, false otherwise
+     * @return true if shift key is pressed, false otherwise
      */
     boolean isShiftPressed() {
         return shiftPressed;
@@ -2103,10 +2146,74 @@ class GraphicsPane extends JPanel implements Runnable, MouseListener, MouseMotio
 
     /**
      * Set flag: Shift key is pressed.
-     * @param p true: Shift key is pressed,false otherwise
+     * @param p true: Shift key is pressed, false otherwise
      */
     void setShiftPressed(final boolean p) {
         shiftPressed = p;
+    }
+
+    /**
+     * Get flag: Left key is pressed?
+     * @return true if left key is pressed, false otherwise
+     */
+    boolean isLeftPressed() {
+        return leftPressed;
+    }
+
+    /**
+     * Set flag: Left key is pressed.
+     * @param p true: Left key is pressed, false otherwise
+     */
+    void setLeftPressed(final boolean p) {
+        leftPressed = p;
+    }
+
+    /**
+     * Get flag: Right key is pressed?
+     * @return true if right key is pressed, false otherwise
+     */
+    boolean isRightPressed() {
+        return rightPressed;
+    }
+
+    /**
+     * Set flag: Right key is pressed.
+     * @param p true: Right key is pressed, false otherwise
+     */
+    void setRightPressed(final boolean p) {
+        rightPressed = p;
+    }
+
+    /**
+     * Get flag: Up key is pressed?
+     * @return true if up key is pressed, false otherwise
+     */
+    boolean isUpPressed() {
+        return upPressed;
+    }
+
+    /**
+     * Set flag: Up key is pressed.
+     * @param p true: Up key is pressed, false otherwise
+     */
+    void setUpPressed(final boolean p) {
+        upPressed = p;
+    }
+
+    /**
+     * Get flag: Down key is pressed?
+     * @return true if down key is pressed, false otherwise
+     */
+    boolean isDownPressed() {
+        return downPressed;
+    }
+
+    /**
+     * Set flag: Down key is pressed.
+     * @param p true: Down key is pressed, false otherwise
+     */
+    void setDownPressed(final boolean p) {
+        downPressed = p;
     }
 
     /**

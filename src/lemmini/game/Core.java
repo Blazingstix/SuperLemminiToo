@@ -164,10 +164,9 @@ public class Core {
         GameController.setFasterFastForward(programProps.getBoolean("fasterFastForward", false));
         if (resourcePathStr.isEmpty() || !REVISION.equalsIgnoreCase(rev) || createPatches) {
             // extract resources
-            Extract e = new Extract();
             try {
-                e.extract(null, sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
-                resourcePath = e.getResourcePath();
+                Extract.extract(null, sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches);
+                resourcePath = Extract.getResourcePath();
                 programProps.set("revision", REVISION);
             } catch (ExtractException ex) {
                 if (ex.isCanceledByUser()) {
@@ -176,8 +175,8 @@ public class Core {
                     throw new LemmException(String.format("Resource extraction failed.%n%s", ex.getMessage()));
                 }
             } finally {
-                programProps.set("resourcePath", e.getResourcePath().toString());
-                programProps.set("sourcePath", e.getSourcePath().toString());
+                programProps.set("resourcePath", Extract.getResourcePath().toString());
+                programProps.set("sourcePath", Extract.getSourcePath().toString());
                 programProps.save(programPropsFilePath);
             }
         }

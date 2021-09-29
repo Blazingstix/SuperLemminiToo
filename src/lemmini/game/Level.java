@@ -752,7 +752,7 @@ public class Level {
                     boolean overwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) == 0;
                     boolean remove = (t.modifier & Terrain.MODE_REMOVE) != 0;
                     for (int y = 0; y < height; y++) {
-                        if (y + ty < 0 || y + ty >= fgHeight) {
+                        if (y + ty < 0 || y + ty >= targetBg.getHeight()) {
                             continue;
                         }
                         int yLine;
@@ -762,7 +762,7 @@ public class Level {
                             yLine = y * width;
                         }
                         for (int x = 0; x < width; x++) {
-                            if (x + tx < 0 || x + tx >= fgWidth) {
+                            if (x + tx < 0 || x + tx >= targetBg.getWidth()) {
                                 continue;
                             }
                             int xSrc;

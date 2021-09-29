@@ -394,7 +394,7 @@ public class Extract implements Runnable {
      * Get source path (WINLEMM) for extraction.
      * @return source path (WINLEMM) for extraction
      */
-    public Path getSourcePath() {
+    public static Path getSourcePath() {
         return sourcePath;
     }
 
@@ -402,7 +402,7 @@ public class Extract implements Runnable {
      * Get destination path (Lemmini resource) for extraction.
      * @return destination path (Lemmini resource) for extraction
      */
-    public Path getResourcePath() {
+    public static Path getResourcePath() {
         return destinationPath;
     }
 

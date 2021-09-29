@@ -36,6 +36,10 @@ public class ExtractLevel {
     
     /** Scale (to convert lowres levels into hires levels) */
     private static final int SCALE = 2;
+    private static final int DEFAULT_WIDTH = 1584;
+    private static final int DEFAULT_HEIGHT = 160;
+    private static final int MINIMUM_WIDTH = 320;
+    private static final int MINIMUM_HEIGHT = 160;
     static final int FAKE_OBJECT_CUTOFF = 16;
     private static final int MAX_ENTRANCES = 4;
     private static final int MAX_ENTRANCES_MULTI = 2;
@@ -150,6 +154,7 @@ public class ExtractLevel {
         int numDiggers = 0;
         /* start screen x pos : 0 - 0x04f0 (1264) rounded to modulo 8 */
         int xPos = 0;
+        int yPos = 80 * SCALE;
         int optionFlags = 0;
         /*
          * 0x0000 is dirt,  <br>0x0001 is fire,   <br>0x0002 is marble,  <br>
@@ -170,6 +175,8 @@ public class ExtractLevel {
         Terrain[] terrain;
         /* steel areas which are indestructible - 32 objects, 4 bytes each */
         Steel[] steel;
+        int width = DEFAULT_WIDTH * SCALE;
+        int height = DEFAULT_HEIGHT * SCALE;
         /* 32 byte level name - filled with whitespaces */
         String lvlName = "";
         int entranceCount = 0;
@@ -309,8 +316,9 @@ public class ExtractLevel {
                         extra2 = b.get();
                         break;
                     case 1:
+                    case 2:
                         if (in.length != 10240L) {
-                            throw new Exception("Format 1 level files must be 10,240 bytes in size!");
+                            throw new Exception("Format 1 and 2 level files must be 10,240 bytes in size!");
                         }
                         b.order(ByteOrder.LITTLE_ENDIAN);
                         b.get();
@@ -337,11 +345,19 @@ public class ExtractLevel {
                                 throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
                             }
                         }
-                        b.get();
-                        b.get();
-                        xPos = b.getShort() & 0xffff;
-                        xPos += multi ? 72 : 160;
-                        xPos *= SCALE;
+                        if (format > 1) {
+                            xPos = b.getShort() & 0xffff;
+                            xPos += multi ? 72 : 160;
+                            xPos *= SCALE;
+                            yPos = (b.getShort() & 0xffff) + 80;
+                            yPos *= SCALE;
+                        } else {
+                            b.get();
+                            b.get();
+                            xPos = b.getShort() & 0xffff;
+                            xPos += multi ? 72 : 160;
+                            xPos *= SCALE;
+                        }
                         skillCounts = new int[16];
                         skillCounts[0] = b.get() & 0xff;
                         skillCounts[1] = b.get() & 0xff;
@@ -366,12 +382,16 @@ public class ExtractLevel {
                         }
                         gimmickFlags = b.getInt();
                         skillFlags = b.getShort() & 0xffff;
-                        b.position(b.position() + 26);
+                        b.get();
+                        b.get();
+                        width = StrictMath.max(DEFAULT_WIDTH + b.getShort(), MINIMUM_WIDTH) * SCALE;
+                        height = StrictMath.max(DEFAULT_HEIGHT + b.getShort(), MINIMUM_HEIGHT) * SCALE;
+                        b.position(b.position() + 20);
                         byte[] bName = new byte[32];
                         b.get(bName);
                         lvlName = new String(bName, StandardCharsets.US_ASCII);
                         b.position(b.position() + 96);
-                        break;      
+                        break;            
                     default:
                         throw new Exception(String.format("Unsupported level format: %d", format));
                 }
@@ -485,6 +505,7 @@ public class ExtractLevel {
                 w.write("numMiners = " + ToolBox.intToString(numMiners, false) + "\r\n");
                 w.write("numDiggers = " + ToolBox.intToString(numDiggers, false) + "\r\n");
                 w.write("xPosCenter = " + xPos + "\r\n");
+                w.write("yPosCenter = " + yPos + "\r\n");
                 w.write("style = " + styleStr + "\r\n");
                 if (specialStyle > -1) {
                     w.write("specialStyle = " + specialStyleStr + "\r\n");
@@ -520,6 +541,8 @@ public class ExtractLevel {
                             break;
                     }
                 }
+                w.write("width = " + width + "\r\n");
+                w.write("height = " + height + "\r\n");
             }
             // read objects
             w.write("\r\n# Objects\r\n");
@@ -532,6 +555,7 @@ public class ExtractLevel {
                     bytes = new byte[32][8];
                     break;
                 case 1:
+                case 2:
                     bytes = new byte[64][16];
                     break;
                 default:
@@ -601,6 +625,7 @@ public class ExtractLevel {
                     bytes = new byte[400][4];
                     break;
                 case 1:
+                case 2:
                     bytes = new byte[1000][8];
                     break;
                 default:
@@ -655,6 +680,7 @@ public class ExtractLevel {
                     bytes = new byte[32][4];
                     break;
                 case 1:
+                case 2:
                     bytes = new byte[128][8];
                     break;
                 default:
@@ -805,6 +831,7 @@ class LvlObject {
                 }
                 break;
             case 1:
+            case 2:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);
@@ -895,6 +922,7 @@ class Terrain {
                 id = b[3] & 0x3f;
                 break;
             case 1:
+            case 2:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);
@@ -979,6 +1007,7 @@ class Steel {
                 negative = false;
                 break;
             case 1:
+            case 2:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
                 xPos *= scale;
                 yPos = (b[2] & 0xff) | (b[3] << 8);

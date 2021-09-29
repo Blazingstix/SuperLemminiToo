@@ -7,11 +7,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.*;
 import javax.sound.sampled.*;
 import lemmini.game.Core;
 import lemmini.game.GameController;
@@ -133,7 +129,7 @@ public class Sound {
 
     private boolean loaded = false;
     private final LineHandler[] lineHandlers;
-    private Queue<LineHandler> availableLineHandlers;
+    private Deque<LineHandler> availableLineHandlers;
     private Path[] fNames;
     private final List<Path> sampleNames;
     private final int[] pitchedSampleID;
@@ -214,7 +210,7 @@ public class Sound {
         mixers = mix.toArray(mixers);
         
         lineHandlers = new LineHandler[MAX_SIMUL_SOUNDS];
-        availableLineHandlers = new ConcurrentLinkedQueue<>();
+        availableLineHandlers = new LinkedList<>();
         for (int i = 0; i < lineHandlers.length; i++) {
             lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), availableLineHandlers);
             availableLineHandlers.add(lineHandlers[i]);
@@ -364,7 +360,7 @@ public class Sound {
         }
         
         if (oldMixerIdx != mixerIdx) {
-            availableLineHandlers = new ConcurrentLinkedQueue<>();
+            Deque<LineHandler> tempLineHandlers = new LinkedList<>();
             for (int i = 0; i < lineHandlers.length; i++) {
                 lineHandlers[i].close();
                 lineHandlers[i] = new LineHandler((SourceDataLine) getLine(info), availableLineHandlers);
@@ -372,6 +368,7 @@ public class Sound {
                 lineHandlers[i].setGain(gain);
                 lineHandlers[i].start();
             }
+            availableLineHandlers = tempLineHandlers;
         }
     }
 
@@ -394,14 +391,20 @@ public class Sound {
      * @param idx index of the sound to be played
      * @param pan panning
      */
-    public synchronized void play(final int idx, final double pan) {
+    public void play(final int idx, final double pan) {
         if (idx < 0 || !GameController.isSoundOn()) {
             return;
         }
         
-        LineHandler lh = availableLineHandlers.poll();
+        Deque<LineHandler> tempLineHandlers = availableLineHandlers;
+        LineHandler lh;
+        synchronized (tempLineHandlers) {
+            lh = tempLineHandlers.pollFirst();
+            if (lh != null) {
+                tempLineHandlers.addLast(lh);
+            }
+        }
         if (lh != null) {
-            availableLineHandlers.add(lh);
             lh.play(soundBuffers[idx], pan);
         }
     }
@@ -438,14 +441,20 @@ public class Sound {
      * @param pe
      * @param pitch pitch value
      */
-    public synchronized void playPitched(final PitchedEffect pe, final int pitch) {
+    public void playPitched(final PitchedEffect pe, final int pitch) {
         if (!GameController.isSoundOn()) {
             return;
         }
         
-        LineHandler lh = availableLineHandlers.poll();
+        Deque<LineHandler> tempLineHandlers = availableLineHandlers;
+        LineHandler lh;
+        synchronized (tempLineHandlers) {
+            lh = tempLineHandlers.pollFirst();
+            if (lh != null) {
+                tempLineHandlers.addLast(lh);
+            }
+        }
         if (lh != null) {
-            availableLineHandlers.add(lh);
             lh.play(pitchBuffers[pe.ordinal()][pitch], 0.0);
         }
     }
@@ -711,7 +720,7 @@ public class Sound {
     private class LineHandler implements Runnable, Closeable {
         
         private final SourceDataLine line;
-        private final Queue<LineHandler> origQueue;
+        private final Deque<LineHandler> origDeque;
         private final int lineBufferSize;
         private double gain;
         private float pan;
@@ -720,9 +729,9 @@ public class Sound {
         
         private final Thread lineThread;
         
-        LineHandler(SourceDataLine line, Queue<LineHandler> origQueue) {
+        LineHandler(SourceDataLine line, Deque<LineHandler> origDeque) {
             this.line = line;
-            this.origQueue = origQueue;
+            this.origDeque = origDeque;
             lineBufferSize = info.getMaxBufferSize();
             gain = 1.0f;
             pan = 0.0f;
@@ -760,18 +769,23 @@ public class Sound {
                         }
 
                         if (currentBuffer != null && open) {
-                            origQueue.remove(this);
                             setPan(currentPan);
-                            while (open && bufferIndex < currentBuffer.length) {
+                            while (bufferIndex < currentBuffer.length) {
                                 bufferIndex += line.write(currentBuffer, bufferIndex,
                                         Math.min(lineBufferSize, currentBuffer.length - bufferIndex));
-                                if (Thread.interrupted() && !open) {
-                                    origQueue.add(this);
+                                if (!open) {
                                     break top;
+                                } else if (nextBuffer != null) {
+                                    line.flush();
+                                    continue top;
                                 }
                             }
                             line.drain();
-                            origQueue.add(this);
+                            line.flush();
+                            synchronized (origDeque) {
+                                origDeque.remove(this);
+                                origDeque.addFirst(this);
+                            }
                         }
                     }
             } catch (LineUnavailableException ex) {
