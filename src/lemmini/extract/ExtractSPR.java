@@ -74,7 +74,7 @@ public class ExtractSPR {
         
         buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        paletteSize = buffer.getShort() & 0xffff; // number of palette entries
+        paletteSize = Short.toUnsignedInt(buffer.getShort()); // number of palette entries
 
         byte[] r = new byte[paletteSize];
         byte[] g = new byte[paletteSize];
@@ -160,8 +160,8 @@ public class ExtractSPR {
         }
         buffer.order(ByteOrder.LITTLE_ENDIAN);
         // get number of frames
-        int frames = buffer.getShort() & 0xffff;
-        int ofs = buffer.getShort() & 0xffff;
+        int frames = Short.toUnsignedInt(buffer.getShort());
+        int ofs = Short.toUnsignedInt(buffer.getShort());
         buffer.position(ofs);
 
         images = new ArrayList<>(frames);
@@ -170,12 +170,12 @@ public class ExtractSPR {
 
         for (int frame = 0; frame < frames; frame++) {
             // get header info
-            int xOfs = buffer.getShort() & 0xffff;   // x offset of data in output image
-            int yOfs = buffer.getShort() & 0xffff;   // y offset of data in output image
-            int maxLen = buffer.getShort() & 0xffff; // maximum length of a data line
-            int lines = buffer.getShort() & 0xffff;  // number of data lines
-            int width = buffer.getShort() & 0xffff;  // width of output image
-            int height = buffer.getShort() & 0xffff; // height of output image
+            int xOfs = Short.toUnsignedInt(buffer.getShort());   // x offset of data in output image
+            int yOfs = Short.toUnsignedInt(buffer.getShort());   // y offset of data in output image
+            int maxLen = Short.toUnsignedInt(buffer.getShort()); // maximum length of a data line
+            int lines = Short.toUnsignedInt(buffer.getShort());  // number of data lines
+            int width = Short.toUnsignedInt(buffer.getShort());  // width of output image
+            int height = Short.toUnsignedInt(buffer.getShort()); // height of output image
 
             byte[] pixels = new byte[width * height];
 
@@ -201,7 +201,7 @@ public class ExtractSPR {
                     b = buffer.get(); // start character
                 }
                 // get line length
-                int len = (b & 0xff) - 0x80;
+                int len = Byte.toUnsignedInt(b) - 0x80;
                 if (len < 0 || len > 0x7f || len > maxLen) {
                     throw new ExtractException(String.format("Maximum data line length exceeded in line %d of frame %d of %s (offset: %d).", line, frame, fname, ofs));
                 }
@@ -212,7 +212,7 @@ public class ExtractSPR {
                             // but some use higher indices. Instead of mirroring the palette, just modulo every
                             // entry with the palette size.
                             // The lookup table is needed to get new index in compressed palette
-                            byte pixelVal = (byte) (lookupBuffer[(buffer.get() & 0xff) % paletteSize] & 0xff);
+                            byte pixelVal = (byte) lookupBuffer[Byte.toUnsignedInt(buffer.get()) % paletteSize];
                             pixels[y + xOfs + lineOfs + pixel + pxOffset] = pixelVal;
                         }
                     } catch (ArrayIndexOutOfBoundsException ex) {
@@ -220,7 +220,7 @@ public class ExtractSPR {
                     }
                     buffer.mark();
                     b = buffer.get(); // end character must be 0x80
-                    if ((b & 0xff) != 0x80) {
+                    if (Byte.toUnsignedInt(b) != 0x80) {
                         // if this is not the end character, the line is continued after an offset
                         pxOffset += (lineOfs + len);
                         buffer.reset();
@@ -297,17 +297,27 @@ public class ExtractSPR {
      * @throws ExtractException
      */
     static void savePng(final PNGImage img, final Path fname) throws ExtractException {
-        IndexColorModel colorModel = new IndexColorModel(8, img.palette.size,
+        int bitsPerPixel;
+        if (img.palette.size <= 2) {
+            bitsPerPixel = 1;
+        } else if (img.palette.size <= 4) {
+            bitsPerPixel = 2;
+        } else if (img.palette.size <= 16) {
+            bitsPerPixel = 4;
+        } else {
+            bitsPerPixel = 8;
+        }
+        IndexColorModel colorModel = new IndexColorModel(bitsPerPixel, img.palette.size,
                 img.palette.getRed(), img.palette.getGreen(), img.palette.getBlue(),
                 TRANSPARENT_INDEX);
         BufferedImage image = new BufferedImage(img.getWidth(), img.getHeight(),
-                BufferedImage.TYPE_BYTE_INDEXED, colorModel);
+                bitsPerPixel > 4 ? BufferedImage.TYPE_BYTE_INDEXED : BufferedImage.TYPE_BYTE_BINARY, colorModel);
         for (int y = 0; y < img.getHeight(); y++) {
             for (int x = 0; x < img.getWidth(); x++) {
                 int index = img.getPixels()[y * img.getWidth() + x];
-                int pixel = ((img.palette.getRed()[index] & 0xff) << 16)
-                        + ((img.palette.getGreen()[index] & 0xff) << 8)
-                        + ((img.palette.getBlue()[index] & 0xff));
+                int pixel = (Byte.toUnsignedInt(img.palette.getRed()[index]) << 16)
+                        + (Byte.toUnsignedInt(img.palette.getGreen()[index]) << 8)
+                        + Byte.toUnsignedInt(img.palette.getBlue()[index]);
                 if (index != TRANSPARENT_INDEX) {
                     pixel |= 0xff000000;
                 }

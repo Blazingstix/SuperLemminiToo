@@ -50,24 +50,24 @@ public class SpriteObject extends Sprite {
         /** level exit (active part!) */
         EXIT (true, false),
         /** steel */
-        STEEL (false, true),
+        STEEL (false, false),
         /** level entrance */
         ENTRANCE (false, false);
         
         private final boolean triggeredByFoot;
-        private final boolean sometimesIndestructible;
+        private final boolean oneWay;
         
         private Type(boolean triggeredByFoot, boolean sometimesIndestructible) {
             this.triggeredByFoot = triggeredByFoot;
-            this.sometimesIndestructible = sometimesIndestructible;
+            this.oneWay = sometimesIndestructible;
         }
         
         public boolean isTriggeredByFoot() {
             return triggeredByFoot;
         }
         
-        public boolean isSometimesIndestructible() {
-            return sometimesIndestructible;
+        public boolean isOneWay() {
+            return oneWay;
         }
     }
 
@@ -213,7 +213,7 @@ public class SpriteObject extends Sprite {
             case EXIT:
                 return Stencil.MSK_EXIT;
             case STEEL:
-                return Stencil.MSK_STEEL;
+                return Stencil.MSK_STEEL_OBJECT;
             default:
                 return -1;
         }

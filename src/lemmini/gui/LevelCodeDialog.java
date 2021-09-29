@@ -19,7 +19,9 @@
 
 package lemmini.gui;
 
+import java.awt.Frame;
 import java.awt.Toolkit;
+import javax.swing.JDialog;
 import lemmini.LemminiFrame;
 import lemmini.game.GameController;
 
@@ -27,7 +29,7 @@ import lemmini.game.GameController;
  * Dialog for entering level codes.
  * @author Volker Oth
  */
-public class LevelCodeDialog extends javax.swing.JDialog {
+public class LevelCodeDialog extends JDialog {
     
     private String[] levelPacks;
     private int levelPackIndex;
@@ -38,7 +40,7 @@ public class LevelCodeDialog extends javax.swing.JDialog {
      * @param parent
      * @param modal
      */
-    public LevelCodeDialog(java.awt.Frame parent, boolean modal) {
+    public LevelCodeDialog(Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
         setLocationRelativeTo(parent);

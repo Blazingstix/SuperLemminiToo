@@ -22,11 +22,12 @@ import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Locale;
 import javax.imageio.ImageIO;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
@@ -34,6 +35,7 @@ import keyrepeatfix.RepeatingReleasedEventsFixer;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
+import lemmini.sound.Music;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -47,10 +49,10 @@ import org.apache.commons.lang3.SystemUtils;
  *
  * @author Volker Oth
  */
-public class LemminiFrame extends javax.swing.JFrame {
+public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.102b";
+    public static final String REVISION = "0.103";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -348,9 +350,8 @@ public class LemminiFrame extends javax.swing.JFrame {
                         GameController.pressIcon(Icons.Type.VLOCK);
                         break;
                     case KeyEvent.VK_V:
-                        Path file = Core.resourcePath.resolve("level.png");
                         LemmImage tmp = GameController.getLevel().createMinimap(GameController.getFgImage(), 1.0, 1.0, true, false, true);
-                        try (OutputStream out = Files.newOutputStream(file)) {
+                        try (OutputStream out = Core.resourceTree.newOutputStream("level.png")) {
                             ImageIO.write(tmp.getImage(), "png", out);
                         } catch (IOException ex) {
                         }
@@ -372,7 +373,13 @@ public class LemminiFrame extends javax.swing.JFrame {
                         break;
                     case KeyEvent.VK_F11:
                     case KeyEvent.VK_P:
-                        GameController.setPaused(!GameController.isPaused());
+                        boolean isPaused = GameController.isPaused();
+                        if (GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)
+                                && !isPaused && GameController.isFastForward()) {
+                            GameController.setFastForward(false);
+                            GameController.pressIcon(Icons.Type.FFWD);
+                        }
+                        GameController.setPaused(!isPaused);
                         GameController.pressIcon(Icons.Type.PAUSE);
                         break;
                     case KeyEvent.VK_F:
@@ -385,8 +392,13 @@ public class LemminiFrame extends javax.swing.JFrame {
                             GameController.setTimed(!GameController.isTimed());
                         }
                         break;
+                    case KeyEvent.VK_R:
+                        if (lemminiPanelMain.isControlPressed()) {
+                            GameController.requestRestartLevel(true, false);
+                        }
+                        break;
                     case KeyEvent.VK_RIGHT /*39*/:
-                        if (GameController.isAdvancedSelect()) {
+                        if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                             if (LemmCursor.getType().isWalkerOnly()) {
                                 lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_RIGHT);
                             } else {
@@ -397,7 +409,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                         }
                         break;
                     case KeyEvent.VK_LEFT /*37*/:
-                        if (GameController.isAdvancedSelect()) {
+                        if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                             if (LemmCursor.getType().isWalkerOnly()) {
                                 lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_LEFT);
                             } else {
@@ -408,25 +420,34 @@ public class LemminiFrame extends javax.swing.JFrame {
                         }
                         break;
                     case KeyEvent.VK_UP:
-                        if (GameController.isAdvancedSelect()) {
-                            if (LemmCursor.getType() == LemmCursor.CursorType.LEFT) {
-                                lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_LEFT);
-                            } else if (LemmCursor.getType() == LemmCursor.CursorType.RIGHT) {
-                                lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_RIGHT);
-                            } else if (LemmCursor.getType() == LemmCursor.CursorType.NORMAL) {
-                                lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER);
+                        if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
+                            switch (LemmCursor.getType()) {
+                                case NORMAL:
+                                    lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER);
+                                    break;
+                                case LEFT:
+                                    lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_LEFT);
+                                    break;
+                                case RIGHT:
+                                    lemminiPanelMain.setCursor(LemmCursor.CursorType.WALKER_RIGHT);
+                                    break;
+                                default:
+                                    break;
                             }
                         } else {
                             lemminiPanelMain.setUpPressed(true);
                         }
                         break;
                     case KeyEvent.VK_DOWN:
-                        if (!GameController.isAdvancedSelect()) {
+                        if (!GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                             lemminiPanelMain.setDownPressed(true);
                         }
                         break;
                     case KeyEvent.VK_SHIFT:
                         lemminiPanelMain.setShiftPressed(true);
+                        break;
+                    case KeyEvent.VK_CONTROL:
+                        lemminiPanelMain.setControlPressed(true);
                         break;
                     case KeyEvent.VK_SPACE:
                         if (GameController.isCheat()) {
@@ -449,9 +470,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                         GameController.handleIconButton(Icons.Type.NUKE);
                         break;
                     case KeyEvent.VK_ESCAPE:
-                        if (GameController.getGameState() == GameController.State.LEVEL) {
-                            GameController.endLevel();
-                        }
+                        GameController.endLevel();
                         break;
                     default:
                         break;
@@ -459,13 +478,111 @@ public class LemminiFrame extends javax.swing.JFrame {
                 evt.consume();
                 break;
             case BRIEFING:
+                key:
+                switch (code) {
+                    case KeyEvent.VK_LEFT:
+                        if (Fader.getState() == Fader.State.OFF) {
+                            LevelPack pack = GameController.getCurLevelPack();
+                            String packName = pack.getName();
+                            int packIdx = GameController.getCurLevelPackIdx();
+                            List<String> ratings = pack.getRatings();
+                            int rating = GameController.getCurRating();
+                            int lvlNum = GameController.getCurLevelNumber() - 1;
+                            while (rating >= 0) {
+                                while (lvlNum >= 0) {
+                                    if (Core.player.isAvailable(packName, ratings.get(rating), lvlNum)) {
+                                        GameController.requestChangeLevel(packIdx, rating, lvlNum, false);
+                                        break key;
+                                    }
+                                    lvlNum--;
+                                }
+                                rating--;
+                                if (rating >= 0) {
+                                    lvlNum = pack.getLevelCount(rating) - 1;
+                                }
+                            }
+                        }
+                        break;
+                    case KeyEvent.VK_RIGHT:
+                        if (Fader.getState() == Fader.State.OFF) {
+                            LevelPack pack = GameController.getCurLevelPack();
+                            String packName = pack.getName();
+                            int packIdx = GameController.getCurLevelPackIdx();
+                            List<String> ratings = pack.getRatings();
+                            int rating = GameController.getCurRating();
+                            int lvlCount = pack.getLevelCount(rating);
+                            int lvlNum = GameController.getCurLevelNumber() + 1;
+                            while (rating < ratings.size()) {
+                                while (lvlNum < lvlCount) {
+                                    if (Core.player.isAvailable(packName, ratings.get(rating), lvlNum)) {
+                                        GameController.requestChangeLevel(packIdx, rating, lvlNum, false);
+                                        break key;
+                                    }
+                                    lvlNum++;
+                                }
+                                rating++;
+                                if (rating < ratings.size()) {
+                                    lvlNum = 0;
+                                }
+                            }
+                        }
+                        break;
+                    case KeyEvent.VK_UP:
+                        if (Fader.getState() == Fader.State.OFF) {
+                            LevelPack pack = GameController.getCurLevelPack();
+                            String packName = pack.getName();
+                            int packIdx = GameController.getCurLevelPackIdx();
+                            List<String> ratings = pack.getRatings();
+                            int rating = GameController.getCurRating() - 1;
+                            int lvlNum = GameController.getCurLevelNumber();
+                            while (rating >= 0) {
+                                while (lvlNum >= 0) {
+                                    if (Core.player.isAvailable(packName, ratings.get(rating), lvlNum)) {
+                                        GameController.requestChangeLevel(packIdx, rating, lvlNum, false);
+                                        break key;
+                                    }
+                                    lvlNum--;
+                                }
+                                rating--;
+                                if (rating >= 0) {
+                                    lvlNum = Math.min(pack.getLevelCount(rating), GameController.getCurLevelNumber());
+                                }
+                            }
+                        }
+                        break;
+                    case KeyEvent.VK_DOWN:
+                        if (Fader.getState() == Fader.State.OFF) {
+                            LevelPack pack = GameController.getCurLevelPack();
+                            String packName = pack.getName();
+                            int packIdx = GameController.getCurLevelPackIdx();
+                            List<String> ratings = pack.getRatings();
+                            int rating = GameController.getCurRating() + 1;
+                            int lvlNum = GameController.getCurLevelNumber();
+                            while (rating < ratings.size()) {
+                                while (lvlNum >= 0) {
+                                    if (Core.player.isAvailable(packName, ratings.get(rating), lvlNum)) {
+                                        GameController.requestChangeLevel(packIdx, rating, lvlNum, false);
+                                        break key;
+                                    }
+                                    lvlNum--;
+                                }
+                                rating++;
+                                if (rating < ratings.size()) {
+                                    lvlNum = Math.min(pack.getLevelCount(rating), GameController.getCurLevelNumber());
+                                }
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                /* falls through */
             case DEBRIEFING:
             case LEVEL_END:
                 switch (code) {
-                    case KeyEvent.VK_S:
-                        Path file = Core.resourcePath.resolve("level.png");
+                    case KeyEvent.VK_V:
                         LemmImage tmp = GameController.getLevel().createMinimap(GameController.getFgImage(), 1.0, 1.0, true, false, true);
-                        try (OutputStream out = Files.newOutputStream(file)) {
+                        try (OutputStream out = Core.resourceTree.newOutputStream("level.png")) {
                             ImageIO.write(tmp.getImage(), "png", out);
                         } catch (IOException ex) {
                         }
@@ -486,6 +603,9 @@ public class LemminiFrame extends javax.swing.JFrame {
                 case KeyEvent.VK_SHIFT:
                     lemminiPanelMain.setShiftPressed(false);
                     break;
+                case KeyEvent.VK_CONTROL:
+                    lemminiPanelMain.setControlPressed(false);
+                    break;
                 case KeyEvent.VK_PLUS:
                 case KeyEvent.VK_ADD:
                 case KeyEvent.VK_EQUALS:
@@ -501,7 +621,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                     GameController.releaseIcon(Icons.Type.NUKE);
                     break;
                 case KeyEvent.VK_LEFT:
-                    if (GameController.isAdvancedSelect()) {
+                    if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                         if (LemmCursor.getType() == LemmCursor.CursorType.LEFT) {
                             lemminiPanelMain.setCursor(LemmCursor.CursorType.NORMAL);
                         } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
@@ -512,7 +632,7 @@ public class LemminiFrame extends javax.swing.JFrame {
                     }
                     break;
                 case KeyEvent.VK_RIGHT:
-                    if (GameController.isAdvancedSelect()) {
+                    if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                         if (LemmCursor.getType() == LemmCursor.CursorType.RIGHT) {
                             lemminiPanelMain.setCursor(LemmCursor.CursorType.NORMAL);
                         } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
@@ -523,20 +643,26 @@ public class LemminiFrame extends javax.swing.JFrame {
                     }
                     break;
                 case KeyEvent.VK_UP:
-                    if (GameController.isAdvancedSelect()) {
-                        if (LemmCursor.getType() == LemmCursor.CursorType.WALKER) {
-                            lemminiPanelMain.setCursor(LemmCursor.CursorType.NORMAL);
-                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
-                            lemminiPanelMain.setCursor(LemmCursor.CursorType.LEFT);
-                        } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
-                            lemminiPanelMain.setCursor(LemmCursor.CursorType.RIGHT);
+                    if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
+                        switch (LemmCursor.getType()) {
+                            case WALKER:
+                                lemminiPanelMain.setCursor(LemmCursor.CursorType.NORMAL);
+                                break;
+                            case WALKER_LEFT:
+                                lemminiPanelMain.setCursor(LemmCursor.CursorType.LEFT);
+                                break;
+                            case WALKER_RIGHT:
+                                lemminiPanelMain.setCursor(LemmCursor.CursorType.RIGHT);
+                                break;
+                            default:
+                                break;
                         }
                     } else {
                         lemminiPanelMain.setUpPressed(false);
                     }
                     break;
                 case KeyEvent.VK_DOWN:
-                    if (!GameController.isAdvancedSelect()) {
+                    if (!GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {
                         lemminiPanelMain.setDownPressed(false);
                     }
                     break;
@@ -578,7 +704,7 @@ public class LemminiFrame extends javax.swing.JFrame {
         if (GameController.getLevel() == null) {
             GameController.requestChangeLevel(GameController.getCurLevelPackIdx(), GameController.getCurRating(), GameController.getCurLevelNumber(), false);
         } else {
-            GameController.requestRestartLevel(false);
+            GameController.requestRestartLevel(false, true);
         }
     }//GEN-LAST:event_jMenuItemRestartLevelActionPerformed
 
@@ -597,7 +723,7 @@ public class LemminiFrame extends javax.swing.JFrame {
     /**
      * The main function. Entry point of the program.
      * @param args the command line arguments
-     * @throws java.io.IOException
+     * @throws IOException
      */
     public static void main(String[] args) throws IOException {
         Path level = null;
@@ -678,8 +804,8 @@ public class LemminiFrame extends javax.swing.JFrame {
      * Common exit method to use in exit events.
      */
     void exit() {
-        // close the zip files
-        Core.zipFiles.stream().forEach(IOUtils::closeQuietly);
+        // stop the music
+        Music.close();
         // store width and height
         Core.programProps.setInt("frameWidth", lemminiPanelMain.getUnmaximizedWidth());
         Core.programProps.setInt("frameHeight", lemminiPanelMain.getUnmaximizedHeight());
@@ -690,6 +816,8 @@ public class LemminiFrame extends javax.swing.JFrame {
         Core.programProps.setBoolean("maximizedHoriz", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_HORIZ));
         Core.programProps.setBoolean("maximizedVert", BooleanUtils.toBoolean(getExtendedState() & MAXIMIZED_VERT));
         Core.saveProgramProps();
+        // close the zip files
+        Core.zipFiles.stream().forEach(IOUtils::closeQuietly);
         RepeatingReleasedEventsFixer.remove();
         System.exit(0);
     }

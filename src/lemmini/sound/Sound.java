@@ -12,6 +12,7 @@ import lemmini.game.Resource;
 import lemmini.game.ResourceException;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
+import org.apache.commons.lang3.StringUtils;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -190,12 +191,16 @@ public class Sound {
         // get all available mixers
         Mixer.Info[] mixInfo = AudioSystem.getMixerInfo();
         mixers = new ArrayList<>(16);
+        mixerIdx = -1;
+        String selectedMixerName = Core.programProps.get("mixerName", StringUtils.EMPTY);
         for (Mixer.Info mixInfo1 : mixInfo) {
             Mixer mixer = AudioSystem.getMixer(mixInfo1);
-            Line.Info info = new Line.Info(Clip.class);
-            int num = mixer.getMaxLines(info);
+            int num = mixer.getMaxLines(new Line.Info(SourceDataLine.class));
             if (num != 0) {
                 mixers.add(mixer);
+                if (mixerIdx < 0 && mixer.getMixerInfo().getName().equals(selectedMixerName)) {
+                    mixerIdx = mixers.size() - 1;
+                }
             }
         }
         
@@ -339,7 +344,7 @@ public class Sound {
     public synchronized void setMixerIdx(final int idx) {
         int oldMixerIdx = mixerIdx;
         
-        if (idx >= mixers.size()) {
+        if (idx < 0 || idx >= mixers.size()) {
             mixerIdx = 0;
         } else {
             mixerIdx = idx;
@@ -388,7 +393,7 @@ public class Sound {
      * @param pan panning
      */
     public void play(final int idx, final double pan) {
-        if (idx < 0 || !GameController.isSoundOn()) {
+        if (idx < 0 || !GameController.isOptionEnabled(GameController.Option.SOUND_ON)) {
             return;
         }
         
@@ -436,7 +441,7 @@ public class Sound {
      * @param pitch pitch value
      */
     public void playPitched(final PitchedEffect pe, final int pitch) {
-        if (!GameController.isSoundOn()) {
+        if (!GameController.isOptionEnabled(GameController.Option.SOUND_ON)) {
             return;
         }
         
@@ -696,9 +701,7 @@ public class Sound {
      */
     public void setGain(final double gn) {
         gain = gn;
-        for (LineHandler lh : lineHandlers) {
-            lh.setGain(gn);
-        }
+        lineHandlers.stream().forEach(lh -> lh.setGain(gn));
     }
     
     public float getSampleRate() {
@@ -745,45 +748,45 @@ public class Sound {
                 setLineGain(line, gain);
                 open = true;
                 top:
-                    while (open) {
-                        byte[] currentBuffer = null;
-                        float currentPan = 0.0f;
-                        int bufferIndex = 0;
-
-                        synchronized (this) {
-                            while (nextBuffer == null && open) {
-                                try {
-                                    wait();
-                                } catch (InterruptedException ex) {
-                                }
-                            }
-                            if (nextBuffer != null && open) {
-                                currentBuffer = nextBuffer;
-                                nextBuffer = null;
-                                currentPan = pan;
+                while (open) {
+                    byte[] currentBuffer = null;
+                    float currentPan = 0.0f;
+                    int bufferIndex = 0;
+                    
+                    synchronized (this) {
+                        while (nextBuffer == null && open) {
+                            try {
+                                wait();
+                            } catch (InterruptedException ex) {
                             }
                         }
-
-                        if (currentBuffer != null && open) {
-                            setPan(currentPan);
-                            while (bufferIndex < currentBuffer.length) {
-                                bufferIndex += line.write(currentBuffer, bufferIndex,
-                                        Math.min(lineBufferSize, currentBuffer.length - bufferIndex));
-                                if (!open) {
-                                    break top;
-                                } else if (nextBuffer != null) {
-                                    line.flush();
-                                    continue top;
-                                }
-                            }
-                            line.drain();
-                            line.flush();
-                            synchronized (origDeque) {
-                                origDeque.remove(this);
-                                origDeque.addFirst(this);
-                            }
+                        if (nextBuffer != null && open) {
+                            currentBuffer = nextBuffer;
+                            nextBuffer = null;
+                            currentPan = pan;
                         }
                     }
+                    
+                    if (currentBuffer != null && open) {
+                        setPan(currentPan);
+                        while (bufferIndex < currentBuffer.length) {
+                            bufferIndex += line.write(currentBuffer, bufferIndex,
+                                    Math.min(lineBufferSize, currentBuffer.length - bufferIndex));
+                            if (!open) {
+                                break top;
+                            } else if (nextBuffer != null) {
+                                line.flush();
+                                continue top;
+                            }
+                        }
+                        line.drain();
+                        line.flush();
+                        synchronized (origDeque) {
+                            origDeque.remove(this);
+                            origDeque.addFirst(this);
+                        }
+                    }
+                }
             } catch (Exception ex) {
                 ex.printStackTrace();
             } finally {

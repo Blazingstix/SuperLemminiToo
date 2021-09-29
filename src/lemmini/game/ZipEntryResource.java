@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import lemmini.tools.ToolBox;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 
 /**
@@ -58,7 +57,7 @@ public class ZipEntryResource implements Resource {
 
     @Override
     public String getFileName() {
-        return FilenameUtils.getName(zipEntryName);
+        return ToolBox.getFileName(zipEntryName);
     }
 
     @Override
@@ -68,8 +67,8 @@ public class ZipEntryResource implements Resource {
     
     @Override
     public ZipEntryResource getSibling(String sibling) {
-        String newOrigPath = FilenameUtils.getPath(origPath) + sibling;
-        String newZipEntryName = FilenameUtils.getPath(zipEntryName) + sibling;
+        String newOrigPath = ToolBox.getParent(origPath) + sibling;
+        String newZipEntryName = ToolBox.getParent(zipEntryName) + sibling;
         return new ZipEntryResource(newOrigPath, zipFile, newZipEntryName);
     }
 

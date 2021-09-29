@@ -2,7 +2,6 @@ package lemmini.game;
 
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -54,9 +53,8 @@ public class Player {
         // read main ini file
         props = new Props();
         // create players directory if it doesn't exist
-        Path dest = Core.resourcePath.resolve("players");
         try {
-            Files.createDirectories(dest);
+            Core.resourceTree.createDirectories("players/");
         } catch (IOException ex) {
         }
         Path iniFilePath = getPlayerINIFilePath(name);
@@ -72,7 +70,7 @@ public class Player {
                 }
                 
                 BigInteger unlockedLevels = new BigInteger(s[1]);
-                Map<Integer, LevelRecord> levelRecords = new HashMap<>();
+                Map<Integer, LevelRecord> levelRecords = new LinkedHashMap<>();
                 for (int j = 0; j < unlockedLevels.bitLength(); j++) {
                     if (j == 0 || unlockedLevels.testBit(j)) {
                         boolean completed = props.getBoolean("group" + idx + "_level" + j + "_completed", false);
@@ -139,7 +137,7 @@ public class Player {
         LevelGroup lg = lvlGroups.get(id);
         if (lg == null) {
             // first level is always available
-            Map<Integer, LevelRecord> records = new HashMap<>();
+            Map<Integer, LevelRecord> records = new LinkedHashMap<>();
             records.put(0, LevelRecord.BLANK_LEVEL_RECORD);
             lg = new LevelGroup(records);
             lvlGroups.put(id, lg);
@@ -174,7 +172,7 @@ public class Player {
         LevelGroup lg = lvlGroups.get(id);
         if (lg == null) {
             // first level is always available
-            Map<Integer, LevelRecord> records = new HashMap<>();
+            Map<Integer, LevelRecord> records = new LinkedHashMap<>();
             records.put(0, LevelRecord.BLANK_LEVEL_RECORD);
             lg = new LevelGroup(records);
             lvlGroups.put(id, lg);
@@ -221,27 +219,33 @@ public class Player {
     }
     
     public static Path getPlayerINIFilePath(final String name) {
-        Path retFile = Core.resourcePath.resolve("players").resolve(addEscapes(name) + ".ini");
-        PlayerFilter filter = new PlayerFilter(name);
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(Core.resourcePath.resolve("players"), filter)) {
-            for (Path file : files) {
-                retFile = file;
-                break;
+        Path retFile = Core.resourceTree.getPath("players/" + addEscapes(name) + ".ini");
+        if (Files.notExists(retFile)) {
+            for (Path file : Core.resourceTree.getAllPathsRegex("players/[^/]+\\.ini")) {
+                String fileName = FilenameUtils.removeExtension(file.getFileName().toString());
+                String convertedFileName = Player.convertEscapes(fileName);
+                if (convertedFileName.equals(name)) {
+                    retFile = file;
+                    break;
+                }
             }
-        } catch (IOException ex) {
         }
         
         return retFile;
     }
     
     public static void deletePlayerINIFile(final String name) {
-        PlayerFilter filter = new PlayerFilter(name);
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(Core.resourcePath.resolve("players"), filter)) {
-            for (Path file : files) {
-                Files.deleteIfExists(file);
+        Core.resourceTree.getAllPathsRegex("players/[^/]+\\.ini").stream()
+                .map(file -> FilenameUtils.removeExtension(file.getFileName().toString()))
+                .forEach(fileName -> {
+            String convertedFileName = Player.convertEscapes(fileName);
+            if (convertedFileName.equals(name)) {
+                try {
+                    Core.resourceTree.delete("players/" + fileName + ".ini");
+                } catch (IOException ex) {
+                }
             }
-        } catch (IOException ex) {
-        }
+        });
     }
     
     /**
@@ -398,27 +402,3 @@ public class Player {
         }
     }
 }
-    
-class PlayerFilter implements DirectoryStream.Filter<Path> {
-
-    private final String playerName;
-
-    PlayerFilter(String playerName) {
-        this.playerName = playerName;
-    }
-
-    @Override
-    public boolean accept(Path entry) {
-        if (!Files.isRegularFile(entry)) {
-            return false;
-        }
-        String fileNameWithExtension = entry.getFileName().toString();
-        String fileName = FilenameUtils.removeExtension(fileNameWithExtension);
-        String extension = FilenameUtils.getExtension(fileName);
-        if (!extension.toLowerCase(Locale.ROOT).equals("ini")) {
-            return false;
-        }
-        String convertedFileName = Player.convertEscapes(fileName);
-        return convertedFileName.equals(playerName);
-    }
-};

@@ -310,58 +310,42 @@ public class Level {
         // load objects
         // first load the data from object descriptor file xxx.ini
         props = new Props();
-        for (int i = 0; i < 2; i++) {
-            try {
-                String fname2 = "styles/" + styleTemp + "/" + styleTemp + ".ini";
-                Resource res2 = Core.findResource(fname2, true);
-                if (!props.load(res2)) {
-                    if (styleIdx != -1) {
-                        throw new ResourceException(fname2);
-                    } else {
-                        throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
-                    }
-                }
-            } catch (ResourceException | LemmException ex) {
-                if (i == 0) {
-                    styleTemp = styleTemp.toLowerCase(Locale.ROOT);
-                    continue;
+        try {
+            String fname2 = "styles/" + styleTemp + "/" + styleTemp + ".ini";
+            Resource res2 = Core.findResource(fname2, true);
+            if (!props.load(res2)) {
+                if (styleIdx != -1) {
+                    throw new ResourceException(fname2);
                 } else {
-                    if (ex instanceof LemmException || styleIdx != -1) {
-                        throw ex;
-                    } else {
-                        throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
-                    }
+                    throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
                 }
             }
-            break;
+        } catch (ResourceException | LemmException ex) {
+            if (ex instanceof LemmException || styleIdx != -1) {
+                throw ex;
+            } else {
+                throw new LemmException("Style \"" + styleTemp + "\" does not exist.");
+            }
         }
         style = styleTemp;
         if (!specialStyleTemp.isEmpty()) {
             props2 = new Props();
-            for (int i = 0; i < 2; i++) {
-                try {
-                    String fname2 = "styles/special/" + specialStyleTemp + "/" + specialStyleTemp + ".ini";
-                    Resource res2 = Core.findResource(fname2, true);
-                    if (!props2.load(res2)) {
-                        if (specialStyleIdx != -1) {
-                            throw new ResourceException(fname2);
-                        } else {
-                            throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
-                        }
-                    }
-                } catch (ResourceException | LemmException ex) {
-                    if (i == 0) {
-                        styleTemp = styleTemp.toLowerCase(Locale.ROOT);
-                        continue;
+            try {
+                String fname2 = "styles/special/" + specialStyleTemp + "/" + specialStyleTemp + ".ini";
+                Resource res2 = Core.findResource(fname2, true);
+                if (!props2.load(res2)) {
+                    if (specialStyleIdx != -1) {
+                        throw new ResourceException(fname2);
                     } else {
-                        if (ex instanceof LemmException || styleIdx != -1) {
-                            throw ex;
-                        } else {
-                            throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
-                        }
+                        throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
                     }
                 }
-                break;
+            } catch (ResourceException | LemmException ex) {
+                if (ex instanceof LemmException || styleIdx != -1) {
+                    throw ex;
+                } else {
+                    throw new LemmException("Special style \"" + specialStyleTemp + "\" does not exist.");
+                }
             }
         } else {
             props2 = props;
@@ -514,11 +498,11 @@ public class Level {
                 }
             }
         } else {
-            fgImage = ToolBox.createTranslucentImage(levelWidth, levelHeight);
+            fgImage = ToolBox.createLemmImage(levelWidth, levelHeight);
         }
         bgImages = new LemmImage[backgrounds.length];
         for (int i = 0; i < backgrounds.length; i++) {
-            bgImages[i] = ToolBox.createTranslucentImage(
+            bgImages[i] = ToolBox.createLemmImage(
                     backgrounds[i].width + BG_BUFFER_PADDING * 2, backgrounds[i].height + BG_BUFFER_PADDING * 2);
         }
         if (stencil != null && stencil.getWidth() == levelWidth && stencil.getHeight() == levelHeight) {
@@ -636,12 +620,12 @@ public class Level {
                                     break;
                                 case SIMPLE:
                                     if (isSteel) {
-                                        newMask |= Stencil.MSK_STEEL;
+                                        newMask |= Stencil.MSK_STEEL_BRICK;
                                     }
                                     break;
                                 case ADVANCED:
                                     if (isSteel && !BooleanUtils.toBoolean(stencil.getMask(x + tx, y + ty) & Stencil.MSK_BRICK)) {
-                                        newMask |= Stencil.MSK_STEEL;
+                                        newMask |= Stencil.MSK_STEEL_BRICK;
                                     }
                                     break;
                             }
@@ -658,14 +642,14 @@ public class Level {
                                     break;
                                 case SIMPLE:
                                     if (isSteel) {
-                                        newMask |= Stencil.MSK_STEEL;
+                                        newMask |= Stencil.MSK_STEEL_BRICK;
                                     }
                                     break;
                                 case ADVANCED:
                                     if (isSteel) {
-                                        newMask |= Stencil.MSK_STEEL;
+                                        newMask |= Stencil.MSK_STEEL_BRICK;
                                     } else {
-                                        newMask &= ~Stencil.MSK_STEEL;
+                                        newMask &= ~Stencil.MSK_STEEL_BRICK;
                                     }
                                     break;
                             }
@@ -690,9 +674,9 @@ public class Level {
                         continue;
                     }
                     if (stl.negative) {
-                        stencil.andMask(x + sx, y + sy, ~Stencil.MSK_STEEL);
+                        stencil.andMask(x + sx, y + sy, ~Stencil.MSK_STEEL_BRICK);
                     } else {
-                        stencil.orMask(x + sx, y + sy, Stencil.MSK_STEEL);
+                        stencil.orMask(x + sx, y + sy, Stencil.MSK_STEEL_BRICK);
                     }
                 }
             }
@@ -778,18 +762,24 @@ public class Level {
                             xDest = x;
                         }
                         int stencilMask = stencil.getMask(xDest + spr.getX(), yDest + spr.getY());
+                        int maskType = spr.getMaskType();
                         if ((!classicSteel
                                         && !spr.getType().isTriggeredByFoot()
                                         && !BooleanUtils.toBoolean(stencilMask & Stencil.MSK_BRICK))
-                                || (spr.getType().isSometimesIndestructible() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY))
+                                || (spr.getType().isOneWay()
+                                        && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY))
                                 || xDest + spr.getX() < 0 || xDest + spr.getX() >= levelWidth) {
                             continue;
                         }
                         // manage collision mask
                         // now read stencil
                         if ((spr.getMask(x, y) & 0xff000000) != 0) { // not transparent
-                            stencil.andMask(spr.getX() + xDest, yDest + spr.getY(), Stencil.MSK_BRICK);
-                            stencil.orMask(spr.getX() + xDest, yDest + spr.getY(), spr.getMaskType());
+                            stencilMask &= Stencil.MSK_BRICK
+                                    | Stencil.MSK_STEEL_BRICK
+                                    | Stencil.MSK_NO_ONE_WAY
+                                    | Stencil.MSK_NO_ONE_WAY_DRAW;
+                            stencilMask |= maskType;
+                            stencil.setMask(spr.getX() + xDest, yDest + spr.getY(), stencilMask);
                             stencil.setMaskObjectID(spr.getX() + xDest, yDest + spr.getY(), n);
                         }
                     }
@@ -809,7 +799,7 @@ public class Level {
                             boolean opaque = fgImage.isPixelOpaque(x + spr.getX(), y + spr.getY());
                             int stencilMask = stencil.getMask(x + spr.getX(), y + spr.getY());
                             paint = (drawFull || (opaque && drawOnVis))
-                                    && !(spr.getType().isSometimesIndestructible() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY_DRAW));
+                                    && !(spr.getType().isOneWay() && BooleanUtils.toBoolean(stencilMask & Stencil.MSK_NO_ONE_WAY_DRAW));
                         }
                         if (!paint) {
                             spr.setPixelVisibility(x, y, false); // set transparent
@@ -827,7 +817,7 @@ public class Level {
             for (int m = 0; m < backgrounds.length; m++) {
                 Background bg = backgrounds[m];
                 LemmImage targetBg = bgImages[m];
-                LemmImage unpaddedBg = ToolBox.createTranslucentImage(
+                LemmImage unpaddedBg = ToolBox.createLemmImage(
                         targetBg.getWidth() - BG_BUFFER_PADDING * 2,
                         targetBg.getHeight() - BG_BUFFER_PADDING * 2);
                 bgOCombined.clear();
@@ -1155,7 +1145,7 @@ public class Level {
             Resource res = Core.findResource(
                     "styles/" + set + "/" + set + "_" + n + ".png",
                     true, Core.IMAGE_EXTENSIONS);
-            images.add(Core.loadTranslucentImage(res));
+            images.add(Core.loadLemmImage(res));
         }
         return images;
     }
@@ -1180,7 +1170,7 @@ public class Level {
                         "styles/" + set + "/" + set + "_" + n + ".png",
                         true, Core.IMAGE_EXTENSIONS);
             }
-            images.add(Core.loadBitmaskImage(res));
+            images.add(Core.loadLemmImage(res, Transparency.BITMASK));
         }
         return images;
     }
@@ -1195,7 +1185,7 @@ public class Level {
         Resource res = Core.findResource(
                 "styles/special/" + specialSet + "/" + specialSet + ".png",
                 true, Core.IMAGE_EXTENSIONS);
-        return Core.loadTranslucentImage(res);
+        return Core.loadLemmImage(res);
     }
     
     /**
@@ -1215,7 +1205,7 @@ public class Level {
                     "styles/special/" + specialSet + "/" + specialSet + ".png",
                     true, Core.IMAGE_EXTENSIONS);
         }
-        return Core.loadBitmaskImage(res);
+        return Core.loadLemmImage(res, Transparency.BITMASK);
     }
 
 
@@ -1251,7 +1241,7 @@ public class Level {
             Resource res = Core.findResource(
                     "styles/" + set + "/" + set + "o_" + idx + ".png",
                     true, Core.IMAGE_EXTENSIONS);
-            LemmImage img = Core.loadTranslucentImage(res);
+            LemmImage img = Core.loadLemmImage(res);
             // load sprite
             int anim = props.getInt("anim_" + sIdx, -1);
             if (anim < 0) {
@@ -1280,7 +1270,7 @@ public class Level {
                             true, Core.IMAGE_EXTENSIONS);
                     int maskOffsetX = props.getInt("maskOffsetX_" + sIdx, 0);
                     int maskOffsetY = props.getInt("maskOffsetY_" + sIdx, 0);
-                    img = Core.loadBitmaskImage(res);
+                    img = Core.loadLemmImage(res, Transparency.BITMASK);
                     sprite.setMask(img, maskOffsetX, maskOffsetY);
                     break;
                 case ENTRANCE:
@@ -1337,7 +1327,7 @@ public class Level {
     public LemmImage createMinimap(final LemmImage fgImage, final double scaleX, final double scaleY,
             final boolean highQuality, final boolean tint, final boolean drawBackground) {
         Level level = GameController.getLevel();
-        LemmImage img = ToolBox.createTranslucentImage(fgImage.getWidth(), fgImage.getHeight());
+        LemmImage img = ToolBox.createLemmImage(fgImage.getWidth(), fgImage.getHeight());
 
         GraphicsContext gx = null;
         try {

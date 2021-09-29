@@ -23,6 +23,7 @@ import java.awt.Toolkit;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import javax.swing.JFrame;
 import javax.swing.event.HyperlinkEvent;
 import lemmini.LemminiFrame;
 
@@ -30,7 +31,7 @@ import lemmini.LemminiFrame;
  * Frame with legal information.
  * @author Volker Oth
  */
-public class LegalFrame extends javax.swing.JFrame {
+public class LegalFrame extends JFrame {
     
     private boolean ok = false;
     private URL thisURL;

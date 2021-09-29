@@ -1,12 +1,13 @@
 package lemmini.game;
 
 import java.io.IOException;
-import java.nio.file.DirectoryStream;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.zip.ZipEntry;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.extract.ExtractDAT;
@@ -54,6 +55,8 @@ public class GameController {
         RESTART_LEVEL,
         /** replay level: fade out, fade in briefing */
         REPLAY_LEVEL,
+        /** replay level: fade out, fade in level */
+        REPLAY_LEVEL_NO_BRIEFING,
         /** load level: fade out, fade in briefing */
         LOAD_LEVEL,
         /** load replay: fade out, fade in briefing */
@@ -68,6 +71,23 @@ public class GameController {
         TO_DEBRIEFING,
         /** go to level: fade in level */
         TO_LEVEL
+    }
+    
+    public static enum Option {
+        /** flag: play music */
+        MUSIC_ON,
+        /** flag: play sounds */
+        SOUND_ON,
+        /** flag: use advanced mouse selection methods */
+        ADVANCED_SELECT,
+        /** flag: use classic mouse cursor behavior */
+        CLASSIC_CURSOR,
+        SWAP_BUTTONS,
+        FASTER_FAST_FORWARD,
+        PAUSE_STOPS_FAST_FORWARD,
+        NO_PERCENTAGES,
+        REPLAY_SCROLL,
+        UNPAUSE_ON_ASSIGNMENT
     }
     
     public static enum LevelFormat {
@@ -111,7 +131,7 @@ public class GameController {
     /** +/- icons: time for key repeat rate */
     private static final long NANOSEC_KEYREPEAT_REPEAT = 67_000_000;
     
-    private static final Pattern LEVEL_DIR_PATTERN = Pattern.compile("^levels/[^/]+/levelpack.ini$");
+    private static final String LEVEL_DIR_REGEX = "levels/[^/]+/levelpack.ini";
     private static final String LEVEL_CACHE_INI = "$levelcache.ini";
 
     /** sound object */
@@ -121,17 +141,7 @@ public class GameController {
     private static Stencil stencil;
     /** the foreground image */
     private static LemmImage fgImage;
-    /** flag: play music */
-    private static boolean musicOn;
-    /** flag: play sounds */
-    private static boolean soundOn;
-    /** flag: use advanced mouse selection methods */
-    private static boolean advancedSelect;
-    /** flag: use classic mouse cursor behavior */
-    private static boolean classicCursor;
-    private static boolean swapButtons;
-    private static boolean fasterFastForward;
-    private static boolean noPercentages;
+    private static final Set<Option> options = EnumSet.noneOf(Option.class);
     /** flag: fast forward mode is active */
     private static boolean fastForward;
     private static boolean verticalLock;
@@ -159,7 +169,7 @@ public class GameController {
     private static int entranceOpenCtr;
     private static int startSoundCtr;
     private static boolean startSoundPlayed;
-    private static final Set<Integer> entranceSounds = new HashSet<>();
+    private static final Set<Integer> entranceSounds = new LinkedHashSet<>();
     /** frame counter for handling time */
     private static int secondCtr;
     /** frame counter used to handle release of new Lemmings */
@@ -274,24 +284,21 @@ public class GameController {
         width = Level.DEFAULT_WIDTH;
         height = Level.DEFAULT_HEIGHT;
         
-        fgImage = ToolBox.createTranslucentImage(width, height);
-
+        fgImage = ToolBox.createLemmImage(width, height);
+        
         gameState = State.INIT;
-
+        
         plus  = new KeyRepeat(NANOSEC_KEYREPEAT_START, NANOSEC_KEYREPEAT_REPEAT, NANOSEC_RELEASE_DOUBLE_CLICK);
         minus = new KeyRepeat(NANOSEC_KEYREPEAT_START, NANOSEC_KEYREPEAT_REPEAT, NANOSEC_RELEASE_DOUBLE_CLICK);
         timerNuke = new NanosecondTimer();
         
         // read level packs
-
-        Path dir = Core.resourcePath.resolve("levels");
-
         levelPacks = new ArrayList<>(32);
         externalLevelList = new LinkedHashSet<>();
         LevelPack externalLevels = new LevelPack();
         Props externalLevelsINI = new Props();
         modPaths = Collections.emptyList();
-        if (externalLevelsINI.load(Core.externalLevelCachePath.resolve(LEVEL_CACHE_INI))) {
+        if (externalLevelsINI.load(Core.resourceTree.getPath(Core.EXTERNAL_LEVEL_CACHE_PATH + LEVEL_CACHE_INI))) {
             boolean updateINI = false;
             for (int i = 0; true; i++) {
                 String[] levelData = externalLevelsINI.getArray("level_" + i, null);
@@ -316,24 +323,18 @@ public class GameController {
         
         // now get the names of the directories
         Set<String> dirs = new TreeSet<>();
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, entry -> Files.isDirectory(entry) && !entry.endsWith(Core.EXTERNAL_LEVELS_CACHE_FOLDER))) {
-            for (Path file : files) {
-                Path lp = Core.resourcePath.resolve("levels").resolve(file).resolve("levelpack.ini");
-                if (Files.isRegularFile(lp)) {
-                    dirs.add(file.getFileName().toString());
-                }
-            }
-        } catch (IOException ex) {
-        }
-        Core.zipFiles.stream().forEachOrdered(zipFile -> {
-           zipFile.stream().forEach(entry -> {
-               String entryName = entry.getName();
-               if (LEVEL_DIR_PATTERN.matcher(entryName).matches()) {
-                   dirs.add(entryName.substring(entryName.indexOf('/') + 1, entryName.lastIndexOf('/')));
-               }
+        Core.resourceTree.getAllPathsRegex(LEVEL_DIR_REGEX).stream()
+                .map(file -> file.getParent().getFileName().toString().toLowerCase(Locale.ROOT))
+                .forEach(dirs::add);
+        Pattern levelDirPattern = Pattern.compile(LEVEL_DIR_REGEX);
+        Core.zipFiles.stream().forEach(zipFile -> {
+           zipFile.stream().map(ZipEntry::getName)
+                   .filter(entryName -> levelDirPattern.matcher(entryName).matches())
+                   .forEach(entryName -> {
+                dirs.add(entryName.substring(entryName.indexOf('/') + 1, entryName.lastIndexOf('/')).toLowerCase(Locale.ROOT));
            });
         });
-        dirs.stream().sorted(String.CASE_INSENSITIVE_ORDER).forEachOrdered(lvlName -> {
+        dirs.stream().sorted().forEachOrdered(lvlName -> {
             try {
                 Resource res = Core.findResource("levels/" + lvlName + "/levelpack.ini", false);
                 levelPacks.add(new LevelPack(res));
@@ -484,17 +485,18 @@ public class GameController {
     /**
      * Restart level.
      * @param doReplay true: replay, false: play
+     * @param showBriefing
      */
-    private static synchronized void restartLevel(final boolean doReplay) throws LemmException {
+    private static synchronized void restartLevel(final boolean doReplay, final boolean showBriefing) throws LemmException {
         if (!replayMode && wasLost() && (gameState == State.LEVEL
                 || gameState == State.LEVEL_END
                 || gameState == State.DEBRIEFING)) {
             timesFailed++;
         }
-        initLevel();
+        initLevel(showBriefing);
         if (doReplay) {
             replayMode = true;
-            replay.save(Core.tempPath.resolve("replay.rpl"));
+            replay.save(Core.TEMP_PATH + "/replay.rpl");
             replay.rewind();
         } else {
             replayMode = false;
@@ -505,7 +507,7 @@ public class GameController {
     /**
      * Initialize a level after it was loaded.
      */
-    private static synchronized void initLevel() throws LemmException {
+    private static synchronized void initLevel(boolean showBriefing) throws LemmException {
         Music.stop();
         
         setFastForward(false);
@@ -602,6 +604,9 @@ public class GameController {
         lemmSkillOld = lemmSkill;
         nukeOld = false;
         
+        sound.setGain(soundGain);
+        Music.setGain(musicGain);
+        
         try {
             String music = level.getMusic();
             if (music == null) {
@@ -618,7 +623,13 @@ public class GameController {
             System.exit(1);
         }
         
-        gameState = State.BRIEFING;
+        if (showBriefing) {
+            gameState = State.BRIEFING;
+        } else {
+            gameState = State.LEVEL;
+            transitionState = TransitionState.TO_LEVEL;
+        }
+        //gameState = showBriefing ? State.BRIEFING : State.LEVEL;
         
         wasCheated = isCheat();
     }
@@ -626,10 +637,18 @@ public class GameController {
     /**
      * Request the restart of this level.
      * @param doReplay
+     * @param showBriefing
      */
-    public static synchronized void requestRestartLevel(final boolean doReplay) {
+    public static synchronized void requestRestartLevel(final boolean doReplay, final boolean showBriefing) {
+        if (doReplay && !replayMode) {
+            replay.addEndEvent(replayFrame);
+        }
         if (doReplay || replayMode) {
-            transitionState = TransitionState.REPLAY_LEVEL;
+            if (showBriefing) {
+                transitionState = TransitionState.REPLAY_LEVEL;
+            } else {
+                transitionState = TransitionState.REPLAY_LEVEL_NO_BRIEFING;
+            }
         } else {
             transitionState = TransitionState.RESTART_LEVEL;
         }
@@ -695,7 +714,7 @@ public class GameController {
         // loading the level will patch appropriate lemmings pixels to the correct colors
         level = new Level(lvlRes, level);
         
-        initLevel();
+        initLevel(true);
         
         if (doReplay) {
             replayMode = true;
@@ -882,7 +901,7 @@ public class GameController {
         numExited++;
         timeElapsedTillLastExited = time;
     }
-
+    
     /**
      * Stop replay.
      */
@@ -896,7 +915,7 @@ public class GameController {
             stopReplayMode = false;
         }
     }
-
+    
     /**
      * Return time as String "minutes-seconds"
      * @return time as String "minutes-seconds"
@@ -1057,7 +1076,7 @@ public class GameController {
                         break;
                     case ReplayStream.MOVE_POS: {
                         ReplayMovePosEvent rx = (ReplayMovePosEvent) r;
-                        if (rx.player == 0) {
+                        if (isOptionEnabled(Option.REPLAY_SCROLL) && rx.player == 0) {
                             setXPos(rx.xPos - Core.getDrawWidth() / 2);
                             setYPos(rx.yPos - LemminiFrame.LEVEL_HEIGHT / 2);
                             xPosOld = xPos;
@@ -1179,7 +1198,7 @@ public class GameController {
                 //System.out.println("opened");
                 entranceOpened = true;
                 releaseCtr = 0; // first lemming to enter at once
-                if (musicOn) {
+                if (isOptionEnabled(Option.MUSIC_ON)) {
                     Music.play();
                 }
             }
@@ -1242,6 +1261,7 @@ public class GameController {
             lemmSkillRequest = lemm;
         }
         stopReplayMode();
+        advanceFrame();
     }
 
     /**
@@ -1375,7 +1395,7 @@ public class GameController {
         }
         if (canSet) {
             lemmSkillRequest = null; // erase request
-            if (isPaused()) {
+            if (isPaused() && isOptionEnabled(Option.UNPAUSE_ON_ASSIGNMENT)) {
                 setPaused(false);
                 Icons.press(Icons.Type.PAUSE);
             }
@@ -1452,6 +1472,10 @@ public class GameController {
                     stopReplayMode();
                     break;
                 case PAUSE:
+                    if (isOptionEnabled(Option.PAUSE_STOPS_FAST_FORWARD) && !paused && fastForward) {
+                        fastForward = false;
+                        pressIcon(Icons.Type.FFWD);
+                    }
                     setPaused(!isPaused());
                     break;
                 case NUKE:
@@ -1586,7 +1610,7 @@ public class GameController {
      * Fade in/out.
      */
     public static void fade() {
-        if (Fader.getState() == Fader.State.OFF && transitionState != TransitionState.NONE) {
+        if (Fader.getState() == Fader.State.BLACK && transitionState != TransitionState.NONE) {
             switch (transitionState) {
                 case END_LEVEL:
                     finishLevel();
@@ -1603,16 +1627,23 @@ public class GameController {
                     gameState = State.INTRO;
                     break;
                 case TO_LEVEL:
+                case REPLAY_LEVEL_NO_BRIEFING:
                     setXPos(xPosCenter - Core.getDrawWidth() / 2);
                     setYPos(yPosCenter - LemminiFrame.LEVEL_HEIGHT / 2);
                     xPosOld = xPos;
                     yPosOld = yPos;
                     gameState = State.LEVEL;
-                    break;
+                    if (transitionState != TransitionState.REPLAY_LEVEL_NO_BRIEFING) {
+                        break;
+                    }
+                    /* falls through */
                 case RESTART_LEVEL:
                 case REPLAY_LEVEL:
                     try {
-                        restartLevel(transitionState == TransitionState.REPLAY_LEVEL);
+                        boolean doReplay = transitionState == TransitionState.REPLAY_LEVEL
+                                || transitionState == TransitionState.REPLAY_LEVEL_NO_BRIEFING;
+                        boolean showBriefing = transitionState != TransitionState.REPLAY_LEVEL_NO_BRIEFING;
+                        restartLevel(doReplay, showBriefing);
                     } catch (LemmException ex) {
                         JOptionPane.showMessageDialog(LemminiFrame.getFrame(), ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                         System.exit(1);
@@ -1655,7 +1686,7 @@ public class GameController {
     private static void setTitle() {
         int numLemmings = level.getNumLemmings();
         String lemmingWord = (numLemmings == 1) ? "Lemming" : "Lemmings";
-        if (noPercentages || numLemmings > 100) {
+        if (isOptionEnabled(Option.NO_PERCENTAGES) || numLemmings > 100) {
             Core.setTitle(String.format("SuperLemmini - %s - Save %d of %d %s",
                     level.getLevelName().trim(),
                     level.getNumToRescue(),
@@ -1848,17 +1879,17 @@ public class GameController {
         return curLevelNumber;
     }
     
-    public static int[] addExternalLevel(Path name, LevelPack lp, boolean showErrors) {
+    public static int[] addExternalLevel(Path lvlPath, LevelPack lp, boolean showErrors) {
         if (lp == null) {
             lp = levelPacks.get(0);
         }
-        if (name != null) {
+        if (lvlPath != null) {
             try {
-                String fNameStr = name.getFileName().toString();
+                String fNameStr = lvlPath.getFileName().toString();
                 String fNameStrNoExt = FilenameUtils.removeExtension(fNameStr);
                 try {
                     LevelFormat format = LevelFormat.valueOf(FilenameUtils.getExtension(fNameStr).toUpperCase(Locale.ROOT));
-                    ExternalLevelEntry entry = new ExternalLevelEntry(format, name);
+                    ExternalLevelEntry entry = new ExternalLevelEntry(format, lvlPath);
                     if (externalLevelList.contains(entry)) {
                         switch (format) {
                             case DAT:
@@ -1886,7 +1917,7 @@ public class GameController {
                     } else {
                         switch (format) {
                             case DAT:
-                                List<byte[]> levels = ExtractDAT.decompress(name);
+                                List<byte[]> levels = ExtractDAT.decompress(lvlPath);
                                 if (levels.isEmpty()) {
                                     if (showErrors) {
                                         JOptionPane.showMessageDialog(LemminiFrame.getFrame(), "DAT file is empty.", "Load Level", JOptionPane.ERROR_MESSAGE);
@@ -1896,9 +1927,12 @@ public class GameController {
                                 List<LevelInfo> liList = new ArrayList<>(levels.size());
                                 for (ListIterator<byte[]> lit = levels.listIterator(); lit.hasNext(); ) {
                                     int i = lit.nextIndex();
-                                    Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + "_" + i + ".ini");
-                                    ExtractLevel.convertLevel(lit.next(), fNameStr + " (section " + i + ")", outName, false, false);
-                                    LevelInfo li = new LevelInfo(new FileResource(outName), null);
+                                    String outName = Core.EXTERNAL_LEVEL_CACHE_PATH + fNameStrNoExt + "_" + i + ".ini";
+                                    try (Writer w = Core.resourceTree.newBufferedWriter(outName)) {
+                                        ExtractLevel.convertLevel(lit.next(),
+                                                fNameStr.toLowerCase(Locale.ROOT) + " (section " + i + ")", w, false, false);
+                                    }
+                                    LevelInfo li = new LevelInfo(new FileResource(outName, outName, Core.resourceTree), null);
                                     if (!li.isValidLevel()) {
                                         return null;
                                     }
@@ -1909,12 +1943,14 @@ public class GameController {
                                 saveExternalLevelList();
                                 return new int[]{0, lp.getRatings().size() - 1, 0};
                             case LVL:
-                                Path outName = Core.externalLevelCachePath.resolve(fNameStrNoExt + ".ini");
-                                ExtractLevel.convertLevel(name, outName, false, false);
-                                name = outName;
+                                String outName = Core.EXTERNAL_LEVEL_CACHE_PATH + fNameStrNoExt + ".ini";
+                                try (Writer w = Core.resourceTree.newBufferedWriter(Core.EXTERNAL_LEVEL_CACHE_PATH + fNameStrNoExt + ".ini")) {
+                                    ExtractLevel.convertLevel(lvlPath, w, false, false);
+                                }
+                                lvlPath = Core.resourceTree.getPath(outName);
                                 /* falls through */
                             case INI:
-                                LevelInfo li = new LevelInfo(new FileResource(name), null);
+                                LevelInfo li = new LevelInfo(new FileResource(lvlPath), null);
                                 if (li.isValidLevel()) {
                                     lp.addLevel(0, li);
                                     externalLevelList.add(entry);
@@ -1950,7 +1986,7 @@ public class GameController {
         for (ExternalLevelEntry extLvl : externalLevelList) {
             output.set("level_" + (idx++), extLvl.toString());
         }
-        output.save(Core.externalLevelCachePath.resolve(LEVEL_CACHE_INI));
+        output.save(Core.EXTERNAL_LEVEL_CACHE_PATH + LEVEL_CACHE_INI);
     }
 
 
@@ -2323,58 +2359,14 @@ public class GameController {
             Music.setGain(Music.getGain() - Fader.getStep() / 255.0 * musicGain * 1.5);
         }
     }
-
-    /**
-     * Set advanced mouse selection mode.
-     * @param sel true: advanced selection mode active, false otherwise
-     */
-    public static void setAdvancedSelect(final boolean sel) {
-        advancedSelect = sel;
-    }
-
-    /**
-     * Get state of advanced mouse selection mode.
-     * @return true if advanced selection mode activated, false otherwise
-     */
-    public static boolean isAdvancedSelect() {
-        return advancedSelect;
-    }
     
-    /**
-     * Set classical cursor mode.
-     * @param sel true: classical cursor mode active, false otherwise
-     */
-    public static void setClassicCursor(final boolean sel) {
-        classicCursor = sel;
-    }
-
-    /**
-     * Get state of classic cursor mode.
-     * @return true if classic cursor mode activated, false otherwise
-     */
-    public static boolean isClassicCursor() {
-        return classicCursor;
-    }
-    
-    public static void setSwapButtons(boolean sb) {
-        swapButtons = sb;
-    }
-    
-    public static boolean doSwapButtons() {
-        return swapButtons;
-    }
-    
-    public static void setFasterFastForward(boolean faster) {
-        fasterFastForward = faster;
-    }
-    
-    public static boolean isFasterFastForward() {
-        return fasterFastForward;
-    }
-    
-    public static void setNoPercentages(boolean np) {
-        noPercentages = np;
-        if (gameState != null) {
+    public static void setOption(Option option, boolean enable) {
+        if (enable) {
+            options.add(option);
+        } else {
+            options.remove(option);
+        }
+        if (option == Option.NO_PERCENTAGES && gameState != null) {
             switch (gameState) {
                 case BRIEFING:
                 case LEVEL:
@@ -2388,8 +2380,8 @@ public class GameController {
         }
     }
     
-    public static boolean isNoPercentages() {
-        return noPercentages;
+    public static boolean isOptionEnabled(Option option) {
+        return options.contains(option);
     }
 
     /**
@@ -2406,38 +2398,6 @@ public class GameController {
      */
     public static Stencil getStencil() {
         return stencil;
-    }
-
-    /**
-     * Enable music.
-     * @param on true: music on, false otherwise
-     */
-    public static void setMusicOn(final boolean on) {
-        musicOn = on;
-    }
-
-    /**
-     * Get music enable state.
-     * @return true: music is on, false otherwise
-     */
-    public static boolean isMusicOn() {
-        return musicOn;
-    }
-
-    /**
-     * Enable sound.
-     * @param on true: sound on, false otherwise
-     */
-    public static void setSoundOn(final boolean on) {
-        soundOn = on;
-    }
-
-    /**
-     * Get sound enable state.
-     * @return true: sound is on, false otherwise
-     */
-    public static boolean isSoundOn() {
-        return soundOn;
     }
 
     /**

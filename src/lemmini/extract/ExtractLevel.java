@@ -6,14 +6,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import lemmini.tools.ToolBox;
 import static org.apache.commons.lang3.BooleanUtils.toBoolean;
 import org.apache.commons.lang3.StringUtils;
@@ -127,12 +120,12 @@ public class ExtractLevel {
     /**
      * Convert one binary LVL file into text file
      * @param fnIn Name of binary LVL file
-     * @param fnOut Name of target text file
+     * @param out Writer to target text file
      * @param multi Whether this is a multiplayer level
      * @param classic Whether to convert in classic mode
      * @throws Exception
      */
-    public static void convertLevel(final Path fnIn, final Path fnOut, final boolean multi, final boolean classic) throws Exception {
+    public static void convertLevel(final Path fnIn, final Writer out, final boolean multi, final boolean classic) throws Exception {
         byte[] b;
         try {
             if (!Files.isRegularFile(fnIn)) {
@@ -146,19 +139,19 @@ public class ExtractLevel {
         } catch (IOException e) {
             throw new Exception(String.format("I/O error while reading %s.", fnIn));
         }
-        convertLevel(b, fnIn.getFileName().toString(), fnOut, multi, classic);
+        convertLevel(b, fnIn.getFileName().toString().toLowerCase(Locale.ROOT), out, multi, classic);
     }
 
     /**
      * Convert one binary LVL file into text file
      * @param in Byte array of binary LVL file
      * @param fName File name
-     * @param fnOut Name of target text file
+     * @param out Writer to target text file
      * @param multi Whether this is a multiplayer level
      * @param classic Whether to convert in classic mode
      * @throws Exception
      */
-    public static void convertLevel(final byte[] in, final String fName, final Path fnOut, final boolean multi, final boolean classic) throws Exception {
+    public static void convertLevel(final byte[] in, final String fName, final Writer out, final boolean multi, final boolean classic) throws Exception {
         int format = 0;
         /* release rate : 0 is slowest, 0x0FA (250) is fastest */
         int releaseRate = 0;
@@ -242,27 +235,27 @@ public class ExtractLevel {
             if (releaseRate >= 100) {
                 releaseRate -= 65536;
             }
-            numLemmings = b.getShort() & 0xffff;
-            numToRescue = b.getShort() & 0xffff;
-            timeLimit = b.getShort() & 0xffff;
-            numClimbers = b.getShort() & 0xffff;
-            numFloaters = b.getShort() & 0xffff;
-            numBombers = b.getShort() & 0xffff;
-            numBlockers = b.getShort() & 0xffff;
-            numBuilders = b.getShort() & 0xffff;
-            numBashers = b.getShort() & 0xffff;
-            numMiners = b.getShort() & 0xffff;
-            numDiggers = b.getShort() & 0xffff;
-            xPos = b.getShort() & 0xffff;
-            xPos += multi ? 72 : 160;
+            numLemmings = Short.toUnsignedInt(b.getShort());
+            numToRescue = Short.toUnsignedInt(b.getShort());
+            timeLimit = Short.toUnsignedInt(b.getShort());
+            numClimbers = Short.toUnsignedInt(b.getShort());
+            numFloaters = Short.toUnsignedInt(b.getShort());
+            numBombers = Short.toUnsignedInt(b.getShort());
+            numBlockers = Short.toUnsignedInt(b.getShort());
+            numBuilders = Short.toUnsignedInt(b.getShort());
+            numBashers = Short.toUnsignedInt(b.getShort());
+            numMiners = Short.toUnsignedInt(b.getShort());
+            numDiggers = Short.toUnsignedInt(b.getShort());
+            xPos = Short.toUnsignedLong(b.getShort());
+            xPos += multi ? 72L : 160L;
             xPos = StrictMath.round(xPos * scale);
             yPos = StrictMath.round((DEFAULT_HEIGHT / 2) * scale);
-            style = b.getShort() & 0xffff;
+            style = Short.toUnsignedInt(b.getShort());
             styleStr = STYLES.get(style);
             if (styleStr == null) {
                 throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
             }
-            specialStyle = (b.getShort() & 0xffff) - 1;
+            specialStyle = Short.toUnsignedInt(b.getShort()) - 1;
             if (specialStyle > -1) {
                 specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                 if (specialStyleStr == null) {
@@ -284,54 +277,54 @@ public class ExtractLevel {
                     if (releaseRate >= 100) {
                         releaseRate -= 256;
                     }
-                    numLemmings = b.getShort() & 0xffff;
-                    numToRescue = b.getShort() & 0xffff;
-                    timeLimitSeconds = b.get() & 0xff;
-                    timeLimit = b.get() & 0xff;
+                    numLemmings = Short.toUnsignedInt(b.getShort());
+                    numToRescue = Short.toUnsignedInt(b.getShort());
+                    timeLimitSeconds = Byte.toUnsignedInt(b.get());
+                    timeLimit = Byte.toUnsignedInt(b.get());
                     if (timeLimit * 60 + timeLimitSeconds >= 6000) {
                         timeLimitSeconds = 0;
                         timeLimit = 0;
                     }
                     skillCounts = new int[8];
-                    gimmickFlags = (b.get() & 0xff) << 24;
-                    skillCounts[0] = b.get() & 0xff;
-                    gimmickFlags |= (b.get() & 0xff) << 16;
-                    skillCounts[1] = b.get() & 0xff;
-                    gimmickFlags |= (b.get() & 0xff) << 8;
-                    skillCounts[2] = b.get() & 0xff;
-                    gimmickFlags |= b.get() & 0xff;
-                    skillCounts[3] = b.get() & 0xff;
+                    gimmickFlags = Byte.toUnsignedInt(b.get()) << 24;
+                    skillCounts[0] = Byte.toUnsignedInt(b.get());
+                    gimmickFlags |= Byte.toUnsignedInt(b.get()) << 16;
+                    skillCounts[1] = Byte.toUnsignedInt(b.get());
+                    gimmickFlags |= Byte.toUnsignedInt(b.get()) << 8;
+                    skillCounts[2] = Byte.toUnsignedInt(b.get());
+                    gimmickFlags |= Byte.toUnsignedInt(b.get());
+                    skillCounts[3] = Byte.toUnsignedInt(b.get());
                     b.get();
-                    skillCounts[4] = b.get() & 0xff;
+                    skillCounts[4] = Byte.toUnsignedInt(b.get());
                     b.get();
-                    skillCounts[5] = b.get() & 0xff;
-                    skillFlags = (b.get() & 0xff) << 8;
-                    skillCounts[6] = b.get() & 0xff;
-                    skillFlags |= b.get() & 0xff;
-                    skillCounts[7] = b.get() & 0xff;
+                    skillCounts[5] = Byte.toUnsignedInt(b.get());
+                    skillFlags = Byte.toUnsignedInt(b.get()) << 8;
+                    skillCounts[6] = Byte.toUnsignedInt(b.get());
+                    skillFlags |= Byte.toUnsignedInt(b.get());
+                    skillCounts[7] = Byte.toUnsignedInt(b.get());
                     for (int i = 0; i < skillCounts.length; i++) {
                         if (skillCounts[i] >= 100) {
                             skillCounts[i] = Integer.MAX_VALUE;
                         }
                     }
-                    xPos = b.getShort() & 0xffff;
-                    xPos += multi ? 72 : 160;
+                    xPos = Short.toUnsignedLong(b.getShort());
+                    xPos += multi ? 72L : 160L;
                     xPos = Math.round(xPos * scale);
                     yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
-                    music = b.get() & 0xff;
+                    music = Byte.toUnsignedInt(b.get());
                     if (music > 0 && music < 253) {
                         musicStr = MUSIC.get(music);
                         if (musicStr == null) {
                             throw new Exception(String.format("%s uses an invalid music index: %d", fName, music));
                         }
                     }
-                    style = b.get() & 0xff;
+                    style = Byte.toUnsignedInt(b.get());
                     styleStr = STYLES.get(style);
                     if (styleStr == null) {
                         throw new Exception(String.format("%s uses an invalid style: %d", fName, style));
                     }
                     optionFlags = b.get();
-                    specialStyle = (b.get() & 0xff) - 1;
+                    specialStyle = Byte.toUnsignedInt(b.get()) - 1;
                     if (specialStyle > -1) {
                         specialStyleStr = SPECIAL_STYLES.get(specialStyle);
                         if (specialStyleStr == null) {
@@ -350,13 +343,13 @@ public class ExtractLevel {
                     }
                     b.order(ByteOrder.LITTLE_ENDIAN);
                     if (format >= 2) {
-                        music = b.get() & 0xff;
+                        music = Byte.toUnsignedInt(b.get());
                     } else {
                         b.get();
                     }
-                    numLemmings = b.getShort() & 0xffff;
-                    numToRescue = b.getShort() & 0xffff;
-                    timeLimitSeconds = b.getShort() & 0xffff;
+                    numLemmings = Short.toUnsignedInt(b.getShort());
+                    numToRescue = Short.toUnsignedInt(b.getShort());
+                    timeLimitSeconds = Short.toUnsignedInt(b.getShort());
                     if (timeLimitSeconds >= 6000) {
                         timeLimitSeconds = 0;
                     }
@@ -368,7 +361,7 @@ public class ExtractLevel {
                     if (format >= 4) {
                         style = 255;
                         specialStyle = 255;
-                        int scaleInt = b.get() & 0xff;
+                        int scaleInt = Byte.toUnsignedInt(b.get());
                         if (scaleInt == 0) {
                             scale = DEFAULT_SCALE;
                         } else {
@@ -376,20 +369,20 @@ public class ExtractLevel {
                         }
                         b.get();
                     } else {
-                        style = b.get() & 0xff;
-                        specialStyle = (b.get() & 0xff) - 1;
+                        style = Byte.toUnsignedInt(b.get());
+                        specialStyle = Byte.toUnsignedInt(b.get()) - 1;
                     }
                     if (format >= 2) {
-                        xPos = b.getShort() & 0xffff;
-                        xPos += multi ? 72 : 160;
+                        xPos = Short.toUnsignedLong(b.getShort());
+                        xPos += multi ? 72L : 160L;
                         xPos = Math.round(xPos * scale);
-                        yPos = (b.getShort() & 0xffff) + 80;
+                        yPos = Short.toUnsignedLong(b.getShort()) + 80L;
                         yPos = Math.round(yPos * scale);
                     } else {
-                        music = b.get() & 0xff;
+                        music = Byte.toUnsignedInt(b.get());
                         b.get();
-                        xPos = b.getShort() & 0xffff;
-                        xPos += multi ? 72 : 160;
+                        xPos = Short.toUnsignedLong(b.getShort());
+                        xPos += multi ? 72L : 160L;
                         xPos = Math.round(xPos * scale);
                         yPos = Math.round((DEFAULT_HEIGHT / 2) * scale);
                     }
@@ -400,34 +393,34 @@ public class ExtractLevel {
                         }
                     }
                     skillCounts = new int[16];
-                    skillCounts[0] = b.get() & 0xff;
-                    skillCounts[1] = b.get() & 0xff;
-                    skillCounts[2] = b.get() & 0xff;
-                    skillCounts[3] = b.get() & 0xff;
-                    skillCounts[4] = b.get() & 0xff;
-                    skillCounts[5] = b.get() & 0xff;
-                    skillCounts[6] = b.get() & 0xff;
-                    skillCounts[7] = b.get() & 0xff;
-                    skillCounts[8] = b.get() & 0xff;
-                    skillCounts[9] = b.get() & 0xff;
-                    skillCounts[10] = b.get() & 0xff;
-                    skillCounts[11] = b.get() & 0xff;
-                    skillCounts[12] = b.get() & 0xff;
-                    skillCounts[13] = b.get() & 0xff;
-                    skillCounts[14] = b.get() & 0xff;
-                    skillCounts[15] = b.get() & 0xff;
+                    skillCounts[0] = Byte.toUnsignedInt(b.get());
+                    skillCounts[1] = Byte.toUnsignedInt(b.get());
+                    skillCounts[2] = Byte.toUnsignedInt(b.get());
+                    skillCounts[3] = Byte.toUnsignedInt(b.get());
+                    skillCounts[4] = Byte.toUnsignedInt(b.get());
+                    skillCounts[5] = Byte.toUnsignedInt(b.get());
+                    skillCounts[6] = Byte.toUnsignedInt(b.get());
+                    skillCounts[7] = Byte.toUnsignedInt(b.get());
+                    skillCounts[8] = Byte.toUnsignedInt(b.get());
+                    skillCounts[9] = Byte.toUnsignedInt(b.get());
+                    skillCounts[10] = Byte.toUnsignedInt(b.get());
+                    skillCounts[11] = Byte.toUnsignedInt(b.get());
+                    skillCounts[12] = Byte.toUnsignedInt(b.get());
+                    skillCounts[13] = Byte.toUnsignedInt(b.get());
+                    skillCounts[14] = Byte.toUnsignedInt(b.get());
+                    skillCounts[15] = Byte.toUnsignedInt(b.get());
                     for (int i = 0; i < skillCounts.length; i++) {
                         if (skillCounts[i] >= 100) {
                             skillCounts[i] = Integer.MAX_VALUE;
                         }
                     }
                     gimmickFlags = b.getInt();
-                    skillFlags = b.getShort() & 0xffff;
+                    skillFlags = Short.toUnsignedInt(b.getShort());
                     b.get();
                     b.get();
                     if (format >= 4) {
-                        width = Math.round((b.getInt() & 0xffffffffL) * scale);
-                        height = Math.round((b.getInt() & 0xffffffffL) * scale);
+                        width = Math.round(Integer.toUnsignedLong(b.getInt()) * scale);
+                        height = Math.round(Integer.toUnsignedLong(b.getInt()) * scale);
                         specialStylePositionX = Math.round(b.getInt() * scale);
                         specialStylePositionY = Math.round(b.getInt() * scale);
                         b.position(b.position() + 8);
@@ -477,7 +470,7 @@ public class ExtractLevel {
                     }
                     if (format == 3) {
                         for (int i = 0; i < 32; i++) {
-                            int entranceIndex = b.get() & 0xff;
+                            int entranceIndex = Byte.toUnsignedInt(b.get());
                             if (toBoolean(entranceIndex & 0x80)) {
                                 entranceOrder.add(entranceIndex & 0x7f);
                             }
@@ -617,7 +610,7 @@ public class ExtractLevel {
                         // read entrance order
                         entranceOrder.clear();
                         int entranceIndex;
-                        while ((entranceIndex = b.getShort() & 0xffff) != 0xffff) {
+                        while ((entranceIndex = Short.toUnsignedInt(b.getShort())) != 0xffff) {
                             entranceOrder.add(entranceIndex);
                         }
                         break;
@@ -723,235 +716,233 @@ public class ExtractLevel {
         }
         
         // write the level
-        try (Writer w = Files.newBufferedWriter(fnOut, StandardCharsets.UTF_8)) {
-            // add only file name without the path in the first line
-            w.write("# LVL extracted by SuperLemmini # " + fName + "\r\n");
-            // write configuration
-            w.write("releaseRate = " + releaseRate + "\r\n");
-            w.write("numLemmings = " + numLemmings + "\r\n");
-            w.write("numToRescue = " + numToRescue + "\r\n");
-            if (classic) {
-                w.write("timeLimit = " + timeLimit + "\r\n");
-                w.write("numClimbers = " + numClimbers + "\r\n");
-                w.write("numFloaters = " + numFloaters + "\r\n");
-                w.write("numBombers = " + numBombers + "\r\n");
-                w.write("numBlockers = " + numBlockers + "\r\n");
-                w.write("numBuilders = " + numBuilders + "\r\n");
-                w.write("numBashers = " + numBashers + "\r\n");
-                w.write("numMiners = " + numMiners + "\r\n");
-                w.write("numDiggers = " + numDiggers + "\r\n");
+        // add only file name without the path in the first line
+        out.write("# LVL extracted by SuperLemmini # " + fName + "\r\n");
+        // write configuration
+        out.write("releaseRate = " + releaseRate + "\r\n");
+        out.write("numLemmings = " + numLemmings + "\r\n");
+        out.write("numToRescue = " + numToRescue + "\r\n");
+        if (classic) {
+            out.write("timeLimit = " + timeLimit + "\r\n");
+            out.write("numClimbers = " + numClimbers + "\r\n");
+            out.write("numFloaters = " + numFloaters + "\r\n");
+            out.write("numBombers = " + numBombers + "\r\n");
+            out.write("numBlockers = " + numBlockers + "\r\n");
+            out.write("numBuilders = " + numBuilders + "\r\n");
+            out.write("numBashers = " + numBashers + "\r\n");
+            out.write("numMiners = " + numMiners + "\r\n");
+            out.write("numDiggers = " + numDiggers + "\r\n");
+        } else {
+            out.write("timeLimitSeconds = " + (timeLimit * 60 + timeLimitSeconds) + "\r\n");
+            out.write("numClimbers = " + ToolBox.intToString(numClimbers, false) + "\r\n");
+            out.write("numFloaters = " + ToolBox.intToString(numFloaters, false) + "\r\n");
+            out.write("numBombers = " + ToolBox.intToString(numBombers, false) + "\r\n");
+            out.write("numBlockers = " + ToolBox.intToString(numBlockers, false) + "\r\n");
+            out.write("numBuilders = " + ToolBox.intToString(numBuilders, false) + "\r\n");
+            out.write("numBashers = " + ToolBox.intToString(numBashers, false) + "\r\n");
+            out.write("numMiners = " + ToolBox.intToString(numMiners, false) + "\r\n");
+            out.write("numDiggers = " + ToolBox.intToString(numDiggers, false) + "\r\n");
+            if (!remappedEntranceOrder.isEmpty()) {
+                out.write("entranceOrder = ");
+                for (Iterator<Integer> it = remappedEntranceOrder.iterator(); it.hasNext(); ) {
+                    out.write(it.next().toString());
+                    if (it.hasNext()) {
+                        out.write(", ");
+                    }
+                }
+                out.write("\r\n");
+            } else if (activeEntranceCount == 3) {
+                out.write("entranceOrder = 0, 1, 2\r\n");
+            }
+        }
+        out.write("xPosCenter = " + xPos + "\r\n");
+        if (!classic) {
+            out.write("yPosCenter = " + yPos + "\r\n");
+        }
+        out.write("style = " + ToolBox.addBackslashes(styleStr, false) + "\r\n");
+        if (specialStyleStr != null) {
+            out.write("specialStyle = " + ToolBox.addBackslashes(specialStyleStr, false) + "\r\n");
+            if (format >= 3) {
+                out.write("specialStylePositionX = " + specialStylePositionX + "\r\n");
+                out.write("specialStylePositionY = " + specialStylePositionY + "\r\n");
+            }
+        }
+        if (musicStr != null) {
+            out.write("music = " + ToolBox.addBackslashes(musicStr, false) + "\r\n");
+        }
+        if (toBoolean(optionFlags & OPTION_FLAG_AUTOSTEEL)) {
+            if (toBoolean(optionFlags & OPTION_FLAG_SIMPLE_AUTOSTEEL)) {
+                out.write("autosteelMode = 1\r\n");
             } else {
-                w.write("timeLimitSeconds = " + (timeLimit * 60 + timeLimitSeconds) + "\r\n");
-                w.write("numClimbers = " + ToolBox.intToString(numClimbers, false) + "\r\n");
-                w.write("numFloaters = " + ToolBox.intToString(numFloaters, false) + "\r\n");
-                w.write("numBombers = " + ToolBox.intToString(numBombers, false) + "\r\n");
-                w.write("numBlockers = " + ToolBox.intToString(numBlockers, false) + "\r\n");
-                w.write("numBuilders = " + ToolBox.intToString(numBuilders, false) + "\r\n");
-                w.write("numBashers = " + ToolBox.intToString(numBashers, false) + "\r\n");
-                w.write("numMiners = " + ToolBox.intToString(numMiners, false) + "\r\n");
-                w.write("numDiggers = " + ToolBox.intToString(numDiggers, false) + "\r\n");
-                if (!remappedEntranceOrder.isEmpty()) {
-                    w.write("entranceOrder = ");
-                    for (Iterator<Integer> it = remappedEntranceOrder.iterator(); it.hasNext(); ) {
-                        w.write(it.next().toString());
-                        if (it.hasNext()) {
-                            w.write(", ");
-                        }
-                    }
-                    w.write("\r\n");
-                } else if (activeEntranceCount == 3) {
-                    w.write("entranceOrder = 0, 1, 2\r\n");
-                }
+                out.write("autosteelMode = 2\r\n");
             }
-            w.write("xPosCenter = " + xPos + "\r\n");
-            if (!classic) {
-                w.write("yPosCenter = " + yPos + "\r\n");
+        }
+        if (classic) {
+            if (extra1 != 0) {
+                out.write("superlemming = true\r\n");
             }
-            w.write("style = " + ToolBox.addBackslashes(styleStr, false) + "\r\n");
-            if (specialStyleStr != null) {
-                w.write("specialStyle = " + ToolBox.addBackslashes(specialStyleStr, false) + "\r\n");
-                if (format >= 3) {
-                    w.write("specialStylePositionX = " + specialStylePositionX + "\r\n");
-                    w.write("specialStylePositionY = " + specialStylePositionY + "\r\n");
-                }
+            if ((extra1 != 0 || extra2 != 0)
+                    && (extra1 != -1 || extra2 != -1)) {
+                out.write("#byte30Value = " + extra1 + "\r\n");
+                out.write("#byte31Value = " + extra2 + "\r\n");
             }
-            if (musicStr != null) {
-                w.write("music = " + ToolBox.addBackslashes(musicStr, false) + "\r\n");
-            }
-            if (toBoolean(optionFlags & OPTION_FLAG_AUTOSTEEL)) {
-                if (toBoolean(optionFlags & OPTION_FLAG_SIMPLE_AUTOSTEEL)) {
-                    w.write("autosteelMode = 1\r\n");
-                } else {
-                    w.write("autosteelMode = 2\r\n");
+            out.write("forceNormalTimerSpeed = true\r\n");
+            out.write("classicSteel = true\r\n");
+        } else {
+            if (format >= 1 || toBoolean(optionFlags & OPTION_FLAG_CUSTOM_GIMMICKS)) {
+                if (toBoolean(gimmickFlags & GIMMICK_FLAG_SUPERLEMMING)) {
+                    out.write("superlemming = true\r\n");
                 }
-            }
-            if (classic) {
-                if (extra1 != 0) {
-                    w.write("superlemming = true\r\n");
+                if (toBoolean(gimmickFlags & GIMMICK_FLAG_CHEAPO_FALL_DISTANCE)) {
+                    out.write("maxFallDistance = 152\r\n");
                 }
-                if ((extra1 != 0 || extra2 != 0)
-                        && (extra1 != -1 || extra2 != -1)) {
-                    w.write("#byte30Value = " + extra1 + "\r\n");
-                    w.write("#byte31Value = " + extra2 + "\r\n");
-                }
-                w.write("forceNormalTimerSpeed = true\r\n");
-                w.write("classicSteel = true\r\n");
             } else {
-                if (format >= 1 || toBoolean(optionFlags & OPTION_FLAG_CUSTOM_GIMMICKS)) {
-                    if (toBoolean(gimmickFlags & GIMMICK_FLAG_SUPERLEMMING)) {
-                        w.write("superlemming = true\r\n");
-                    }
-                    if (toBoolean(gimmickFlags & GIMMICK_FLAG_CHEAPO_FALL_DISTANCE)) {
-                        w.write("maxFallDistance = 152\r\n");
-                    }
-                } else {
-                    switch (extra1) {
-                        case -1:
-                            w.write("superlemming = true\r\n");
-                            break;
-                        case 66:
-                            switch (extra2) {
-                                case 1:
-                                case 9:
-                                case 10:
-                                    w.write("superlemming = true\r\n");
-                                    break;
-                                default:
-                                    break;
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                w.write("width = " + width + "\r\n");
-                w.write("height = " + height + "\r\n");
-            }
-            // write objects
-            w.write("\r\n# Objects\r\n");
-            w.write("# ID, X position, Y position, paint mode, flags, object-specific modifier (optional)\r\n");
-            w.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
-            w.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask, 8 = horizontally flipped (combining allowed)\r\n");
-            int maxObjectID = -1;
-            for (ListIterator<LvlObject> it = objects.listIterator(objects.size()); it.hasPrevious(); ) {
-                int i = it.previousIndex();
-                LvlObject obj = it.previous();
-                if (obj.exists) {
-                    maxObjectID = i;
-                    break;
-                }
-            }
-            for (ListIterator<LvlObject> it = objects.listIterator(); it.nextIndex() <= maxObjectID && it.hasNext(); ) {
-                int i = it.nextIndex();
-                LvlObject obj = it.next();
-                if (obj.exists) {
-                    w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + obj.flags);
-                    if (!classic) {
-                        if (obj.id == LvlObject.ENTRANCE_ID && obj.leftFacing) {
-                            w.write(", 1");
-                        } else {
-                            w.write(", 0");
-                        }
-                    }
-                    w.write("\r\n");
-                    if (classic) {
-                        if (toBoolean(obj.byte4Value & 0x80)) {
-                            w.write("#object_" + i + "_byte4Value = " + obj.byte4Value + "\r\n");
-                        }
-                        if ((obj.byte6Value & 0x3f) != 0) {
-                            w.write("#object_" + i + "_byte6Value = " + obj.byte6Value + "\r\n");
-                        }
-                        if ((obj.byte7Value & 0x7f) != 0x0f) {
-                            w.write("#object_" + i + "_byte7Value = " + obj.byte7Value + "\r\n");
-                        }
-                    }
-                } else {
-                    w.write("object_" + i + " = -1, 0, 0, 0, 0\r\n");
-                }
-            }
-            // write terrain
-            w.write("\r\n# Terrain\r\n");
-            w.write("# ID, X position, Y position, modifier\r\n");
-            w.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite,\r\n");
-            w.write("#           16 = fake, 32 = horizontally flipped, 64 = no one-way arrows (combining allowed)\r\n");
-            int maxTerrainID = -1;
-            for (ListIterator<Terrain> it = terrain.listIterator(terrain.size()); it.hasPrevious(); ) {
-                int i = it.previousIndex();
-                Terrain ter = it.previous();
-                if (ter.exists) {
-                    maxTerrainID = i;
-                    break;
-                }
-            }
-            int maxValidTerrainID = -1;
-            if (!classic) {
-                maxValidTerrainID = maxTerrainID;
-            } else if (specialStyle < 0) {
-                for (ListIterator<Terrain> it = terrain.listIterator(); it.nextIndex() <= maxTerrainID && it.hasNext(); ) {
-                    int i = it.nextIndex();
-                    Terrain ter = it.next();
-                    if (ter.exists) {
-                        maxValidTerrainID = i;
-                    } else {
+                switch (extra1) {
+                    case -1:
+                        out.write("superlemming = true\r\n");
                         break;
-                    }
+                    case 66:
+                        switch (extra2) {
+                            case 1:
+                            case 9:
+                            case 10:
+                                out.write("superlemming = true\r\n");
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    default:
+                        break;
                 }
             }
+            out.write("width = " + width + "\r\n");
+            out.write("height = " + height + "\r\n");
+        }
+        // write objects
+        out.write("\r\n# Objects\r\n");
+        out.write("# ID, X position, Y position, paint mode, flags, object-specific modifier (optional)\r\n");
+        out.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
+        out.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask, 8 = horizontally flipped (combining allowed)\r\n");
+        int maxObjectID = -1;
+        for (ListIterator<LvlObject> it = objects.listIterator(objects.size()); it.hasPrevious(); ) {
+            int i = it.previousIndex();
+            LvlObject obj = it.previous();
+            if (obj.exists) {
+                maxObjectID = i;
+                break;
+            }
+        }
+        for (ListIterator<LvlObject> it = objects.listIterator(); it.nextIndex() <= maxObjectID && it.hasNext(); ) {
+            int i = it.nextIndex();
+            LvlObject obj = it.next();
+            if (obj.exists) {
+                out.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + obj.flags);
+                if (!classic) {
+                    if (obj.id == LvlObject.ENTRANCE_ID && obj.leftFacing) {
+                        out.write(", 1");
+                    } else {
+                        out.write(", 0");
+                    }
+                }
+                out.write("\r\n");
+                if (classic) {
+                    if (toBoolean(obj.byte4Value & 0x80)) {
+                        out.write("#object_" + i + "_byte4Value = " + obj.byte4Value + "\r\n");
+                    }
+                    if ((obj.byte6Value & 0x3f) != 0) {
+                        out.write("#object_" + i + "_byte6Value = " + obj.byte6Value + "\r\n");
+                    }
+                    if ((obj.byte7Value & 0x7f) != 0x0f) {
+                        out.write("#object_" + i + "_byte7Value = " + obj.byte7Value + "\r\n");
+                    }
+                }
+            } else {
+                out.write("object_" + i + " = -1, 0, 0, 0, 0\r\n");
+            }
+        }
+        // write terrain
+        out.write("\r\n# Terrain\r\n");
+        out.write("# ID, X position, Y position, modifier\r\n");
+        out.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite,\r\n");
+        out.write("#           16 = fake, 32 = horizontally flipped, 64 = no one-way arrows (combining allowed)\r\n");
+        int maxTerrainID = -1;
+        for (ListIterator<Terrain> it = terrain.listIterator(terrain.size()); it.hasPrevious(); ) {
+            int i = it.previousIndex();
+            Terrain ter = it.previous();
+            if (ter.exists) {
+                maxTerrainID = i;
+                break;
+            }
+        }
+        int maxValidTerrainID = -1;
+        if (!classic) {
+            maxValidTerrainID = maxTerrainID;
+        } else if (specialStyle < 0) {
             for (ListIterator<Terrain> it = terrain.listIterator(); it.nextIndex() <= maxTerrainID && it.hasNext(); ) {
                 int i = it.nextIndex();
-                if (i > maxValidTerrainID) {
-                    w.write("#");
-                }
                 Terrain ter = it.next();
                 if (ter.exists) {
-                    w.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier + "\r\n");
-                    if (classic && toBoolean(ter.byte3Value & 0x40)) {
-                        w.write("#terrain_" + i + "_byte3Value = " + ter.byte3Value + "\r\n");
-                    }
+                    maxValidTerrainID = i;
                 } else {
-                    w.write("terrain_" + i + " = -1, 0, 0, 0\r\n");
+                    break;
                 }
             }
-            // write steel blocks
-            w.write("\r\n# Steel\r\n");
-            w.write("# X position, Y position, width, height, flags (optional)\r\n");
-            w.write("# Flags: 1 = remove existing steel\r\n");
-            int maxSteelID = -1;
-            if (!toBoolean(optionFlags & OPTION_FLAG_IGNORE_STEEL)) {
-                for (ListIterator<Steel> it = steel.listIterator(steel.size()); it.hasPrevious(); ) {
-                    int i = it.previousIndex();
-                    Steel stl = it.previous();
-                    if (stl.exists) {
-                        maxSteelID = i;
-                        break;
-                    }
-                }
+        }
+        for (ListIterator<Terrain> it = terrain.listIterator(); it.nextIndex() <= maxTerrainID && it.hasNext(); ) {
+            int i = it.nextIndex();
+            if (i > maxValidTerrainID) {
+                out.write("#");
             }
-            for (ListIterator<Steel> it = steel.listIterator(); it.nextIndex() <= maxSteelID && it.hasNext(); ) {
-                int i = it.nextIndex();
-                Steel stl = it.next();
+            Terrain ter = it.next();
+            if (ter.exists) {
+                out.write("terrain_" + i + " = " + ter.id + ", " + ter.xPos + ", " + ter.yPos + ", " + ter.modifier + "\r\n");
+                if (classic && toBoolean(ter.byte3Value & 0x40)) {
+                    out.write("#terrain_" + i + "_byte3Value = " + ter.byte3Value + "\r\n");
+                }
+            } else {
+                out.write("terrain_" + i + " = -1, 0, 0, 0\r\n");
+            }
+        }
+        // write steel blocks
+        out.write("\r\n# Steel\r\n");
+        out.write("# X position, Y position, width, height, flags (optional)\r\n");
+        out.write("# Flags: 1 = remove existing steel\r\n");
+        int maxSteelID = -1;
+        if (!toBoolean(optionFlags & OPTION_FLAG_IGNORE_STEEL)) {
+            for (ListIterator<Steel> it = steel.listIterator(steel.size()); it.hasPrevious(); ) {
+                int i = it.previousIndex();
+                Steel stl = it.previous();
                 if (stl.exists) {
-                    w.write("steel_" + i + " = " + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
-                    if (!classic) {
-                        w.write(", " + (stl.negative ? "1" : "0"));
-                    }
-                    w.write("\r\n");
-                    if (classic && stl.byte3Value != 0) {
-                        w.write("#steel_" + i + "_byte3Value = " + stl.byte3Value + "\r\n");
-                    }
-                } else {
-                    w.write("steel_" + i + " = 0, 0, 0, 0\r\n");
+                    maxSteelID = i;
+                    break;
                 }
             }
-            // write name
-            w.write("\r\n# Name and author\r\n");
-            if (origLvlName != null) {
-                w.write("#origName = " + origLvlName + "\r\n");
+        }
+        for (ListIterator<Steel> it = steel.listIterator(); it.nextIndex() <= maxSteelID && it.hasNext(); ) {
+            int i = it.nextIndex();
+            Steel stl = it.next();
+            if (stl.exists) {
+                out.write("steel_" + i + " = " + stl.xPos + ", " + stl.yPos + ", " + stl.width + ", " + stl.height);
+                if (!classic) {
+                    out.write(", " + (stl.negative ? "1" : "0"));
+                }
+                out.write("\r\n");
+                if (classic && stl.byte3Value != 0) {
+                    out.write("#steel_" + i + "_byte3Value = " + stl.byte3Value + "\r\n");
+                }
+            } else {
+                out.write("steel_" + i + " = 0, 0, 0, 0\r\n");
             }
-            w.write("name = " + lvlName + "\r\n");
-            if (!author.isEmpty()) {
-                w.write("author = " + author + "\r\n");
-            }
+        }
+        // write name
+        out.write("\r\n# Name and author\r\n");
+        if (origLvlName != null) {
+            out.write("#origName = " + origLvlName + "\r\n");
+        }
+        out.write("name = " + lvlName + "\r\n");
+        if (!author.isEmpty()) {
+            out.write("author = " + author + "\r\n");
         }
     }
 }
@@ -1009,23 +1000,23 @@ class LvlObject {
                 byte7Value = b[7];
                 int sum = 0;
                 for (byte b1 : b) {
-                    sum += b1 & 0xff;
+                    sum += Byte.toUnsignedInt(b1);
                 }
                 exists = sum != 0;
                 // x pos  : min 0xFFF8, max 0x0638.  0xFFF8 = -24, 0x0000 = -16, 0x0008 = -8
                 // 0x0010 = 0, 0x0018 = 8, ... , 0x0638 = 1576    note: should be multiples of 8
-                xPos = ((b[0] << 8L) | (b[1] & 0xffL)) - 16L;
+                xPos = ((b[0] << 8L) | Byte.toUnsignedLong(b[1])) - 16L;
                 xPos = StrictMath.round(xPos * scale);
                 // y pos  : min 0xFFD7, max 0x009F.  0xFFD7 = -41, 0xFFF8 = -8, 0xFFFF = -1
                 // 0x0000 = 0, ... , 0x009F = 159.  note: can be any value in the specified range
-                yPos = (b[2] << 8L) | (b[3] & 0xffL);
+                yPos = (b[2] << 8L) | Byte.toUnsignedLong(b[3]);
                 yPos = StrictMath.round(yPos * scale);
                 // obj id : min 0x0000, max 0x000F.  the object id is different in each
                 // graphics set, however 0x0000 is always an exit and 0x0001 is always a start.
                 if (classic) {
-                    id = ((b[4] & 0x7f) << 8) | (b[5] & 0xff);
+                    id = ((b[4] & 0x7f) << 8) | Byte.toUnsignedInt(b[5]);
                 } else {
-                    id = b[5] & 0xff;
+                    id = Byte.toUnsignedInt(b[5]);
                 }
                 // modifier : first byte can be 80 (do not overwrite existing terrain) or 40
                 // (must have terrain underneath to be visible). 00 specifies always draw full graphic.
@@ -1054,11 +1045,11 @@ class LvlObject {
                 byte4Value = 0;
                 byte6Value = 0;
                 byte7Value = 0;
-                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Byte.toUnsignedLong(b[0]) | (b[1] << 8L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Byte.toUnsignedLong(b[2]) | (b[3] << 8L);
                 yPos = Math.round(yPos * scale);
-                id = b[4] & 0xff;
+                id = Byte.toUnsignedInt(b[4]);
                 paintMode = 0;
                 flags = 0;
                 if (toBoolean(b[7] & 0x01)) {
@@ -1087,11 +1078,17 @@ class LvlObject {
                 byte4Value = 0;
                 byte6Value = 0;
                 byte7Value = 0;
-                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Byte.toUnsignedLong(b[0])
+                        | (Byte.toUnsignedLong(b[1]) << 8L)
+                        | (Byte.toUnsignedLong(b[2]) << 16L)
+                        | (b[3] << 24L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Byte.toUnsignedLong(b[4])
+                        | (Byte.toUnsignedLong(b[5]) << 8L)
+                        | (Byte.toUnsignedLong(b[6]) << 16L)
+                        | (b[7] << 24L);
                 yPos = Math.round(yPos * scale);
-                id = (b[8] & 0xff) | ((b[9] & 0xff) << 8);
+                id = Byte.toUnsignedInt(b[8]) | (Byte.toUnsignedInt(b[9]) << 8);
                 paintMode = 0;
                 flags = 0;
                 if (toBoolean(b[12] & 0x01)) {
@@ -1178,7 +1175,7 @@ class Terrain {
                 byte3Value = b[3];
                 int mask = 0xff;
                 for (byte b1 : b) {
-                    mask &= b1 & 0xff;
+                    mask &= Byte.toUnsignedInt(b1);
                 }
                 exists = mask != 0xff;
                 // xpos: 0x0000..0x063F.  0x0000 = -16, 0x0008 = -8, 0x0010 = 0, 0x063f = 1583.
@@ -1188,12 +1185,12 @@ class Terrain {
                 // 0 indicates normal.
                 // eg: 0xC011 means draw at xpos=1, do not overwrite, upside-down.
                 modifier = (b[0] & 0xe0) >> 4;
-                xPos = (((b[0] & (classic ? 0x1fL : 0x0fL)) << 8L) | (b[1] & 0xffL)) - 16L;
+                xPos = (((b[0] & (classic ? 0x1fL : 0x0fL)) << 8L) | Byte.toUnsignedLong(b[1])) - 16L;
                 xPos = StrictMath.round(xPos * scale);
                 // y pos : 9-bit value. min 0xEF0, max 0x518.  0xEF0 = -38, 0xEF8 = -37,
                 // 0x020 = 0, 0x028 = 1, 0x030 = 2, 0x038 = 3, ... , 0x518 = 159
                 // note: the ypos value bleeds into the next value since it is 9 bits.
-                yPos = ((b[2] & 0xffL) << 1L) | ((b[3] & 0x80L) >> 7L);
+                yPos = (Byte.toUnsignedLong(b[2]) << 1L) | ((b[3] & 0x80L) >> 7L);
                 if (toBoolean((int) yPos & 0x100)) { // highest bit set -> negative
                     yPos -= 512L;
                 }
@@ -1209,11 +1206,11 @@ class Terrain {
             case 2:
             case 3:
                 byte3Value = 0;
-                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Byte.toUnsignedLong(b[0]) | (b[1] << 8L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Byte.toUnsignedLong(b[2]) | (b[3] << 8L);
                 yPos = Math.round(yPos * scale);
-                id = b[4] & 0xff;
+                id = Byte.toUnsignedInt(b[4]);
                 modifier = 0;
                 if (toBoolean(b[5] & 0x01)) {
                     modifier |= FLAG_NO_OVERWRITE;
@@ -1234,11 +1231,17 @@ class Terrain {
                 break;
             case 4:
                 byte3Value = 0;
-                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Byte.toUnsignedLong(b[0])
+                        | (Byte.toUnsignedLong(b[1]) << 8L)
+                        | (Byte.toUnsignedLong(b[2]) << 16L)
+                        | (b[3] << 24L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Byte.toUnsignedLong(b[4])
+                        | (Byte.toUnsignedLong(b[5]) << 8L)
+                        | (Byte.toUnsignedLong(b[6]) << 16L)
+                        | (b[7] << 24L);
                 yPos = Math.round(yPos * scale);
-                id = (b[8] & 0xff) | ((b[9] & 0xff) << 8);
+                id = Byte.toUnsignedInt(b[8]) | (Byte.toUnsignedInt(b[9]) << 8);
                 modifier = 0;
                 if (toBoolean(b[10] & 0x01)) {
                     modifier |= FLAG_NO_OVERWRITE;
@@ -1316,11 +1319,11 @@ class Steel {
                 byte3Value = b[3];
                 int sum = 0;
                 for (byte b1 : b) {
-                    sum += b1 & 0xff;
+                    sum += Byte.toUnsignedInt(b1);
                 }
                 exists = sum != 0;
                 // xpos: 9-bit value: 0x000-0x178).  0x000 = -16, 0x178 = 1580
-                xPos = (((b[0] & 0xffL) << 1L) | ((b[1] & 0x80L) >> 7L)) * 4L - 16L;
+                xPos = ((Byte.toUnsignedLong(b[0]) << 1L) | ((b[1] & 0x80L) >> 7L)) * 4L - 16L;
                 if (!classic) {
                     xPos -= (b[3] & 0xc0L) >>> 6L;
                 }
@@ -1349,13 +1352,13 @@ class Steel {
             case 2:
             case 3:
                 byte3Value = 0;
-                xPos = (b[0] & 0xffL) | (b[1] << 8L);
+                xPos = Byte.toUnsignedLong(b[0]) | (b[1] << 8L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[2] & 0xffL) | (b[3] << 8L);
+                yPos = Byte.toUnsignedLong(b[2]) | (b[3] << 8L);
                 yPos = Math.round(yPos * scale);
-                width = (b[4] & 0xffL) + 1L;
+                width = Byte.toUnsignedLong(b[4]) + 1L;
                 width = Math.round(width * scale);
-                height = (b[5] & 0xffL) + 1L;
+                height = Byte.toUnsignedLong(b[5]) + 1L;
                 height = Math.round(height * scale);
                 steelType = b[6] & 0x7f;
                 negative = steelType == 1;
@@ -1363,13 +1366,25 @@ class Steel {
                 break;
             case 4:
                 byte3Value = 0;
-                xPos = (b[0] & 0xffL) | ((b[1] & 0xffL) << 8L) | ((b[2] & 0xffL) << 16L) | (b[3] << 24L);
+                xPos = Byte.toUnsignedLong(b[0])
+                        | (Byte.toUnsignedLong(b[1]) << 8L)
+                        | (Byte.toUnsignedLong(b[2]) << 16L)
+                        | (b[3] << 24L);
                 xPos = Math.round(xPos * scale);
-                yPos = (b[4] & 0xffL) | ((b[5] & 0xffL) << 8L) | ((b[6] & 0xffL) << 16L) | (b[7] << 24L);
+                yPos = Byte.toUnsignedLong(b[4])
+                        | (Byte.toUnsignedLong(b[5]) << 8L)
+                        | (Byte.toUnsignedLong(b[6]) << 16L)
+                        | (b[7] << 24L);
                 yPos = Math.round(yPos * scale);
-                width = ((b[8] & 0xffL) | ((b[9] & 0xffL) << 8L) | ((b[10] & 0xffL) << 16L) | (b[11] << 24L)) + 1L;
+                width = (Byte.toUnsignedLong(b[8])
+                        | (Byte.toUnsignedLong(b[9]) << 8L)
+                        | (Byte.toUnsignedLong(b[10]) << 16L)
+                        | (b[11] << 24L)) + 1L;
                 width = Math.round(width * scale);
-                height = ((b[12] & 0xffL) | ((b[13] & 0xffL) << 8L) | ((b[14] & 0xffL) << 16L) | (b[15] << 24L)) + 1L;
+                height = (Byte.toUnsignedLong(b[12])
+                        | (Byte.toUnsignedLong(b[13]) << 8L)
+                        | (Byte.toUnsignedLong(b[14]) << 16L)
+                        | (b[15] << 24L)) + 1L;
                 height = Math.round(height * scale);
                 steelType = b[16] & 0x7f;
                 negative = steelType == 1;

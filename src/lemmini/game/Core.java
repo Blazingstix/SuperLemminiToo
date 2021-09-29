@@ -6,8 +6,6 @@ import java.awt.Toolkit;
 import java.awt.Transparency;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -19,6 +17,8 @@ import lemmini.extract.Extract;
 import lemmini.extract.ExtractException;
 import lemmini.graphics.LemmImage;
 import lemmini.gui.LegalFrame;
+import lemmini.tools.CaseInsensitiveFileTree;
+import lemmini.tools.CaseInsensitiveZipFile;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
@@ -65,32 +65,32 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     /** file name of patching configuration */
     public static final String PATCH_INI_NAME = "patch.ini";
-    public static final String EXTERNAL_LEVELS_CACHE_FOLDER = "$external";
     public static final String ROOT_ZIP_NAME = "root.lzp";
+    /** path of external level cache */
+    public static final String EXTERNAL_LEVEL_CACHE_PATH = "levels/$external/";
+    /** path for temporary files */
+    public static final String TEMP_PATH = "temp/";
     /** The revision string for resource compatibility - not necessarily the version number */
-    public static final String RES_REVISION = "0.102";
+    public static final String RES_REVISION = "0.103";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
     /** name of the INI file */
-    private static final String INI_NAME = "superlemmini.ini";
+    private static final String PROGRAM_PROPS_FILE_NAME = "superlemmini.ini";
+    /** name of player properties file */
+    private static final String PLAYER_PROPS_FILE_NAME = "players.ini";
     
     /** program properties */
     public static Props programProps;
     /** path of (extracted) resources */
     public static Path resourcePath;
-    /** path of external level cache */
-    public static Path externalLevelCachePath;
-    /** path for temporary files */
-    public static Path tempPath;
+    public static CaseInsensitiveFileTree resourceTree;
     public static List<ZipFile> zipFiles;
     /** current player */
     public static Player player;
     
     /** name of program properties file */
     private static Path programPropsFilePath;
-    /** name of player properties file */
-    private static Path playerPropsFilePath;
     /** player properties */
     private static Props playerProps;
     /** list of all players */
@@ -115,7 +115,7 @@ public class Core {
     public static boolean init(final boolean createPatches) throws LemmException, IOException  {
         // get ini path
         programPropsFilePath = Paths.get(SystemUtils.USER_HOME);
-        programPropsFilePath = programPropsFilePath.resolve(INI_NAME);
+        programPropsFilePath = programPropsFilePath.resolve(PROGRAM_PROPS_FILE_NAME);
         // read main ini file
         programProps = new Props();
         
@@ -131,23 +131,28 @@ public class Core {
         bilinear = Core.programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
         resourcePath = Paths.get(resourcePathStr);
+        resourceTree = new CaseInsensitiveFileTree(resourcePath);
         
         Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
         String rev = programProps.get("revision", "zip-invalid");
-        GameController.setMusicOn(programProps.getBoolean("music", true));
-        GameController.setSoundOn(programProps.getBoolean("sound", true));
+        GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
+        GameController.setOption(GameController.Option.SOUND_ON, programProps.getBoolean("sound", true));
         double gain;
         gain = programProps.getDouble("musicGain", 1.0);
         GameController.setMusicGain(gain);
         gain = programProps.getDouble("soundGain", 1.0);
         GameController.setSoundGain(gain);
-        GameController.setAdvancedSelect(programProps.getBoolean("advancedSelect", true));
-        GameController.setClassicCursor(programProps.getBoolean("classicalCursor", false));
-        GameController.setSwapButtons(programProps.getBoolean("swapButtons", false));
-        GameController.setFasterFastForward(programProps.getBoolean("fasterFastForward", false));
-        GameController.setNoPercentages(programProps.getBoolean("noPercentages", false));
+        GameController.setOption(GameController.Option.ADVANCED_SELECT, programProps.getBoolean("advancedSelect", true));
+        GameController.setOption(GameController.Option.CLASSIC_CURSOR, programProps.getBoolean("classicalCursor", false));
+        GameController.setOption(GameController.Option.SWAP_BUTTONS, programProps.getBoolean("swapButtons", false));
+        GameController.setOption(GameController.Option.FASTER_FAST_FORWARD, programProps.getBoolean("fasterFastForward", false));
+        GameController.setOption(GameController.Option.PAUSE_STOPS_FAST_FORWARD, programProps.getBoolean("pauseStopsFastForward", false));
+        GameController.setOption(GameController.Option.NO_PERCENTAGES, programProps.getBoolean("noPercentages", false));
+        GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
+        GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
+        boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
         if (rev.equalsIgnoreCase("zip")) {
-            try (ZipFile zip = new ZipFile(resourcePath.resolve(ROOT_ZIP_NAME).toFile())) {
+            try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {
                 ZipEntry entry = zip.getEntry("revision.ini");
                 try (Reader r = ToolBox.getBufferedReader(zip.getInputStream(entry))) {
                     Props p = new Props();
@@ -161,9 +166,9 @@ public class Core {
         if (resourcePathStr.isEmpty() || !rev.equalsIgnoreCase(RES_REVISION) || createPatches) {
             // extract resources
             try {
-                boolean deleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
-                Extract.extract(sourcePath, resourcePath, Paths.get("reference"), Paths.get("patch"), createPatches, deleteOldFiles);
-                resourcePath = Extract.getResourcePath();
+                Extract.extract(sourcePath, resourceTree, Paths.get("reference"), Paths.get("patch"), createPatches, maybeDeleteOldFiles);
+                resourceTree = Extract.getResourceTree();
+                resourcePath = resourceTree.getRoot();
                 programProps.set("revision", "zip");
             } catch (ExtractException ex) {
                 if (ex.isCanceledByUser()) {
@@ -172,8 +177,14 @@ public class Core {
                     throw new LemmException(String.format("Resource extraction failed.%n%s", ex.getMessage()));
                 }
             } finally {
-                programProps.set("resourcePath", Extract.getResourcePath().toString());
-                programProps.set("sourcePath", Extract.getSourcePath().toString());
+                CaseInsensitiveFileTree resTree = Extract.getResourceTree();
+                CaseInsensitiveFileTree srcTree = Extract.getSourceTree();
+                if (resTree != null) {
+                    programProps.set("resourcePath", resTree.getRoot().toString());
+                }
+                if (srcTree != null) {
+                    programProps.set("sourcePath", srcTree.getRoot().toString());
+                }
                 programProps.save(programPropsFilePath);
             }
         }
@@ -206,32 +217,27 @@ public class Core {
             }
         }
         // create temp folder
-        tempPath = resourcePath.resolve("temp");
-        Files.createDirectories(tempPath);
+        resourceTree.createDirectories(TEMP_PATH);
         
         // create folder for external level cache
-        externalLevelCachePath = resourcePath.resolve("levels").resolve(EXTERNAL_LEVELS_CACHE_FOLDER);
-        Files.createDirectories(externalLevelCachePath);
+        resourceTree.createDirectories(EXTERNAL_LEVEL_CACHE_PATH);
         
         // scan for and open zip files in resource folder, being sure to open root.lzp last
         zipFiles = new ArrayList<>(16);
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(resourcePath,
-                file -> FilenameUtils.isExtension(file.toString().toLowerCase(Locale.ROOT), "lzp"))) {
-            for (Path file : stream) {
-                if (!file.getFileName().toString().equals(ROOT_ZIP_NAME)) {
-                    ZipFile zipFile = new ZipFile(file.toFile());
-                    zipFiles.add(zipFile);
-                }
+        for (Path file : resourceTree.getAllPathsRegex("[^/]+\\.lzp")) {
+            if (!file.getFileName().toString().toLowerCase(Locale.ROOT).equals(ROOT_ZIP_NAME)) {
+                zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
             }
         }
-        zipFiles.add(new ZipFile(resourcePath.resolve(ROOT_ZIP_NAME).toFile()));
+        for (Path file : resourceTree.getAllPaths(ROOT_ZIP_NAME)) {
+            zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
+        }
         
         System.gc(); // force garbage collection here before the game starts
         
         // read player names
-        playerPropsFilePath = resourcePath.resolve("players.ini");
         playerProps = new Props();
-        playerProps.load(playerPropsFilePath);
+        playerProps.load(PLAYER_PROPS_FILE_NAME);
         String defaultPlayer = playerProps.get("defaultPlayer", "default");
         players = new ArrayList<>(16);
         for (int idx = 0; true; idx++) {
@@ -272,9 +278,8 @@ public class Core {
             // try to load the file from the mod paths
             for (String mod : GameController.getModPaths()) {
                 String resString = mod + "/" + fname;
-                Path file = resourcePath.resolve(resString);
-                if (Files.isRegularFile(file)) {
-                    return new FileResource(fname, file);
+                if (resourceTree.exists(resString)) {
+                    return new FileResource(fname, resString, resourceTree);
                 }
                 for (ZipFile zipFile : zipFiles) {
                     ZipEntry entry = zipFile.getEntry(resString);
@@ -286,9 +291,8 @@ public class Core {
         }
         // file not found in mod folders or mods not searched,
         // so look for it in the main folders
-        Path file = resourcePath.resolve(fname);
-        if (Files.isRegularFile(file)) {
-            return new FileResource(fname, file);
+        if (resourceTree.exists(fname)) {
+            return new FileResource(fname, fname, resourceTree);
         }
         for (ZipFile zipFile : zipFiles) {
             ZipEntry entry = zipFile.getEntry(fname);
@@ -314,9 +318,9 @@ public class Core {
             // try to load the file from the mod paths with each extension
             for (String mod : GameController.getModPaths()) {
                 for (String ext : extensions) {
-                    Path file = resourcePath.resolve(mod).resolve(fnameNoExt + "." + ext);
-                    if (Files.isRegularFile(file)) {
-                        return new FileResource(fname, file);
+                    String resString = mod + "/" + fnameNoExt + "." + ext;
+                    if (resourceTree.exists(resString)) {
+                        return new FileResource(fname, resString, resourceTree);
                     }
                 }
                 for (ZipFile zipFile : zipFiles) {
@@ -332,9 +336,9 @@ public class Core {
         // file not found in mod folders or mods not searched,
         // so look for it in the main folders, again with each extension
         for (String ext : extensions) {
-            Path file = resourcePath.resolve(fnameNoExt + "." + ext);
-            if (Files.isRegularFile(file)) {
-                return new FileResource(fname, file);
+            String resString = fnameNoExt + "." + ext;
+            if (resourceTree.exists(resString)) {
+                return new FileResource(fname, resString, resourceTree);
             }
         }
         for (ZipFile zipFile : zipFiles) {
@@ -351,62 +355,36 @@ public class Core {
     
     public static List<String> searchForResources(String folder, boolean searchMods, String... extensions) {
         Set<String> resources = new LinkedHashSet<>(64);
-        DirectoryStream.Filter<Path> filter = entry -> {
-            if (!Files.isRegularFile(entry)) {
-                return false;
-            }
-            for (String ext : extensions) {
-                String lowercaseName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
-                if (lowercaseName.endsWith("." + ext)) {
-                    return true;
-                }
-            }
-            return false;
-        };
         
         if (searchMods) {
             GameController.getModPaths().stream().forEachOrdered(mod -> {
-                try (DirectoryStream<Path> files = Files.newDirectoryStream(resourcePath.resolve("mods").resolve(mod).resolve(folder), filter)) {
-                    for (Path file : files) {
-                        resources.add(file.getFileName().toString());
-                    }
-                } catch (IOException ex) {
-                }
+                String lowercasePath = ("mods/" + mod + "/" + folder).toLowerCase(Locale.ROOT);
+                resourceTree.getAllPathsRegex(ToolBox.literalToRegex(lowercasePath) + "[^/]+").stream()
+                        .map(file -> file.getFileName().toString())
+                        .filter(fileName -> FilenameUtils.isExtension(fileName.toLowerCase(Locale.ROOT), extensions))
+                        .forEachOrdered(resources::add);
                 zipFiles.stream().forEachOrdered(zipFile -> {
                     zipFile.stream()
-                            .filter(entry -> !entry.isDirectory())
-                            .filter(entry -> {
-                                String name = entry.getName();
-                                for (String ext : extensions) {
-                                    if (FilenameUtils.getPath(name).equals("mods/" + mod + "/" + folder) && name.endsWith("." + ext)) {
-                                        return true;
-                                    }
-                                }
-                                return false;
-                            }).forEachOrdered(entry -> resources.add(FilenameUtils.getName(entry.getName())));
+                            .map(ZipEntry::getName)
+                            .filter(entryName -> ToolBox.getParent(entryName).toLowerCase(Locale.ROOT).equals(lowercasePath))
+                            .filter(entryName -> {
+                                return FilenameUtils.isExtension(entryName.toLowerCase(Locale.ROOT), extensions);
+                            }).forEachOrdered(entryName -> resources.add(ToolBox.getFileName(entryName)));
                 });
             });
         }
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(resourcePath.resolve(folder), filter)) {
-            for (Path file : files) {
-                resources.add(file.getFileName().toString());
-            }
-        } catch (IOException ex) {
-        }
+        String lowercasePath = folder.toLowerCase(Locale.ROOT);
+        resourceTree.getAllPathsRegex(ToolBox.literalToRegex(lowercasePath) + "[^/]+").stream()
+                .map(file -> file.getFileName().toString())
+                .filter(fileName -> FilenameUtils.isExtension(fileName.toLowerCase(Locale.ROOT), extensions))
+                .forEachOrdered(resources::add);
         zipFiles.stream().forEachOrdered(zipFile -> {
             zipFile.stream()
-                    .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> {
-                        String name = entry.getName();
-                        for (String ext : extensions) {
-                            if (FilenameUtils.getPath(name).equals(folder) && name.endsWith("." + ext)) {
-                                return true;
-                            }
-                        }
-                        return false;
-                    }).forEachOrdered(entry -> {
-                        resources.add(FilenameUtils.getName(entry.getName()));
-                    });
+                    .map(ZipEntry::getName)
+                    .filter(entryName -> ToolBox.getParent(entryName).toLowerCase(Locale.ROOT).equals(lowercasePath))
+                    .filter(entryName -> {
+                        return FilenameUtils.isExtension(entryName.toLowerCase(Locale.ROOT), extensions);
+                    }).forEachOrdered(entryName -> resources.add(ToolBox.getFileName(entryName)));
         });
         
         return new ArrayList<>(resources);
@@ -427,7 +405,7 @@ public class Core {
         //programProps.setDouble("scale", scale);
         programProps.save(programPropsFilePath);
         playerProps.set("defaultPlayer", player.getName());
-        playerProps.save(playerPropsFilePath);
+        playerProps.save(PLAYER_PROPS_FILE_NAME);
         player.store();
     }
     
@@ -513,28 +491,19 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadOpaqueImage(final Resource res) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(res), Transparency.OPAQUE);
+    public static LemmImage loadLemmImage(final Resource res) throws ResourceException {
+        return loadLemmImage(res, Transparency.TRANSLUCENT);
     }
     
     /**
      * Loads an image from the given resource.
      * @param res resource
+     * @param transparency
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadBitmaskImage(final Resource res) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(res), Transparency.BITMASK);
-    }
-    
-    /**
-     * Loads an image from the given resource.
-     * @param res resource
-     * @return Image
-     * @throws ResourceException
-     */
-    public static LemmImage loadTranslucentImage(final Resource res) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImage(res), Transparency.TRANSLUCENT);
+    public static LemmImage loadLemmImage(final Resource res, final int transparency) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImage(res), transparency);
     }
     
     /**
@@ -558,28 +527,19 @@ public class Core {
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadOpaqueImageJar(final String fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.OPAQUE);
+    public static LemmImage loadLemmImageJar(final String fname) throws ResourceException {
+        return loadLemmImageJar(fname, Transparency.TRANSLUCENT);
     }
     
     /**
      * Load an image from inside the JAR or the directory of the main class.
      * @param fname
+     * @param transparency
      * @return Image
      * @throws ResourceException
      */
-    public static LemmImage loadBitmaskImageJar(final String fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.BITMASK);
-    }
-    
-    /**
-     * Load an image from inside the JAR or the directory of the main class.
-     * @param fname
-     * @return Image
-     * @throws ResourceException
-     */
-    public static LemmImage loadTranslucentImageJar(final String fname) throws ResourceException {
-        return ToolBox.imageToBuffered(loadImageJar(fname), Transparency.TRANSLUCENT);
+    public static LemmImage loadLemmImageJar(final String fname, final int transparency) throws ResourceException {
+        return ToolBox.imageToBuffered(loadImageJar(fname), transparency);
     }
     
     /**

@@ -19,10 +19,12 @@
 
 package lemmini.gui;
 
+import java.awt.Frame;
 import java.awt.Toolkit;
 import java.util.List;
 import java.util.Locale;
 import java.util.Vector;
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.game.Core;
@@ -31,7 +33,7 @@ import lemmini.game.Core;
  * Dialog for managing players.
  * @author Volker Oth
  */
-public class PlayerDialog extends javax.swing.JDialog {
+public class PlayerDialog extends JDialog {
     
     private Vector<String> players;
 
@@ -40,7 +42,7 @@ public class PlayerDialog extends javax.swing.JDialog {
      * @param parent
      * @param modal
      */
-    public PlayerDialog(java.awt.Frame parent, boolean modal) {
+    public PlayerDialog(Frame parent, boolean modal) {
         super(parent, modal);
         initComponents();
         setMinimumSize(getSize());

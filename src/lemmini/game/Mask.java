@@ -186,8 +186,8 @@ public class Mask {
                         // add pixel to all object images that are visible only on terrain
                         if (spr != null && spr.getVisOnTerrain()
                                 && (GameController.getLevel().getClassicSteel() 
-                                        || !spr.getType().isSometimesIndestructible())
-                                && !(spr.getType().isSometimesIndestructible()
+                                        || !spr.getType().isOneWay())
+                                && !(spr.getType().isOneWay()
                                         && BooleanUtils.toBoolean(stencil.getMask(x, y) & Stencil.MSK_NO_ONE_WAY_DRAW))) {
                             spr.setPixelVisibility(x - spr.getX(), y - spr.getY(), true);
                         }

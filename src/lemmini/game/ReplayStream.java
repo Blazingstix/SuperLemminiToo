@@ -1,11 +1,11 @@
 package lemmini.game;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
@@ -44,14 +44,14 @@ public class ReplayStream {
     static final int END = 5;
     
     static final int CURRENT_FORMAT = 1;
-    static final String CURRENT_REVISION = "0.100";
-
+    static final String CURRENT_REVISION = "0.103";
+    
     private List<ReplayEvent> events;
     private int replayIndex;
     private int format;
     private String revision;
     private int players;
-
+    
     /**
      * Constructor.
      */
@@ -60,14 +60,14 @@ public class ReplayStream {
         replayIndex = 0;
         format = 0;
     }
-
+    
     /**
      * Rewind replay to start position.
      */
     public void rewind() {
         replayIndex = 0;
     }
-
+    
     /**
      * Get next replay event
      * @param ctr frame counter
@@ -88,14 +88,14 @@ public class ReplayStream {
         }
         return null; /* no more events for this frame */
     }
-
+    
     /**
      * Clear the replay buffer.
      */
     public void clear() {
         events.clear();
     }
-
+    
     /**
      * Clear the replay buffer from a certain frame counter.
      * @param ctr frame counter
@@ -113,7 +113,7 @@ public class ReplayStream {
         }
         replayIndex = 0;
     }
-
+    
     /**
      * Load replay buffer from file.
      * @param fname file name
@@ -184,7 +184,7 @@ public class ReplayStream {
                 if (e.length < 2) {
                     throw new LemmException("Not enough values in replay event.");
                 }
-
+                
                 switch (Integer.parseInt(e[1])) { /* type */
                     case ASSIGN_SKILL:
                         if (e.length < 4) {
@@ -241,14 +241,14 @@ public class ReplayStream {
             throw new LemmException("Error reading replay file.");
         }
     }
-
+    
     /**
-     * Store replay info in a file.
-     * @param fname file name
+     * Store replay info.
+     * @param w BufferedWriter
      * @return true if save OK, false otherwise
      */
-    public boolean save(final Path fname) {
-        try (BufferedWriter w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
+    private boolean save(final BufferedWriter w) {
+        try {
             w.write("#REPLAY NEW");
             w.newLine();
             w.write("#FORMAT " + CURRENT_FORMAT);
@@ -266,15 +266,39 @@ public class ReplayStream {
                 w.write(r.toString()); // will use toString of the correct child object
                 w.newLine();
             }
-
+            
             return true;
-        } catch (FileNotFoundException e) {
-            return false;
         } catch (IOException e) {
             return false;
         }
     }
-
+    
+    /**
+     * Store replay info in a file.
+     * @param fname file name
+     * @return true if save OK, false otherwise
+     */
+    public boolean save(final Path fname) {
+        try (BufferedWriter w = Files.newBufferedWriter(fname)) {
+            return save(w);
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Store replay info in a file.
+     * @param fname file name
+     * @return true if save OK, false otherwise
+     */
+    public boolean save(final String fname) {
+        try (BufferedWriter w = Core.resourceTree.newBufferedWriter(fname)) {
+            return save(w);
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+    
     /**
      * Add a NUKE event (all lemmings nuked).
      * @param ctr frame counter
@@ -293,7 +317,7 @@ public class ReplayStream {
         ReplayEvent event = new ReplayEvent(ctr, END);
         events.add(event);
     }
-
+    
     /**
      * Add ASSIGN_SKILL event (one lemming was assigned a skill).
      * @param ctr frame counter
@@ -304,7 +328,7 @@ public class ReplayStream {
         ReplayAssignSkillEvent event = new ReplayAssignSkillEvent(ctr, skill, lemming);
         events.add(event);
     }
-
+    
     /**
      * Add SELECT_SKILL event (skill selection button was pressed).
      * @param ctr frame counter
@@ -315,7 +339,7 @@ public class ReplayStream {
         ReplaySelectSkillEvent event = new ReplaySelectSkillEvent(ctr, skill, plr);
         events.add(event);
     }
-
+    
     /**
      * Add MOVE_POS event (screen moved left/right).
      * @param ctr frame counter
@@ -327,7 +351,7 @@ public class ReplayStream {
         ReplayMovePosEvent event = new ReplayMovePosEvent(ctr, xPos, yPos, plr);
         events.add(event);
     }
-
+    
     /**
      * Add SET_RELEASE_RATE event (release rate was changed).
      * @param ctr frame counter
@@ -339,12 +363,10 @@ public class ReplayStream {
     }
     
     private void removeEndEvent() {
-        for (int i = events.size() - 1; i >= 0; i--) {
-            ReplayEvent r = events.get(i);
+        for (ListIterator<ReplayEvent> lit = events.listIterator(events.size()); lit.hasPrevious(); ) {
+            ReplayEvent r = lit.previous();
             if (r.type == END) {
-                events.remove(i);
-            } else {
-                break;
+                lit.remove();
             }
         }
     }
@@ -355,11 +377,12 @@ public class ReplayStream {
  * @author Volker Oth
  */
 class ReplayEvent {
+    
     /** frame counter */
     int frameCtr;
     /** event type */
     int type;
-
+    
     /**
      * Constructor
      * @param ctr frame counter
@@ -369,7 +392,7 @@ class ReplayEvent {
         frameCtr = ctr;
         type = t;
     }
-
+    
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */
@@ -384,11 +407,12 @@ class ReplayEvent {
  * @author Volker Oth
  */
 class ReplayAssignSkillEvent extends ReplayEvent {
+    
     /** skill */
     Lemming.Type skill;
     /** Lemming */
     int lemming;
-
+    
     /**
      * Skill assigned
      * @param ctr Frame counter
@@ -400,7 +424,7 @@ class ReplayAssignSkillEvent extends ReplayEvent {
         skill = s;
         lemming = lem;
     }
-
+    
     /* (non-Javadoc)
      * @see Game.ReplayEvent#toString()
      */
@@ -415,9 +439,10 @@ class ReplayAssignSkillEvent extends ReplayEvent {
  * @author Volker Oth
  */
 class ReplaySelectSkillEvent extends ReplayEvent {
+    
     Lemming.Type skill;
     int player;
-
+    
     /**
      * Skill selected
      * @param ctr Frame counter
@@ -429,7 +454,7 @@ class ReplaySelectSkillEvent extends ReplayEvent {
         skill = s;
         player = plr;
     }
-
+    
     /* (non-Javadoc)
      * @see Game.ReplayEvent#toString()
      */
@@ -444,12 +469,13 @@ class ReplaySelectSkillEvent extends ReplayEvent {
  * @author Volker Oth
  */
 class ReplayMovePosEvent extends ReplayEvent {
+    
     /** screen X position */
     int xPos;
     /** screen Y position */
     int yPos;
     int player;
-
+    
     /**
      * Screen position changed event
      * @param ctr Frame counter
@@ -463,7 +489,7 @@ class ReplayMovePosEvent extends ReplayEvent {
         yPos = y;
         player = plr;
     }
-
+    
     /* (non-Javadoc)
      * @see Game.ReplayEvent#toString()
      */
@@ -478,8 +504,9 @@ class ReplayMovePosEvent extends ReplayEvent {
  * @author Volker Oth
  */
 class ReplayReleaseRateEvent extends ReplayEvent {
+    
     int releaseRate;
-
+    
     /**
      * Release Rate changed event
      * @param ctr Frame counter
@@ -489,7 +516,7 @@ class ReplayReleaseRateEvent extends ReplayEvent {
         super(ctr, ReplayStream.SET_RELEASE_RATE);
         releaseRate = rate;
     }
-
+    
     /* (non-Javadoc)
      * @see Game.ReplayEvent#toString()
      */

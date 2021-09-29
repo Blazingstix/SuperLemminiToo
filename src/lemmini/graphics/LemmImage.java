@@ -96,6 +96,38 @@ public class LemmImage {
         return new LemmImage(img);
     }
     
+    public void flip(boolean horizontal, boolean vertical) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        if (horizontal && !vertical) {
+            for (int y = 0; y < height; y++) {
+                for (int x = 0, x2 = width - 1; x < x2; x++, x2--) {
+                    int c = image.getRGB(x, y);
+                    image.setRGB(x, y, image.getRGB(x2, y));
+                    image.setRGB(x2, y, c);
+                }
+            }
+        } else if (!horizontal && vertical) {
+            for (int y = 0, y2 = height - 1; y < y2; y++, y2--) {
+                for (int x = 0; x < width; x++) {
+                    int c = image.getRGB(x, y);
+                    image.setRGB(x, y, image.getRGB(x, y2));
+                    image.setRGB(x, y2, c);
+                }
+            }
+        } else if (horizontal && vertical) {
+            int maxY = (height / 2) + (height % 2) - 1;
+            for (int y = 0, y2 = height - 1; y <= maxY; y++, y2--) {
+                int maxX = ((y == y2) ? (width / 2) : width) - 1;
+                for (int x = 0, x2 = width - 1; x <= maxX; x++, x2--) {
+                    int c = image.getRGB(x, y);
+                    image.setRGB(x, y, image.getRGB(x2, y2));
+                    image.setRGB(x2, y2, c);
+                }
+            }
+        }
+    }
+    
     public GraphicsContext createGraphicsContext() {
         return new GraphicsContext(image.createGraphics());
     }

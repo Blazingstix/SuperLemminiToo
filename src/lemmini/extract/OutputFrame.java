@@ -19,13 +19,14 @@
 package lemmini.extract;
 
 import java.awt.Toolkit;
+import javax.swing.JFrame;
 import lemmini.LemminiFrame;
 
 /**
  * Frame used to output extraction progress information.
  * @author Volker Oth
  */
-public class OutputFrame extends javax.swing.JFrame {
+public class OutputFrame extends JFrame {
     
     /** Extraction canceled? */
     private boolean cancel = false;

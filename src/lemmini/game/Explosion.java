@@ -71,7 +71,7 @@ public class Explosion {
      */
     static void init() throws ResourceException {
         Resource res = Core.findResource("gfx/misc/explode.png", true, Core.IMAGE_EXTENSIONS);
-        expImg = Core.loadTranslucentImage(res);
+        expImg = Core.loadLemmImage(res);
     }
 
     /**

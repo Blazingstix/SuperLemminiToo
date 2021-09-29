@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.ListIterator;
 import lemmini.game.GameController;
 import lemmini.game.Lemming;
-import lemmini.graphics.GraphicsOperation;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 import org.apache.commons.lang3.ArrayUtils;
@@ -239,13 +238,15 @@ public class Sprite {
         if (!horizontal && !vertical) {
             return;
         }
-        GraphicsOperation go = ToolBox.createGraphicsOperation();
-        go.setToScale(horizontal ? -1 : 1, vertical ? -1 : 1);
-        go.translate(horizontal ? -width : 0, vertical ? -height : 0);
+        //GraphicsOperation go = ToolBox.createGraphicsOperation();
+        //go.setToScale(horizontal ? -1 : 1, vertical ? -1 : 1);
+        //go.translate(horizontal ? -width : 0, vertical ? -height : 0);
         for (ListIterator<LemmImage> lit = frames.listIterator(); lit.hasNext(); ) {
             int i = lit.nextIndex();
-            LemmImage imgSpr = ToolBox.createTranslucentImage(width, height);
-            go.execute(lit.next(), imgSpr);
+            //LemmImage imgSpr = ToolBox.createTranslucentImage(width, height);
+            //go.execute(lit.next(), imgSpr);
+            LemmImage imgSpr = new LemmImage(lit.next());
+            imgSpr.flip(horizontal, vertical);
             lit.set(imgSpr);
             
             int[] buffer = origColors[i].clone();

@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.GraphicsBuffer;
@@ -44,7 +45,7 @@ import org.apache.commons.lang3.StringUtils;
  * A graphics panel in which the actual game contents is displayed.
  * @author Volker Oth
  */
-public class LemminiPanel extends javax.swing.JPanel implements Runnable {
+public class LemminiPanel extends JPanel implements Runnable {
     
     private static final long serialVersionUID = 0x01L;
     
@@ -88,6 +89,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     private int mouseDy;
     /** flag: shift key is pressed */
     private boolean shiftPressed;
+    /** flag: control key is pressed */
+    private boolean controlPressed;
     /** flag: left key is pressed */
     private boolean leftPressed;
     /** flag: right key is pressed */
@@ -244,7 +247,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
         int y = Core.unscale(evt.getY());
         mouseDx = 0;
         mouseDy = 0;
-        boolean swapButtons = GameController.doSwapButtons();
+        boolean swapButtons = GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS);
         int buttonPressed = evt.getButton();
         int modifiers = evt.getModifiersEx();
         boolean leftMousePressed = BooleanUtils.toBoolean(modifiers & InputEvent.BUTTON1_DOWN_MASK);
@@ -330,7 +333,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                                     GameController.getCurLevelNumber(), false);
                             break;
                         case RESTART:
-                            GameController.requestRestartLevel(false);
+                            GameController.requestRestartLevel(false, true);
                             break;
                         case MENU:
                             GameController.setTransition(GameController.TransitionState.TO_INTRO);
@@ -338,7 +341,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             Core.setTitle("SuperLemmini");
                             break;
                         case REPLAY:
-                            GameController.requestRestartLevel(true);
+                            GameController.requestRestartLevel(true, true);
                             break;
                         case SAVE_REPLAY:
                             Path replayPath = ToolBox.getFileName(getParent(), Core.resourcePath, false, false, Core.REPLAY_EXTENSIONS);
@@ -381,15 +384,12 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             GameController.handleIconButton(type);
                         }
                     } else {
-                        if (y < LemminiFrame.LEVEL_HEIGHT) {
-                            GameController.stopReplayMode();
-                            if (GameController.isCheat()) {
-                                GameController.advanceFrame();
-                            }
-                        }
                         Lemming l = GameController.lemmUnderCursor(LemmCursor.getType());
                         if (l != null) {
                             GameController.requestSkill(l);
+                        } else if (y < LemminiFrame.LEVEL_HEIGHT) {
+                            GameController.stopReplayMode();
+                            GameController.advanceFrame();
                         }
                     }
                     // check minimap mouse move
@@ -400,12 +400,18 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                     evt.consume();
                 } 
                 if (buttonPressed == (swapButtons ? MouseEvent.BUTTON2 : MouseEvent.BUTTON3)) {
-                    if (LemmCursor.getType() == LemmCursor.CursorType.LEFT) {
-                        setCursor(LemmCursor.CursorType.WALKER_LEFT);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.RIGHT) {
-                        setCursor(LemmCursor.CursorType.WALKER_RIGHT);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.NORMAL) {
-                        setCursor(LemmCursor.CursorType.WALKER);
+                    switch (LemmCursor.getType()) {
+                        case NORMAL:
+                            setCursor(LemmCursor.CursorType.WALKER);
+                            break;
+                        case LEFT:
+                            setCursor(LemmCursor.CursorType.WALKER_LEFT);
+                            break;
+                        case RIGHT:
+                            setCursor(LemmCursor.CursorType.WALKER_RIGHT);
+                            break;
+                        default:
+                            break;
                     }
                     shiftPressed = true;
                 }
@@ -426,7 +432,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
         int y = Core.unscale(evt.getY());
         mouseDx = 0;
         mouseDy = 0;
-        boolean swapButtons = GameController.doSwapButtons();
+        boolean swapButtons = GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS);
         int buttonPressed = evt.getButton();
 
         switch (GameController.getGameState()) {
@@ -449,12 +455,18 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                     GameController.releaseIcon(Icons.Type.NUKE);
                 }
                 if (buttonPressed == (swapButtons ? MouseEvent.BUTTON2 : MouseEvent.BUTTON3)) {
-                    if (LemmCursor.getType() == LemmCursor.CursorType.WALKER) {
-                        setCursor(LemmCursor.CursorType.NORMAL);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_LEFT) {
-                        setCursor(LemmCursor.CursorType.LEFT);
-                    } else if (LemmCursor.getType() == LemmCursor.CursorType.WALKER_RIGHT) {
-                        setCursor(LemmCursor.CursorType.RIGHT);
+                    switch (LemmCursor.getType()) {
+                        case WALKER:
+                            setCursor(LemmCursor.CursorType.NORMAL);
+                            break;
+                        case WALKER_LEFT:
+                            setCursor(LemmCursor.CursorType.LEFT);
+                            break;
+                        case WALKER_RIGHT:
+                            setCursor(LemmCursor.CursorType.RIGHT);
+                            break;
+                        default:
+                            break;
                     }
                     shiftPressed = false;
                 }
@@ -483,7 +495,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
             case LEVEL:
                 int x = Core.unscale(evt.getX());
                 int y = Core.unscale(evt.getY());
-                if (GameController.doSwapButtons() ? rightMousePressed : middleMousePressed) {
+                if (GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS)
+                        ? rightMousePressed : middleMousePressed) {
                     int xOfsTemp = GameController.getXPos() + (x - mouseDragStartX);
                     GameController.setXPos(xOfsTemp);
                     if (!GameController.isVerticalLock()) {
@@ -596,6 +609,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
     
     void focusLost() {
         shiftPressed = false;
+        controlPressed = false;
         leftPressed = false;
         rightPressed = false;
         upPressed = false;
@@ -753,7 +767,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                                 lemmingName = StringUtils.EMPTY;
                             }
                             String in;
-                            if (GameController.isNoPercentages() || GameController.getNumLemmingsMax() > 100) {
+                            if (GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES)
+                                    || GameController.getNumLemmingsMax() > 100) {
                                 in = Integer.toString(GameController.getNumExited());
                             } else {
                                 int saved = GameController.getNumExited() * 100 / GameController.getNumLemmingsMax();
@@ -770,7 +785,7 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                         }
                         // draw cursor
                         if (lemmUnderCursor != null) {
-                            if (GameController.isClassicCursor()) {
+                            if (GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR)) {
                                 if (mouseHasEntered && !LemmCursor.isBox()) {
                                     LemmCursor.setBox(true);
                                     setCursor(LemmCursor.getCursor());
@@ -784,7 +799,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                                 offGfx.drawImage(cursorImg, lx, ly);
                             }
                         } else {
-                            if (GameController.isClassicCursor() && LemmCursor.isBox()) {
+                            if (GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR)
+                                    && LemmCursor.isBox()) {
                                 LemmCursor.setBox(false);
                                 setCursor(LemmCursor.getCursor());
                             }
@@ -937,7 +953,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                         // in fast forward or super lemming modes, update the game mechanics
                         // multiple times per (drawn) frame
                         if (GameController.isFastForward()) {
-                            int multiplier = (GameController.isFasterFastForward() ? GameController.FASTER_FAST_FWD_MULTI : GameController.FAST_FWD_MULTI);
+                            int multiplier = (GameController.isOptionEnabled(GameController.Option.FASTER_FAST_FORWARD)
+                                    ? GameController.FASTER_FAST_FWD_MULTI : GameController.FAST_FWD_MULTI);
                             for (int f = 1; f < multiplier; f++) {
                                 GameController.update();
                             }
@@ -1004,8 +1021,8 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                             if (spr != null && spr.getVisOnTerrain()) {
                                 if (doDraw) {
                                     if ((GameController.getLevel().getClassicSteel() 
-                                                    || !spr.getType().isSometimesIndestructible())
-                                            && !(spr.getType().isSometimesIndestructible()
+                                                    || !spr.getType().isOneWay())
+                                            && !(spr.getType().isOneWay()
                                                     && BooleanUtils.toBoolean(stencil.getMask(xa + xOfs, ya + yOfs) & Stencil.MSK_NO_ONE_WAY_DRAW))) {
                                         spr.setPixelVisibility(xa + xOfs - spr.getX(), ya + yOfs - spr.getY(), true);
                                     }
@@ -1308,6 +1325,22 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
      */
     void setShiftPressed(final boolean p) {
         shiftPressed = p;
+    }
+
+    /**
+     * Get flag: Control key is pressed?
+     * @return true if control key is pressed, false otherwise
+     */
+    boolean isControlPressed() {
+        return controlPressed;
+    }
+
+    /**
+     * Set flag: Control key is pressed.
+     * @param p true: control key is pressed, false otherwise
+     */
+    void setControlPressed(final boolean p) {
+        controlPressed = p;
     }
 
     /**

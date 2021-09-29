@@ -11,6 +11,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.swing.JOptionPane;
 import lemmini.game.Core;
+import lemmini.tools.CaseInsensitiveFileTree;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
@@ -67,10 +68,10 @@ public class Extract implements Runnable {
     private static OutputFrame outputFrame;
     /** monitor the files created without erasing the target dir */
     private static Set<Path> createdFiles;
-    /** source path (WINLEMM) for extraction */
-    private static Path sourcePath;
-    /** destination path (Lemmini resource) for extraction */
-    private static Path destinationPath;
+    /** tree of source path (WINLEMM) for extraction */
+    private static CaseInsensitiveFileTree sourceTree;
+    /** tree of destination path (Lemmini resource) for extraction */
+    private static CaseInsensitiveFileTree destinationTree;
     /** reference path for creation of DIF files */
     private static Path referencePath;
     /** path of the DIF files */
@@ -133,10 +134,10 @@ public class Extract implements Runnable {
                 if (crcbuf == null) {
                     break;
                 }
-                out(crcbuf[0]);
-                Path sourceFile = sourcePath.resolve(crcbuf[0]);
+                Path sourceFile = sourceTree.getPath(crcbuf[0]);
+                out(sourceTree.getRoot().relativize(sourceFile).toString());
                 if (!Files.isRegularFile(sourceFile)) {
-                    throw new ExtractException(String.format("File %s not found.", sourceFile));
+                    throw new ExtractException(String.format("File %s not found.", sourceTree.getRoot().relativize(sourceFile)));
                 }
                 long srcLen = Files.size(sourceFile);
                 long reqLen = ToolBox.parseLong(crcbuf[1]);
@@ -169,7 +170,7 @@ public class Extract implements Runnable {
                 if (lvls == null) {
                     break;
                 }
-                extractLevels(sourcePath.resolve(lvls[0]), tempFolder.resolve(lvls[1]));
+                extractLevels(sourceTree, lvls[0], tempFolder.resolve(lvls[1]));
                 checkCancel();
             }
             
@@ -187,10 +188,10 @@ public class Extract implements Runnable {
                 Path dest = tempFolder.resolve(styles[3]);
                 Files.createDirectories(dest);
                 // load palette and sprite
-                sprite.loadPalette(sourcePath.resolve(styles[2]));
-                sprite.loadSPR(sourcePath.resolve(styles[0]));
-                mask.loadPalette(sourcePath.resolve(styles[2]));
-                mask.loadSPR(sourcePath.resolve(styles[1]));
+                sprite.loadPalette(sourceTree.getPath(styles[2]));
+                sprite.loadSPR(sourceTree.getPath(styles[0]));
+                mask.loadPalette(sourceTree.getPath(styles[2]));
+                mask.loadSPR(sourceTree.getPath(styles[1]));
                 mask.createMasks();
                 List<Path> files = sprite.saveAll(dest.resolve(styles[4]));
                 List<Path> maskFiles = mask.saveAll(dest.resolve(styles[4] + "m"));
@@ -207,12 +208,13 @@ public class Extract implements Runnable {
                 if (object == null) {
                     break;
                 }
-                out(object[0]);
+                Path src = sourceTree.getPath(object[0]);
+                out(sourceTree.getRoot().relativize(src).toString());
                 Path dest = tempFolder.resolve(object[3]);
                 Files.createDirectories(dest);
                 // load palette and sprite
-                sprite.loadPalette(sourcePath.resolve(object[1]));
-                sprite.loadSPR(sourcePath.resolve(object[0]));
+                sprite.loadPalette(sourceTree.getPath(object[1]));
+                sprite.loadSPR(src);
                 for (int j = 0; true; j++) {
                     // 0: idx, 1: frames, 2: name
                     String[] member = props.getArray(object[2] + "_" + j, null);
@@ -237,7 +239,7 @@ public class Extract implements Runnable {
                 if (copy == null) {
                     break;
                 }
-                Path sourceFile = sourcePath.resolve(copy[0]);
+                Path sourceFile = sourceTree.getPath(copy[0]);
                 Path destinationFile = tempFolder.resolve(copy[1]);
                 if (!Files.isRegularFile(sourceFile)) {
                     throw new ExtractException(String.format("File %s not found.", sourceFile));
@@ -272,37 +274,34 @@ public class Extract implements Runnable {
                 checkCancel();
             }
             
-            Files.createDirectories(destinationPath);
+            destinationTree.createDirectories("/");
             
             if (doCreatePatches) {
-                Path patchINIPath = destinationPath.resolve(Core.PATCH_INI_NAME);
                 // this is not needed by Lemmini, but to create the DIF files (and CRCs)
                 if (DO_CREATE_CRC) {
                     // create crc.ini
                     out(String.format("%nCreating crc.ini..."));
-                    Path crcINIPath = destinationPath.resolve(CRC_INI_NAME);
-                    try (Writer fCRCList = Files.newBufferedWriter(crcINIPath, StandardCharsets.UTF_8)) {
+                    try (Writer fCRCList = destinationTree.newBufferedWriter(CRC_INI_NAME)) {
                         for (int i = 0; true; i++) {
-                            String ppath;
-                            ppath = props.get("pcrc_" + i, StringUtils.EMPTY);
+                            String ppath = props.get("pcrc_" + i, StringUtils.EMPTY);
                             if (ppath.isEmpty()) {
                                 break;
                             }
-                            createCRCs(sourcePath, ppath, fCRCList);
+                            createCRCs(sourceTree, ppath, fCRCList);
                             checkCancel();
                         }
                     } catch (IOException ex) {
-                        throw new ExtractException(String.format("Unable to create %s.", crcINIPath));
+                        throw new ExtractException(String.format(
+                                "Unable to create %s.", destinationTree.getRoot().resolve(CRC_INI_NAME)));
                     }
                 }
                 
                 // step six: create patches and patch.ini
                 Files.createDirectories(patchPath);
                 out(String.format("%nCreating patch.ini..."));
-                try (Writer fPatchList = Files.newBufferedWriter(patchINIPath, StandardCharsets.UTF_8)) {
+                try (Writer fPatchList = destinationTree.newBufferedWriter(Core.PATCH_INI_NAME)) {
                     for (int i = 0; true; i++) {
-                        String ppath;
-                        ppath = props.get("ppatch_" + i, StringUtils.EMPTY);
+                        String ppath = props.get("ppatch_" + i, StringUtils.EMPTY);
                         if (ppath.isEmpty()) {
                             break;
                         }
@@ -310,7 +309,8 @@ public class Extract implements Runnable {
                         checkCancel();
                     }
                 } catch (IOException ex) {
-                    throw new ExtractException(String.format("Unable to create %s.", patchINIPath));
+                    throw new ExtractException(String.format(
+                            "Unable to create %s.", destinationTree.getRoot().resolve(Core.PATCH_INI_NAME)));
                 }
             }
             
@@ -349,12 +349,13 @@ public class Extract implements Runnable {
             }
             
             // step seven: use patch.ini to extract/patch all files
-            try (ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(destinationPath.resolve(Core.ROOT_ZIP_NAME)))) {
+            destinationTree.delete(Core.ROOT_ZIP_NAME);
+            try (ZipOutputStream zip = new ZipOutputStream(destinationTree.newOutputStream(Core.ROOT_ZIP_NAME))) {
                 // extract
-                out(String.format("%nAdding files to zip..."));
+                out(String.format("%nAdding files to root.lzp..."));
                 for (PatchINIEntry extract : extractList) {
                     String extractPath = extract.getPath();
-                    out(extractPath);
+                    out(Paths.get(extractPath).toString());
                     String fnDecorated = extractPath.replace('/', '@');
                     URL fnc = findFile(patchPath.resolve(fnDecorated));
                     ZipEntry zipEntry = new ZipEntry(extractPath);
@@ -363,19 +364,21 @@ public class Extract implements Runnable {
                         copyFile(fnc, zip);
                         zip.closeEntry();
                     } catch (Exception ex) {
-                        throw new ExtractException(String.format("Unable to add %s to zip file.",
-                                patchPath.resolve(FilenameUtils.getName(extractPath))));
+                        throw new ExtractException(String.format("Unable to add %s to root.lzp.",
+                                patchPath.resolve(ToolBox.getFileName(extractPath))));
                     }
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(extractPath));
-                    } catch (IOException ex) {
+                    if (deleteOldFiles) {
+                        try {
+                            destinationTree.delete(extractPath);
+                        } catch (IOException ex) {
+                        }
                     }
                     checkCancel();
                 }
                 // check
                 for (PatchINIEntry check : checkList) {
                     String checkPath = check.getPath();
-                    out(checkPath);
+                    out(Paths.get(checkPath).toString());
                     Path source = tempFolder.resolve(checkPath);
                     ZipEntry zipEntry = new ZipEntry(checkPath);
                     try {
@@ -383,12 +386,14 @@ public class Extract implements Runnable {
                         copyFile(source, zip);
                         zip.closeEntry();
                     } catch (Exception ex) {
-                        throw new ExtractException(String.format("Unable to add %s to zip file.",
-                                patchPath.resolve(FilenameUtils.getName(checkPath))));
+                        throw new ExtractException(String.format("Unable to add %s to root.lzp.",
+                                patchPath.resolve(ToolBox.getFileName(checkPath))));
                     }
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(checkPath));
-                    } catch (IOException ex) {
+                    if (deleteOldFiles) {
+                        try {
+                            destinationTree.delete(checkPath);
+                        } catch (IOException ex) {
+                        }
                     }
                     checkCancel();
                 }
@@ -396,7 +401,7 @@ public class Extract implements Runnable {
                 out(String.format("%nPatching files..."));
                 for (PatchINIEntry patch : patchList) {
                     String pPath = patch.getPath();
-                    out(pPath);
+                    out(Paths.get(pPath).toString());
                     String fnDif = pPath.replace('/', '@');
                     int pos = fnDif.lastIndexOf('.');
                     if (pos == StringUtils.INDEX_NOT_FOUND) {
@@ -421,12 +426,14 @@ public class Extract implements Runnable {
                         throw new ExtractException(String.format("Unable to patch file %s.%n%s",
                                 pPath, ex.getMessage()));
                     } catch (IOException ex) {
-                        throw new ExtractException(String.format("Unable to add %s to zip file.",
-                                patchPath.resolve(FilenameUtils.getName(pPath))));
+                        throw new ExtractException(String.format("Unable to add %s to root.lzp.",
+                                patchPath.resolve(ToolBox.getFileName(pPath))));
                     }
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(pPath));
-                    } catch (IOException ex) {
+                    if (deleteOldFiles) {
+                        try {
+                            destinationTree.delete(pPath);
+                        } catch (IOException ex) {
+                        }
                     }
                     checkCancel();
                 }
@@ -447,44 +454,13 @@ public class Extract implements Runnable {
                 if (path.isEmpty()) {
                     break;
                 }
-                out(path);
-                Path dest = destinationPath.resolve(path);
-                Files.createDirectories(dest);
+                out(destinationTree.getRoot().relativize(destinationTree.getPath(path)).toString());
+                destinationTree.createDirectories(path);
                 checkCancel();
             }
             
             if (deleteOldFiles) {
-                // step nine: delete files
-                out(String.format("%nDeleting old files..."));
-                // extract
-                for (PatchINIEntry extract : extractList) {
-                    String extractPath = extract.getPath();
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(extractPath));
-                    } catch (IOException ex) {
-                    }
-                    checkCancel();
-                }
-                // check
-                for (PatchINIEntry check : checkList) {
-                    String checkPath = check.getPath();
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(checkPath));
-                    } catch (IOException ex) {
-                    }
-                    checkCancel();
-                }
-                // patch
-                for (PatchINIEntry patch : patchList) {
-                    String patchPath = patch.getPath();
-                    try {
-                        Files.deleteIfExists(destinationPath.resolve(patchPath));
-                    } catch (IOException ex) {
-                    }
-                    checkCancel();
-                }
-                
-                // step ten: delete directories
+                // step nine: delete directories
                 out(String.format("%nDeleting old directories..."));
                 for (int i = 0; true; i++) {
                     // 0: path
@@ -492,13 +468,10 @@ public class Extract implements Runnable {
                     if (path.isEmpty()) {
                         break;
                     }
-                    out(path);
-                    Path dest = destinationPath.resolve(path);
-                    if (Files.isDirectory(dest)) {
-                        try {
-                            Files.deleteIfExists(dest);
-                        } catch (IOException ex) {
-                        }
+                    out(destinationTree.getRoot().relativize(destinationTree.getPath(path)).toString());
+                    try {
+                        destinationTree.deleteIfEmpty(path);
+                    } catch (IOException ex) {
                     }
                     checkCancel();
                 }
@@ -525,55 +498,65 @@ public class Extract implements Runnable {
     }
     
     /**
-     * Get source path (WINLEMM) for extraction.
-     * @return source path (WINLEMM) for extraction
+     * Get tree of source path (WINLEMM) for extraction.
+     * @return tree of source path (WINLEMM) for extraction
      */
-    public static Path getSourcePath() {
-        return sourcePath;
+    public static CaseInsensitiveFileTree getSourceTree() {
+        return sourceTree;
     }
     
     /**
-     * Get destination path (Lemmini resource) for extraction.
-     * @return destination path (Lemmini resource) for extraction
+     * Get tree of destination path (Lemmini resource) for extraction.
+     * @return tree of destination path (Lemmini resource) for extraction
      */
-    public static Path getResourcePath() {
-        return destinationPath;
+    public static CaseInsensitiveFileTree getResourceTree() {
+        return destinationTree;
     }
     
     /**
      * Extract all resources and create patch.ini if referencePath is not null
      * @param srcPath WINLEMM directory
-     * @param dstPath target (installation) directory. May also be a relative path inside JAR
+     * @param dstTree tree of target (installation) directory.
      * @param refPath the reference path with the original (wanted) files
      * @param pPath the path to store the patch files to
      * @param createPatches create patches if true
      * @param deleteOld delete old files and folders if true
      * @throws ExtractException
      */
-    public static void extract(final Path srcPath, final Path dstPath,
+    public static void extract(final Path srcPath, final CaseInsensitiveFileTree dstTree,
             final Path refPath, final Path pPath,
             final boolean createPatches, final boolean deleteOld) throws ExtractException {
         doCreatePatches = createPatches;
         deleteOldFiles = deleteOld;
-        sourcePath = srcPath;
-        destinationPath = dstPath;
-        if (refPath != null) {
-            referencePath = refPath;
-        }
+        Path sourcePath = srcPath;
+        destinationTree = dstTree;
+        referencePath = refPath;
         patchPath = pPath;
         
         loader = Extract.class.getClassLoader();
         
         FolderFrame fFrame;
         fFrame = new FolderFrame();
-        fFrame.setParameters(sourcePath, destinationPath);
+        fFrame.setParameters(sourcePath, destinationTree.getRoot());
         fFrame.setVisible(true);
         fFrame.waitUntilClosed();
         if (!fFrame.getSuccess()) {
             throw new ExtractException("Extraction canceled by user.", true);
         }
         sourcePath = fFrame.getSource();
-        destinationPath = fFrame.getDestination();
+        try {
+            sourceTree = new CaseInsensitiveFileTree(sourcePath);
+        } catch (IOException ex) {
+            throw new ExtractException(String.format("Unable to read from %s.", sourcePath));
+        }
+        Path destinationPath = fFrame.getDestination();
+        if (!destinationPath.equals(destinationTree.getRoot())) {
+            try {
+                destinationTree = new CaseInsensitiveFileTree(destinationPath);
+            } catch (IOException ex) {
+                throw new ExtractException(String.format("Unable to read from %s.", destinationPath));
+            }
+        }
         
         // open output dialog
         outputFrame = new OutputFrame();
@@ -596,25 +579,27 @@ public class Extract implements Runnable {
     
     /**
      * Extract the level INI files from LVL files
-     * @param r name of root folder (source of LVL files)
+     * @param tree source tree
+     * @param src name of folder with LVL files
      * @param dest destination folder for extraction (resource folder)
      * @throws ExtractException
      */
-    private static void extractLevels(final Path r, final Path dest) throws ExtractException {
+    private static void extractLevels(final CaseInsensitiveFileTree tree, final String src, final Path dest) throws ExtractException {
         // first extract the levels
         try {
             Files.createDirectories(dest);
         } catch (IOException ex) {
         }
         
-        try (DirectoryStream<Path> levels = Files.newDirectoryStream(r, "*.LVL")) {
-            for (Path level : levels) {
-                Path fIn = r.resolve(level.getFileName());
+        try {
+            for (Path level : tree.getAllPathsRegex(ToolBox.literalToRegex(src) + "[^/]+\\.lvl")) {
                 String fOutStr = level.getFileName().toString().toLowerCase(Locale.ROOT);
                 Path fOut = dest.resolve(FilenameUtils.removeExtension(fOutStr) + ".ini");
                 createdFiles.add(fOut);
-                out(level.getFileName().toString());
-                ExtractLevel.convertLevel(fIn, fOut, false, true);
+                out(tree.getRoot().relativize(level).toString());
+                try (Writer w = Files.newBufferedWriter(fOut)) {
+                    ExtractLevel.convertLevel(level, w, false, true);
+                }
             }
         } catch (Exception ex) {
             String msg = ex.getMessage();
@@ -645,68 +630,49 @@ public class Extract implements Runnable {
         } catch (IOException ex) {
         }
         
-        String out;
-        try {
-            Files.createDirectories(patchPath);
-        } catch (IOException ex) {
-        }
-        
         Diff.setParameters(512, 4);
         String subDir = addSeparator(sDir);
         String subDirDecorated = subDir.replace('/', '@');
         
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(patchSourcePath, new PatchFilter())) {
-            outerLoop:
-                for (Path file : files) {
-                    int pos;
-                    String fileName = file.getFileName().toString();
-                    // check extension
-                    pos = fileName.lastIndexOf('.');
-                    if (pos != StringUtils.INDEX_NOT_FOUND) {
-                        String ext = fileName.substring(pos + 1);
-                        for (String ignoreExt1 : ignoreExt) {
-                            if (ignoreExt1.equalsIgnoreCase(ext)) {
-                                continue outerLoop;
-                            }
-                        }
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(patchSourcePath, Files::isRegularFile)) {
+            for (Path file : files) {
+                String fileName = file.getFileName().toString();
+                // check extension
+                if (FilenameUtils.isExtension(file.toString().toLowerCase(Locale.ROOT), ignoreExt)) {
+                    continue;
+                }
+                
+                Path fnOut = destPath.resolve(fileName);
+                Path fnPatch = patchPath.resolve(subDirDecorated
+                        + FilenameUtils.removeExtension((file.getFileName().toString().toLowerCase(Locale.ROOT))) + ".dif");
+                out(sPath.relativize(file).toString());
+                // read sourceFile file
+                byte[] src = readFile(file);
+                byte[] trg = null;
+                // read target file
+                boolean fileExists;
+                fileExists = createdFiles.contains(fnOut);
+                if (fileExists) {
+                    try {
+                        trg = readFile(fnOut);
+                    } catch (ExtractException ex) {
+                        fileExists = false;
                     }
-                    
-                    Path fnIn = patchSourcePath.resolve(fileName);
-                    Path fnOut = destPath.resolve(fileName);
-                    pos = fileName.lastIndexOf('.');
-                    if (pos == StringUtils.INDEX_NOT_FOUND) {
-                        pos = fileName.length();
-                    }
-                    Path fnPatch = patchPath.resolve(subDirDecorated + fileName.substring(0, pos).toLowerCase(Locale.ROOT) + ".dif");
-                    out(fnIn.toString());
-                    // read sourceFile file
-                    byte[] src = readFile(fnIn);
-                    byte[] trg = null;
-                    // read target file
-                    boolean fileExists;
-                    fileExists = createdFiles.contains(fnOut);
-                    if (fileExists) {
-                        try {
-                            trg = readFile(fnOut);
-                        } catch (ExtractException ex) {
-                            fileExists = false;
-                        }
-                    }
-                    if (!fileExists) {
-                        // mark missing files: needs to be extracted from JAR
-                        Adler32 crc = new Adler32();
-                        crc.update(src);
-                        out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc.getValue());
-                        out = ToolBox.addBackslashes(out, false);
-                        fPatchList.write(String.format(Locale.ROOT, "extract_%d = %s\r\n", extractNo++, out));
-                        // copy missing files to patch dir
-                        copyFile(fnIn, patchPath.resolve(subDirDecorated + fileName));
-                        continue;
-                    }
+                }
+                if (!fileExists) {
+                    // mark missing files: needs to be extracted from JAR
+                    Adler32 crc = new Adler32();
+                    crc.update(src);
+                    String out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc.getValue());
+                    out = ToolBox.addBackslashes(out, false);
+                    fPatchList.write(String.format(Locale.ROOT, "extract_%d = %s\r\n", extractNo++, out));
+                    // copy missing files to patch dir
+                    copyFile(file, patchPath.resolve(subDirDecorated + fileName));
+                } else {
                     // create diff
                     byte[] patch = Diff.diffBuffers(trg, src);
                     int crc = Diff.targetCRC; // crc of target buffer
-                    out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc);
+                    String out = String.format(Locale.ROOT, "%s%s, %#010x", subDir, fileName, crc);
                     out = ToolBox.addBackslashes(out, false);
                     if (patch == null) {
                         //out("sourceFile and trg are identical");
@@ -719,6 +685,7 @@ public class Extract implements Runnable {
                         fPatchList.write(String.format(Locale.ROOT, "patch_%d = %s\r\n", patchNo++, out));
                     }
                 }
+            }
         } catch (Exception ex) {
             throw new ExtractException(ex.getMessage());
         }
@@ -726,39 +693,38 @@ public class Extract implements Runnable {
     
     /**
      * Create CRCs for resources (development).
-     * @param rPath The root path with the files to create CRCs for
+     * @param tree The tree with the files to create CRCs for
      * @param sDir SubDir to create patches for
      * @param fCRCList Writer to create crc.ini
      * @throws ExtractException
      */
-    private static void createCRCs(final Path rPath, final String sDir, final Writer fCRCList) throws ExtractException {
-        Path rootPath = rPath.resolve(sDir);
-        String out;
-        try (DirectoryStream<Path> files = Files.newDirectoryStream(rootPath, new PatchFilter())) {
+    private static void createCRCs(final CaseInsensitiveFileTree tree, final String sDir,
+            final Writer fCRCList) throws ExtractException {
+        try {
             outerLoop:
-                for (Path file : files) {
-                    int pos;
-                    String fileName = file.getFileName().toString();
-                    // check extension
-                    pos = fileName.lastIndexOf('.');
-                    if (pos != StringUtils.INDEX_NOT_FOUND) {
-                        String ext = fileName.substring(pos + 1);
-                        for (String ignoreExt1 : ignoreExt) {
-                            if (ignoreExt1.equalsIgnoreCase(ext)) {
-                                continue outerLoop;
-                            }
+            for (Path file : tree.getAllPathsRegex(ToolBox.literalToRegex(sDir) + "[^/]+")) {
+                int pos;
+                String fileName = file.getFileName().toString();
+                // check extension
+                pos = fileName.lastIndexOf('.');
+                if (pos != StringUtils.INDEX_NOT_FOUND) {
+                    String ext = fileName.substring(pos + 1);
+                    for (String ignoreExt1 : ignoreExt) {
+                        if (ignoreExt1.equalsIgnoreCase(ext)) {
+                            continue outerLoop;
                         }
                     }
-                    Path fnIn = rootPath.resolve(fileName);
-                    out(fnIn.toString());
-                    // read sourceFile file
-                    byte[] src = readFile(fnIn);
-                    Adler32 crc32 = new Adler32();
-                    crc32.update(src);
-                    out = String.format(Locale.ROOT, "%s%s, %d, %#010x", addSeparator(sDir), fileName, src.length, crc32.getValue());
-                    out = ToolBox.addBackslashes(out, false);
-                    fCRCList.write(String.format(Locale.ROOT, "crc_%d = %s\r\n", crcNo++, out));
                 }
+                out(tree.getRoot().relativize(file).toString());
+                // read sourceFile file
+                byte[] src = readFile(file);
+                Adler32 crc32 = new Adler32();
+                crc32.update(src);
+                String out = String.format(Locale.ROOT, "%s%s, %d, %#010x", addSeparator(sDir), fileName, src.length, crc32.getValue());
+                out = out.toLowerCase(Locale.ROOT);
+                out = ToolBox.addBackslashes(out, false);
+                fCRCList.write(String.format(Locale.ROOT, "crc_%d = %s\r\n", crcNo++, out));
+            }
         } catch (Exception ex) {
             throw new ExtractException(ex.getMessage());
         }
@@ -825,7 +791,14 @@ public class Extract implements Runnable {
      * @throws IOException
      */
     private static void copyFile(final Path source, final Path destination) throws IOException {
-        Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        try {
+            Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException ex) {
+            try (InputStream fSrc = Files.newInputStream(source);
+                    OutputStream fDest = Files.newOutputStream(destination)) {
+                IOUtils.copy(fSrc, fDest);
+            }
+        }
     }
     
     /**

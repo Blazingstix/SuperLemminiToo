@@ -31,37 +31,39 @@ public class Stencil {
     public static final int MSK_EMPTY = 0;
     /** brick - Lemmings can walk on it */
     public static final int MSK_BRICK = 1;
+    public static final int MSK_STEEL_BRICK = 1 << 1;
+    public static final int MSK_STEEL_OBJECT = 1 << 2;
     /** steel - can't be destroyed */
-    public static final int MSK_STEEL = 1 << 1;
-    public static final int MSK_NO_ONE_WAY = 1 << 2;
-    public static final int MSK_NO_ONE_WAY_DRAW = 1 << 3;
-    public static final int MSK_TURN_LEFT = 1 << 4;
-    public static final int MSK_TURN_RIGHT = 1 << 5;
+    public static final int MSK_STEEL = MSK_STEEL_BRICK | MSK_STEEL_OBJECT;
+    public static final int MSK_NO_ONE_WAY = 1 << 3;
+    public static final int MSK_NO_ONE_WAY_DRAW = 1 << 4;
+    public static final int MSK_TURN_LEFT = 1 << 5;
+    public static final int MSK_TURN_RIGHT = 1 << 6;
     /** right side of blocker mask - reflects to the right */
-    public static final int MSK_BLOCKER_LEFT = 1 << 6;
+    public static final int MSK_BLOCKER_LEFT = 1 << 7;
     /** center of blocker mask */
-    public static final int MSK_BLOCKER_CENTER = 1 << 7;
+    public static final int MSK_BLOCKER_CENTER = 1 << 8;
     /** left side of blocker mask - reflects to the left */
-    public static final int MSK_BLOCKER_RIGHT = 1 << 8;
+    public static final int MSK_BLOCKER_RIGHT = 1 << 9;
     /** blocker mask (either left, center, or right) */
     public static final int MSK_BLOCKER = MSK_BLOCKER_LEFT | MSK_BLOCKER_CENTER | MSK_BLOCKER_RIGHT;
     /** left arrows - no bashing to the right */
-    public static final int MSK_ONE_WAY_LEFT = 1 << 9;
+    public static final int MSK_ONE_WAY_LEFT = 1 << 10;
     /** right arrows - no bashing to the left */
-    public static final int MSK_ONE_WAY_RIGHT = 1 << 10;
+    public static final int MSK_ONE_WAY_RIGHT = 1 << 11;
     /** no bashing - either left or right */
     public static final int MSK_ONE_WAY = MSK_ONE_WAY_LEFT | MSK_ONE_WAY_RIGHT;
 
     /** a trap that triggers the drowning animation - i.e. water */
-    public static final int MSK_TRAP_LIQUID = 1 << 11;
+    public static final int MSK_TRAP_LIQUID = 1 << 12;
     /** a trap that removes the Lemming */
-    public static final int MSK_TRAP_REMOVE = 1 << 12;
+    public static final int MSK_TRAP_REMOVE = 1 << 13;
     /** a trap that triggers the normal death animation */
-    public static final int MSK_TRAP_FIRE = 1 << 13;
+    public static final int MSK_TRAP_FIRE = 1 << 14;
     /** a trap (either LIQUID, REMOVE or FIRE) */
     public static final int MSK_TRAP = MSK_TRAP_LIQUID | MSK_TRAP_REMOVE | MSK_TRAP_FIRE;
     /** the level exit */
-    public static final int MSK_EXIT = 1 << 14;
+    public static final int MSK_EXIT = 1 << 15;
 
     /** array which represents the stencil buffer */
     private final StencilPixel[] stencil;

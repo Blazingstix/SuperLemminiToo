@@ -31,41 +31,6 @@
           <Group type="102" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="jSeparatorBottom" max="32767" attributes="0"/>
-                  <Group type="102" attributes="0">
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="103" groupAlignment="1" max="-2" attributes="0">
-                              <Component id="jLabelSound" alignment="0" max="32767" attributes="0"/>
-                              <Component id="jSliderMusicVolume" alignment="0" max="32767" attributes="0"/>
-                              <Component id="jComboBoxMixer" alignment="0" max="32767" attributes="0"/>
-                              <Component id="jLabelMusicVolume" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="jLabelSoundVolume" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="jLabelMixer" alignment="0" min="-2" max="-2" attributes="0"/>
-                              <Component id="jSliderSoundVolume" alignment="0" max="32767" attributes="0"/>
-                          </Group>
-                          <Component id="jCheckBoxEnableMusic" alignment="0" min="-2" max="-2" attributes="0"/>
-                          <Component id="jCheckBoxEnableSound" alignment="0" min="-2" max="-2" attributes="0"/>
-                      </Group>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jSeparatorCenter" min="-2" pref="2" max="-2" attributes="0"/>
-                      <EmptySpace max="-2" attributes="0"/>
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Component id="jLabelMisc" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jLabelGraphics" alignment="0" max="32767" attributes="0"/>
-                          <Component id="jSeparatorRight" alignment="1" max="32767" attributes="0"/>
-                          <Group type="102" attributes="0">
-                              <Group type="103" groupAlignment="0" attributes="0">
-                                  <Component id="jCheckBoxAdvanced" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jCheckBoxSwap" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jCheckBoxFaster" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jCheckBoxNoPercentages" alignment="0" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jCheckBoxBilinear" min="-2" max="-2" attributes="0"/>
-                                  <Component id="jCheckBoxClassicCursor" min="-2" max="-2" attributes="0"/>
-                              </Group>
-                              <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
-                          </Group>
-                      </Group>
-                  </Group>
                   <Group type="102" alignment="1" attributes="0">
                       <EmptySpace min="0" pref="0" max="32767" attributes="0"/>
                       <Component id="jButtonOK" min="-2" max="-2" attributes="0"/>
@@ -74,6 +39,14 @@
                       <EmptySpace max="-2" attributes="0"/>
                       <Component id="jButtonApply" min="-2" max="-2" attributes="0"/>
                   </Group>
+                  <Group type="102" alignment="0" attributes="0">
+                      <Component id="jPanelSound" min="-2" max="-2" attributes="0"/>
+                      <EmptySpace max="-2" attributes="0"/>
+                      <Group type="103" groupAlignment="0" attributes="0">
+                          <Component id="jPanelGraphics" max="32767" attributes="0"/>
+                          <Component id="jPanelMisc" max="32767" attributes="0"/>
+                      </Group>
+                  </Group>
               </Group>
               <EmptySpace max="-2" attributes="0"/>
           </Group>
@@ -81,56 +54,16 @@
     </DimensionLayout>
     <DimensionLayout dim="1">
       <Group type="103" groupAlignment="0" attributes="0">
-          <Group type="102" alignment="0" attributes="0">
+          <Group type="102" alignment="1" attributes="0">
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="0" attributes="0">
+                  <Component id="jPanelSound" max="32767" attributes="0"/>
                   <Group type="102" attributes="0">
-                      <Group type="103" groupAlignment="0" attributes="0">
-                          <Group type="102" attributes="0">
-                              <Component id="jLabelSound" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jCheckBoxEnableMusic" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jLabelMusicVolume" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jSliderMusicVolume" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jCheckBoxEnableSound" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jLabelSoundVolume" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jSliderSoundVolume" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jLabelMixer" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                          <Group type="102" alignment="0" attributes="0">
-                              <Component id="jLabelGraphics" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jCheckBoxBilinear" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jSeparatorRight" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jLabelMisc" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace type="unrelated" max="-2" attributes="0"/>
-                              <Component id="jCheckBoxAdvanced" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jCheckBoxClassicCursor" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jCheckBoxSwap" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jCheckBoxFaster" min="-2" max="-2" attributes="0"/>
-                              <EmptySpace max="-2" attributes="0"/>
-                              <Component id="jCheckBoxNoPercentages" min="-2" max="-2" attributes="0"/>
-                          </Group>
-                      </Group>
+                      <Component id="jPanelGraphics" min="-2" max="-2" attributes="0"/>
                       <EmptySpace max="-2" attributes="0"/>
-                      <Component id="jComboBoxMixer" min="-2" max="-2" attributes="0"/>
-                      <EmptySpace min="0" pref="4" max="32767" attributes="0"/>
+                      <Component id="jPanelMisc" max="32767" attributes="0"/>
                   </Group>
-                  <Component id="jSeparatorCenter" max="32767" attributes="0"/>
               </Group>
-              <EmptySpace max="-2" attributes="0"/>
-              <Component id="jSeparatorBottom" min="-2" max="-2" attributes="0"/>
               <EmptySpace max="-2" attributes="0"/>
               <Group type="103" groupAlignment="3" attributes="0">
                   <Component id="jButtonApply" alignment="3" min="-2" max="-2" attributes="0"/>
@@ -143,149 +76,288 @@
     </DimensionLayout>
   </Layout>
   <SubComponents>
-    <Component class="javax.swing.JLabel" name="jLabelSound">
+    <Container class="javax.swing.JPanel" name="jPanelSound">
       <Properties>
-        <Property name="horizontalAlignment" type="int" value="0"/>
-        <Property name="text" type="java.lang.String" value="Sound"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxEnableMusic">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isMusicOn()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Enable Music"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JLabel" name="jLabelMusicVolume">
-      <Properties>
-        <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-          <ComponentRef name="jSliderMusicVolume"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Music Volume"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JSlider" name="jSliderMusicVolume">
-      <Properties>
-        <Property name="majorTickSpacing" type="int" value="10"/>
-        <Property name="maximum" type="int" value="200"/>
-        <Property name="paintTicks" type="boolean" value="true"/>
-        <Property name="value" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="(int) (100 * GameController.getMusicGain())" type="code"/>
+        <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+          <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
+            <TitledBorder justification="2" title="Sound"/>
+          </Border>
         </Property>
       </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxEnableSound">
+
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                      <Component id="jCheckBoxEnableSound" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxEnableMusic" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jLabelMusicVolume" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jSliderMusicVolume" alignment="0" max="32767" attributes="0"/>
+                      <Component id="jLabelSoundVolume" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jSliderSoundVolume" alignment="0" max="32767" attributes="0"/>
+                      <Component id="jLabelMixer" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jComboBoxMixer" alignment="0" max="32767" attributes="0"/>
+                  </Group>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxEnableMusic" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="jLabelMusicVolume" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jSliderMusicVolume" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="jCheckBoxEnableSound" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="jLabelSoundVolume" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jSliderSoundVolume" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                  <Component id="jLabelMixer" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jComboBoxMixer" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace pref="37" max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxEnableMusic">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.MUSIC_ON)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Enable Music"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="jLabelMusicVolume">
+          <Properties>
+            <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
+              <ComponentRef name="jSliderMusicVolume"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Music Volume"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSlider" name="jSliderMusicVolume">
+          <Properties>
+            <Property name="majorTickSpacing" type="int" value="10"/>
+            <Property name="maximum" type="int" value="200"/>
+            <Property name="paintTicks" type="boolean" value="true"/>
+            <Property name="value" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="(int) (100 * GameController.getMusicGain())" type="code"/>
+            </Property>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxEnableSound">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.SOUND_ON)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Enable Sound Effects"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="jLabelSoundVolume">
+          <Properties>
+            <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
+              <ComponentRef name="jSliderSoundVolume"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Sound Volume"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JSlider" name="jSliderSoundVolume">
+          <Properties>
+            <Property name="majorTickSpacing" type="int" value="10"/>
+            <Property name="maximum" type="int" value="200"/>
+            <Property name="paintTicks" type="boolean" value="true"/>
+            <Property name="value" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="(int) (100 * GameController.getSoundGain())" type="code"/>
+            </Property>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JLabel" name="jLabelMixer">
+          <Properties>
+            <Property name="text" type="java.lang.String" value="SFX Mixer"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JComboBox" name="jComboBoxMixer">
+          <Properties>
+            <Property name="selectedIndex" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.sound.getMixerIdx()" type="code"/>
+            </Property>
+          </Properties>
+          <AuxValues>
+            <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new JComboBox&lt;String&gt;(GameController.sound.getMixers())"/>
+            <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
+          </AuxValues>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JPanel" name="jPanelGraphics">
       <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isSoundOn()" type="code"/>
+        <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+          <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
+            <TitledBorder justification="2" title="Graphics"/>
+          </Border>
         </Property>
-        <Property name="text" type="java.lang.String" value="Enable Sound Effects"/>
       </Properties>
-    </Component>
-    <Component class="javax.swing.JLabel" name="jLabelSoundVolume">
+
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxBilinear" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxBilinear" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxBilinear">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="Core.isBilinear()" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Bilinear Filtering"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
+    <Container class="javax.swing.JPanel" name="jPanelMisc">
       <Properties>
-        <Property name="text" type="java.lang.String" value="Sound Volume"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JSlider" name="jSliderSoundVolume">
-      <Properties>
-        <Property name="majorTickSpacing" type="int" value="10"/>
-        <Property name="maximum" type="int" value="200"/>
-        <Property name="paintTicks" type="boolean" value="true"/>
-        <Property name="value" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="(int) (100 * GameController.getSoundGain())" type="code"/>
+        <Property name="border" type="javax.swing.border.Border" editor="org.netbeans.modules.form.editors2.BorderEditor">
+          <Border info="org.netbeans.modules.form.compat2.border.TitledBorderInfo">
+            <TitledBorder justification="2" title="Miscellaneous"/>
+          </Border>
         </Property>
       </Properties>
-    </Component>
-    <Component class="javax.swing.JLabel" name="jLabelMixer">
-      <Properties>
-        <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-          <ComponentRef name="jComboBoxMixer"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="SFX Mixer"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JComboBox" name="jComboBoxMixer">
-      <Properties>
-        <Property name="selectedIndex" type="int" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.sound.getMixerIdx()" type="code"/>
-        </Property>
-      </Properties>
-      <AuxValues>
-        <AuxValue name="JavaCodeGenerator_CreateCodeCustom" type="java.lang.String" value="new javax.swing.JComboBox&lt;String&gt;(GameController.sound.getMixers())"/>
-        <AuxValue name="JavaCodeGenerator_TypeParameters" type="java.lang.String" value="&lt;String&gt;"/>
-      </AuxValues>
-    </Component>
-    <Component class="javax.swing.JSeparator" name="jSeparatorCenter">
-      <Properties>
-        <Property name="orientation" type="int" value="1"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JLabel" name="jLabelGraphics">
-      <Properties>
-        <Property name="horizontalAlignment" type="int" value="0"/>
-        <Property name="text" type="java.lang.String" value="Graphics"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxBilinear">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="Core.isBilinear()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Bilinear Filtering"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JSeparator" name="jSeparatorRight">
-    </Component>
-    <Component class="javax.swing.JLabel" name="jLabelMisc">
-      <Properties>
-        <Property name="horizontalAlignment" type="int" value="0"/>
-        <Property name="text" type="java.lang.String" value="Miscellaneous"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxAdvanced">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isAdvancedSelect()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Advanced Select"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxClassicCursor">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isClassicCursor()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Classic Cursor"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxSwap">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.doSwapButtons()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Swap Middle/Right Mouse Buttons"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxFaster">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isFasterFastForward()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Increase Fast-Forward Speed"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JCheckBox" name="jCheckBoxNoPercentages">
-      <Properties>
-        <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
-          <Connection code="GameController.isNoPercentages()" type="code"/>
-        </Property>
-        <Property name="text" type="java.lang.String" value="Never Show Percentages"/>
-      </Properties>
-    </Component>
-    <Component class="javax.swing.JSeparator" name="jSeparatorBottom">
-    </Component>
+
+      <Layout>
+        <DimensionLayout dim="0">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Group type="103" groupAlignment="0" attributes="0">
+                      <Component id="jCheckBoxAdvanced" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxClassicCursor" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxSwap" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxFaster" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxNoPercentages" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxReplayScroll" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxPauseStopsFastForward" alignment="0" min="-2" max="-2" attributes="0"/>
+                      <Component id="jCheckBoxUnpauseOnAssignment" alignment="0" min="-2" max="-2" attributes="0"/>
+                  </Group>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+        <DimensionLayout dim="1">
+          <Group type="103" groupAlignment="0" attributes="0">
+              <Group type="102" alignment="0" attributes="0">
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxAdvanced" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxClassicCursor" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxSwap" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxFaster" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxPauseStopsFastForward" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxNoPercentages" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxReplayScroll" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="-2" attributes="0"/>
+                  <Component id="jCheckBoxUnpauseOnAssignment" min="-2" max="-2" attributes="0"/>
+                  <EmptySpace max="32767" attributes="0"/>
+              </Group>
+          </Group>
+        </DimensionLayout>
+      </Layout>
+      <SubComponents>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxAdvanced">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Advanced Select"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxClassicCursor">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Classic Cursor"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxSwap">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Swap Middle/Right Mouse Buttons"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxFaster">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.FASTER_FAST_FORWARD)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Increase Fast-Forward Speed"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxPauseStopsFastForward">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)&#xd;&#xa;" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Stop Fast-Forward When Pausing"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxNoPercentages">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Never Show Percentages"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxReplayScroll">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Scroll Level During Replay"/>
+          </Properties>
+        </Component>
+        <Component class="javax.swing.JCheckBox" name="jCheckBoxUnpauseOnAssignment">
+          <Properties>
+            <Property name="selected" type="boolean" editor="org.netbeans.modules.form.RADConnectionPropertyEditor">
+              <Connection code="GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT)" type="code"/>
+            </Property>
+            <Property name="text" type="java.lang.String" value="Unpause After Assigning Skill"/>
+          </Properties>
+        </Component>
+      </SubComponents>
+    </Container>
     <Component class="javax.swing.JButton" name="jButtonOK">
       <Properties>
         <Property name="text" type="java.lang.String" value="OK"/>

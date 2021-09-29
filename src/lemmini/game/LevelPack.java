@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -112,7 +111,7 @@ public class LevelPack {
      */
     public LevelPack(final Resource res) throws ResourceException {
         // extract path from descriptor file
-        path = FilenameUtils.getPath(res.getOriginalPath());
+        path = ToolBox.getParent(res.getOriginalPath());
         // load the descriptor file
         Props props = new Props();
         if (!props.load(res)) {
@@ -174,7 +173,7 @@ public class LevelPack {
                 }
                 // filename, music number
                 if (levelStr != null && levelStr.length >= 2) {
-                    LevelInfo info = new LevelInfo(path + levelStr[0], false,
+                    LevelInfo info = new LevelInfo(path + levelStr[0],
                             music.get(ToolBox.parseInt(levelStr[1])));
                     levels.add(info);
                 }

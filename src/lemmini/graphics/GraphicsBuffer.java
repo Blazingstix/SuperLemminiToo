@@ -59,23 +59,12 @@ public class GraphicsBuffer {
             if (graphics != null) {
                 graphics.dispose();
             }
-            switch (transparency) {
-                case Transparency.OPAQUE:
-                    image = ToolBox.createOpaqueImage(w, h);
-                    graphics = image.createGraphicsContext();
-                    graphics.setBackground(new Color(0, 0, 0));
-                    break;
-                case Transparency.BITMASK:
-                    image = ToolBox.createBitmaskImage(w, h);
-                    graphics = image.createGraphicsContext();
-                    graphics.setBackground(new Color(0, 0, 0, 0));
-                    break;
-                case Transparency.TRANSLUCENT:
-                default:
-                    image = ToolBox.createTranslucentImage(w, h);
-                    graphics = image.createGraphicsContext();
-                    graphics.setBackground(new Color(0, 0, 0, 0));
-                    break;
+            image = ToolBox.createLemmImage(w, h, transparency);
+            graphics = image.createGraphicsContext();
+            if (transparency == Transparency.OPAQUE) {
+                graphics.setBackground(new Color(0, 0, 0));
+            } else {
+                graphics.setBackground(new Color(0, 0, 0, 0));
             }
         }
         if (subimage == null || width != subimage.getWidth() || height != subimage.getHeight()) {

@@ -50,13 +50,13 @@ public class NumFont {
     public static void init() throws ResourceException {
         Resource res = Core.findResource("gfx/misc/numfont.png", true, Core.IMAGE_EXTENSIONS);
         numImg.clear();
-        LemmImage sourceImg = Core.loadTranslucentImage(res);
+        LemmImage sourceImg = Core.loadLemmImage(res);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
         List<LemmImage> numImgTemp = ToolBox.getAnimation(sourceImg, 10);
         numImg.addAll(numImgTemp);
         res = Core.findResource("gfx/misc/numfont2.png", true, Core.IMAGE_EXTENSIONS);
-        sourceImg = Core.loadTranslucentImage(res);
+        sourceImg = Core.loadLemmImage(res);
         numImgTemp = ToolBox.getAnimation(sourceImg, 5);
         numImg.addAll(numImgTemp);
         
@@ -64,7 +64,7 @@ public class NumFont {
         LemmImage numImgTemp2;
         GraphicsContext g = null;
         for (int i = 0; i < 100; i++) {
-            numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
+            numImgTemp2 = ToolBox.createLemmImage(width * 2, height);
             try {
                 g = numImgTemp2.createGraphicsContext();
                 g.drawImage(numImg.get(i / 10), 0, 0);
@@ -76,7 +76,7 @@ public class NumFont {
             }
             numImgMap.put(i, numImgTemp2);
         }
-        numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
+        numImgTemp2 = ToolBox.createLemmImage(width * 2, height);
         try {
             g = numImgTemp2.createGraphicsContext();
             g.drawImage(numImg.get(13), 0, 0);
@@ -87,7 +87,7 @@ public class NumFont {
             }
         }
         numImgMap.put(Integer.MAX_VALUE, numImgTemp2);
-        numImgTemp2 = ToolBox.createTranslucentImage(width * 3, height);
+        numImgTemp2 = ToolBox.createLemmImage(width * 3, height);
         try {
             g = numImgTemp2.createGraphicsContext();
             g.drawImage(numImg.get(10), 0, 0);
@@ -112,7 +112,7 @@ public class NumFont {
             return numImgTemp;
         } else {
             String numString = Integer.toString(n);
-            numImgTemp = ToolBox.createTranslucentImage(width * numString.length(), height);
+            numImgTemp = ToolBox.createLemmImage(width * numString.length(), height);
             GraphicsContext g = null;
             try {
                 g = numImgTemp.createGraphicsContext();

@@ -2,11 +2,11 @@ package lemmini.tools;
 
 import java.io.*;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Properties;
+import lemmini.game.Core;
 import lemmini.game.Resource;
 
 /*
@@ -399,7 +399,37 @@ public class Props {
      * @return True if OK, false if exception occurred
      */
     public boolean save(final Path fname) {
-        try (Writer w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
+        try (Writer w = Files.newBufferedWriter(fname)) {
+            return save(w);
+        } catch (FileNotFoundException e) {
+            return false;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Save property file
+     * @param fname File name of property file
+     * @return True if OK, false if exception occurred
+     */
+    public boolean save(final String fname) {
+        try (Writer w = Core.resourceTree.newBufferedWriter(fname)) {
+            return save(w);
+        } catch (FileNotFoundException e) {
+            return false;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Save property file
+     * @param w Writer to property file
+     * @return True if OK, false if exception occurred
+     */
+    public boolean save(final Writer w) {
+        try {
             hash.store(w, header);
             return true;
         } catch (FileNotFoundException e) {
@@ -416,6 +446,20 @@ public class Props {
      */
     public boolean load(final Path fname) {
         try (Reader r = ToolBox.getBufferedReader(fname)) {
+            hash.load(r);
+            return true;
+        } catch (IOException | NullPointerException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Load property file
+     * @param fname Name of property file
+     * @return True if OK, false if exception occurred
+     */
+    public boolean load(final String fname) {
+        try (Reader r = ToolBox.getBufferedReader(Core.resourceTree.getPath(fname))) {
             hash.load(r);
             return true;
         } catch (IOException | NullPointerException e) {

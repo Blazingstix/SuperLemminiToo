@@ -1,11 +1,11 @@
 package lemmini.game;
 
 import java.awt.Color;
+import java.awt.RenderingHints;
 import java.util.List;
 import lemmini.LemminiFrame;
 import static lemmini.game.LemmFont.Color.*;
 import lemmini.graphics.GraphicsContext;
-import lemmini.graphics.GraphicsOperation;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
 import org.apache.commons.lang3.StringUtils;
@@ -100,6 +100,7 @@ public class TextScreen {
     private static final int FAILURE_THRESHOLD_FOR_HINTS = 3;
     /** counter threshold used to trigger the rotation animation (in animation update frames) */
     private static final int MAX_ROT_CTR = 99;
+    private static final int ROT_ANIM_LENGTH = 21;
     /** scroll text */
     private static final String SCROLL_TEXT =
         "SuperLemmini - a game engine for Lemmings(tm) in Java. "
@@ -114,24 +115,10 @@ public class TextScreen {
 
     /** TextDialog used as base component */
     private static TextDialog textDialog;
-    /** factor used for the rotation animation */
-    private static double rotFact = 1.0;
-    /** delta used for the rotation animation */
-    private static double rotDelta;
-    /** source image for rotation animation */
-    private static LemmImage imgSrc;
-    /** target image for rotation animation */
-    private static LemmImage imgTrg;
-    /** graphics for rotation animation */
-    private static GraphicsContext imgGfx = null;
-    /** flip state for rotation: true - image is flipped in Y direction */
-    private static boolean flip;
-    /** affine transformation used for rotation animation */
-    private static GraphicsOperation at;
+    /** frames for rotation animation */
+    private static LemmImage[] rotImg;
     /** counter used to trigger the rotation animation (in animation update frames) */
     private static int rotCtr;
-    /** used to stop the rotation only after it was flipped twice -> original direction */
-    private static int flipCtr;
     /** counter for scrolled pixels */
     private static int scrollPixCtr;
     /** image used for scroller */
@@ -171,7 +158,7 @@ public class TextScreen {
     static void initIntro() {
         textDialog.clear();
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN), true);
-        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 4/2016", null, 4, RED);
+        textDialog.addStringCentered("Release " + LemminiFrame.REVISION + " 6/2016", null, 4, RED);
         textDialog.addTextButton("Play Level", "Play Level", null, -5, -2, Button.PLAY_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Load Replay", "Load Replay", null, -14, 0, Button.LOAD_REPLAY, BLUE, BROWN);
         textDialog.addTextButton("Enter Code", "Enter Code", null, 3, 0, Button.ENTER_CODE, BLUE, BROWN);
@@ -218,7 +205,7 @@ public class TextScreen {
         } else {
             textDialog.addStringCentered("All lemmings accounted for.", null, -7, TURQUOISE);
         }
-        if (GameController.isNoPercentages() || numLemmings > 100) {
+        if (GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES) || numLemmings > 100) {
             textDialog.addString(String.format("You needed:  %d", toRescue), null, -7, -5, VIOLET);
             textDialog.addString(String.format("You rescued: %d", rescued), null, -7, -4, VIOLET);
         } else {
@@ -243,7 +230,7 @@ public class TextScreen {
                 debriefing = debriefings.get(4);
             }
             textDialog.addStringCentered(debriefing, null, -1, RED);
-            textDialog.addTextButton("Retry", "Retry", null, -2, 6, Button.RESTART, BLUE, BROWN);
+            textDialog.addTextButton("Retry Level", "Retry Level", null, -12, 5, Button.RESTART, BLUE, BROWN);
         } else {
             String debriefing;
             if (rescued <= toRescue && rescued < numLemmings) {
@@ -266,21 +253,21 @@ public class TextScreen {
                 if (code != null) {
                     textDialog.addStringCentered(String.format("Your access code for level %d%nis %s", ln + 2, code), null, 2, BROWN);
                 }
-                textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.CONTINUE, BLUE, BROWN);
+                textDialog.addTextButton("Continue", "Continue", null, -11, 5, Button.CONTINUE, BLUE, BROWN);
             } else if (!(lpn == 0 && r == 0)) {
                 List<String> ratings = lp.getRatings();
                 textDialog.addStringCentered("Congratulations!", null, 2, BROWN);
                 textDialog.addStringCentered(String.format("You finished all the %s levels!", ratings.get(GameController.getCurRating())), null, 3, GREEN);
                 if (lpn != 0 && lp.getLevelCount(r) <= ln + 1 && ratings.size() > r + 1) {
-                    textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.NEXT_RATING, BLUE, BROWN);
+                    textDialog.addTextButton("Continue", "Continue", null, -11, 5, Button.NEXT_RATING, BLUE, BROWN);
                 }
             }
         }
         if (!GameController.getWasCheated()) {
-            textDialog.addTextButton("Replay", "Replay", null, -12, 5, Button.REPLAY, BLUE, BROWN);
-            textDialog.addTextButton("Save Replay", "Save Replay", null, -4, 5, Button.SAVE_REPLAY, BLUE, BROWN);
+            textDialog.addTextButton("View Replay", "View Replay", null, 1, 5, Button.REPLAY, BLUE, BROWN);
+            textDialog.addTextButton("Save Replay", "Save Replay", null, 1, 6, Button.SAVE_REPLAY, BLUE, BROWN);
         }
-        textDialog.addTextButton("Menu", "Menu", null, 9, 5, Button.MENU, BLUE, BROWN);
+        textDialog.addTextButton("Menu", "Menu", null, -9, 6, Button.MENU, BLUE, BROWN);
     }
     
     public static void showLevelInfo() {
@@ -289,7 +276,7 @@ public class TextScreen {
             Level level = GameController.getLevel();
             String rating = GameController.getCurLevelPack().getRatings().get(GameController.getCurRating());
             textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), "info", -9, -2, BLUE);
-            if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
+            if (GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES) || level.getNumLemmings() > 100) {
                 textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), "info", -9, -1, GREEN);
             } else {
                 textDialog.addString(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), "info", -9, -1, GREEN);
@@ -358,23 +345,23 @@ public class TextScreen {
      */
     public static void init() {
         synchronized (monitor) {
-            if (imgGfx != null) {
-                imgGfx.dispose();
+            rotImg = new LemmImage[ROT_ANIM_LENGTH];
+            rotImg[0] = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
+            for (int i = 1; i < rotImg.length; i++) {
+                if (i < ROT_ANIM_LENGTH - (ROT_ANIM_LENGTH / 2)) {
+                    rotImg[i] = rotImg[0].getScaledInstance(rotImg[0].getWidth(),
+                            Math.max((int) (rotImg[0].getHeight()
+                                    * (((ROT_ANIM_LENGTH - 1.0) - (i * 2.0)) / (ROT_ANIM_LENGTH - 1.0))), 1),
+                            RenderingHints.VALUE_INTERPOLATION_BILINEAR, false);
+                } else {
+                    rotImg[i] = new LemmImage(rotImg[ROT_ANIM_LENGTH - 1 - i]);
+                    rotImg[i].flip(false, true);
+                }
             }
-            
-            rotFact = 1.0;
-            rotDelta = -0.1;
-            imgSrc = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
-            at = ToolBox.createGraphicsOperation();
-            flip = false;
-            rotCtr = 0 ;
-            flipCtr = 0;
-            imgTrg = ToolBox.createTranslucentImage(imgSrc.getWidth(), imgSrc.getHeight());
-            imgGfx = imgTrg.createGraphicsContext();
-            imgGfx.setBackground(new Color(0, 0, 0, 0)); // invisible
+            rotCtr = 0;
             scrollPixCtr = 0;
             
-            LemmImage tempScrollerImg = ToolBox.createTranslucentImage(
+            LemmImage tempScrollerImg = ToolBox.createLemmImage(
                     LemmFont.getWidth() * (LemmFont.getCharCount(SCROLL_TEXT) + SCROLL_PADDING * 2) + SCROLL_WIDTH * 2,
                     LemmFont.getHeight());
             GraphicsContext scrollerGfx = null;
@@ -387,7 +374,7 @@ public class TextScreen {
                     scrollerGfx.dispose();
                 }
             }
-            scrollerImg = ToolBox.createTranslucentImage(
+            scrollerImg = ToolBox.createLemmImage(
                     tempScrollerImg.getWidth(), tempScrollerImg.getHeight() * 2);
             try {
                 scrollerGfx = scrollerImg.createGraphicsContext();
@@ -432,34 +419,20 @@ public class TextScreen {
         // manage logo rotation
         if (++rotCtr > MAX_ROT_CTR) {
             // animate
-            rotFact += rotDelta;
-            if (rotFact <= 0.0) {
-                // minimum size reached -> flip and increase again
-                rotFact = 0.1;
-                rotDelta = -rotDelta;
-                flip = !flip;
-            } else if (rotFact > 1.0) {
-                // maximum size reached -> decrease again
-                rotFact = 1.0;
-                rotDelta = -rotDelta;
+            int rotImgFrameIdx = rotCtr - MAX_ROT_CTR;
+            if (rotImgFrameIdx >= rotImg.length) {
+                rotImgFrameIdx = rotImgFrameIdx - ((rotImgFrameIdx - ROT_ANIM_LENGTH + 1) * 2);
+            }
+            if (rotImgFrameIdx <= 0) {
                 // reset only after two rounds (flipped back)
-                if (++flipCtr > 1) {
-                    rotCtr = 0;
-                }
+                rotImgFrameIdx = 0;
+                rotCtr = 0;
             }
-            if (flip) {
-                at.setToScale(1, -rotFact);
-                at.translate(1, -imgSrc.getHeight());
-            } else {
-                at.setToScale(1, rotFact);
-            }
-            imgGfx.clearRect(0, 0, imgTrg.getWidth(), imgTrg.getHeight());
-            at.execute(imgSrc, imgTrg);
-            textDialog.addImage(imgTrg, "introAnimation", -150 - (int) (imgSrc.getHeight() / 2 * Math.abs(rotFact) + 0.5));
+            LemmImage rotImgFrame = rotImg[rotImgFrameIdx];
+            textDialog.addImage(rotImgFrame, "introAnimation", -150 - (int) (rotImgFrame.getHeight() / 2));
         } else {
             // display original image
-            flipCtr = 0;
-            textDialog.addImage(imgSrc, "introAnimation", -150 - imgSrc.getHeight() / 2);
+            textDialog.addImage(rotImg[0], "introAnimation", -150 - rotImg[0].getHeight() / 2);
         }
         // manage scroller
         LemmImage subimage = scrollerImg.getSubimage(scrollPixCtr, 0, SCROLL_WIDTH, scrollerImg.getHeight());

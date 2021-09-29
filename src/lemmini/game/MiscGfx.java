@@ -1,5 +1,6 @@
 package lemmini.game;
 
+import java.awt.Transparency;
 import java.util.ArrayList;
 import java.util.List;
 import lemmini.graphics.LemmImage;
@@ -71,38 +72,38 @@ public class MiscGfx {
         images.clear();
         /* 0: MINIMAP_LEFT */
         Resource res = Core.findResource("gfx/misc/minimap_left.png", true, Core.IMAGE_EXTENSIONS);
-        LemmImage img = Core.loadTranslucentImage(res);
+        LemmImage img = Core.loadLemmImage(res);
         images.add(img);
         /* 1: MINIMAP_CENTER */
         res = Core.findResource("gfx/misc/minimap_center.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(res);
+        img = Core.loadLemmImage(res);
         images.add(img);
         /* 2: MINIMAP_RIGHT */
         res = Core.findResource("gfx/misc/minimap_right.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(res);
+        img = Core.loadLemmImage(res);
         images.add(img);
         /* 3: MINIMAP_ARROW_LEFT, 4: MINIMAP_ARROW_UP, 5: MINIMAP_ARROW_RIGHT, 6: MINIMAP_ARROW_DOWN */
         res = Core.findResource("gfx/misc/minimap_arrows.png", true, Core.IMAGE_EXTENSIONS);
-        List<LemmImage> anim = ToolBox.getAnimation(Core.loadTranslucentImage(res), 4);
+        List<LemmImage> anim = ToolBox.getAnimation(Core.loadLemmImage(res), 4);
         images.addAll(anim);
         /* 7: LEMMINI */
-        img = Core.loadTranslucentImageJar("lemmini.png");
+        img = Core.loadLemmImageJar("lemmini.png");
         images.add(img);
         /* 8: TILE_GREEN */
         res = Core.findResource("gfx/misc/background_level.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadOpaqueImage(res);
+        img = Core.loadLemmImage(res, Transparency.OPAQUE);
         images.add(img);
         /* 9: TILE_BROWN */
         res = Core.findResource("gfx/misc/background_main.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadOpaqueImage(res);
+        img = Core.loadLemmImage(res, Transparency.OPAQUE);
         images.add(img);
         /* 10: REPLAY_1, 11: REPLAY_2 */
         res = Core.findResource("gfx/misc/replay.png", true, Core.IMAGE_EXTENSIONS);
-        anim = ToolBox.getAnimation(Core.loadTranslucentImage(res), 2);
+        anim = ToolBox.getAnimation(Core.loadLemmImage(res), 2);
         images.addAll(anim);
         /* 12: SELECT */
         res = Core.findResource("gfx/misc/select.png", true, Core.IMAGE_EXTENSIONS);
-        img = Core.loadTranslucentImage(res);
+        img = Core.loadLemmImage(res);
         images.add(img);
         
         /* Assemble minimap */
@@ -140,7 +141,7 @@ public class MiscGfx {
         int centerWidth = width + 4 - leftWidth;
         int rightWidth = minimapRight.getWidth();
         
-        LemmImage tempMinimap = ToolBox.createTranslucentImage(leftWidth + centerWidth + rightWidth,
+        LemmImage tempMinimap = ToolBox.createLemmImage(leftWidth + centerWidth + rightWidth,
                 NumberUtils.max(minimapLeft.getHeight(), minimapCenter.getHeight(), minimapRight.getHeight()));
         
         for (int y = 0; y < minimapLeft.getHeight(); y++) {

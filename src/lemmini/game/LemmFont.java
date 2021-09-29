@@ -93,7 +93,7 @@ public class LemmFont {
             
             String name = FilenameUtils.removeExtension(fileName);
             
-            LemmImage sourceImg = Core.loadTranslucentImage(res);
+            LemmImage sourceImg = Core.loadLemmImage(res);
             List<LemmImage> glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
             List<Glyph> glyphs = new ArrayList<>(numChars);
             for (ListIterator<LemmImage> lit = glyphImg.listIterator(); lit.hasNext(); ) {
@@ -107,7 +107,7 @@ public class LemmFont {
             subsets.put(name, new Subset(glyphs));
         }
         
-        LemmImage img = ToolBox.createTranslucentImage(width, height);
+        LemmImage img = ToolBox.createLemmImage(width, height);
         GraphicsContext g = null;
         try {
             g = img.createGraphicsContext();
@@ -120,7 +120,7 @@ public class LemmFont {
         }
         missingChar = new Glyph(img);
         
-        img = Core.loadTranslucentImageJar("missing_char_font.png");
+        img = Core.loadLemmImageJar("missing_char_font.png");
         List<LemmImage> missingGlyphFontImg = ToolBox.getAnimation(img, 16);
         missingGlyphFontImg.stream().forEachOrdered(missingGlyphImg -> {
             missingCharFont.add(new Glyph(missingGlyphImg));
@@ -169,7 +169,7 @@ public class LemmFont {
      * @return a buffered image of the needed size that contains an image of the given string
      */
     public static LemmImage strImage(final String s, final Color color) {
-        LemmImage image = ToolBox.createTranslucentImage(getCharCount(s) * width, height);
+        LemmImage image = ToolBox.createLemmImage(getCharCount(s) * width, height);
         GraphicsContext g = image.createGraphicsContext();
         try {
             g = image.createGraphicsContext();
@@ -398,11 +398,11 @@ public class LemmFont {
             
             LemmImage[] glyphColorsArray = {
                 glyph,
-                ToolBox.createTranslucentImage(width, height),
-                ToolBox.createTranslucentImage(width, height),
-                ToolBox.createTranslucentImage(width, height),
-                ToolBox.createTranslucentImage(width, height),
-                ToolBox.createTranslucentImage(width, height),
+                ToolBox.createLemmImage(width, height),
+                ToolBox.createLemmImage(width, height),
+                ToolBox.createLemmImage(width, height),
+                ToolBox.createLemmImage(width, height),
+                ToolBox.createLemmImage(width, height),
             };
             
             for (int xp = 0; xp < width; xp++) {

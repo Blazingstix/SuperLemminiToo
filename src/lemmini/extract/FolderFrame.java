@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +33,7 @@ import org.apache.commons.lang3.StringUtils;
  *
  * @author Volker Oth
  */
-public class FolderFrame extends javax.swing.JFrame {
+public class FolderFrame extends JFrame {
     
     private static final long serialVersionUID = 0x01L;
 
@@ -98,7 +99,7 @@ public class FolderFrame extends javax.swing.JFrame {
         });
 
         jLabelDest.setLabelFor(jTextFieldDest);
-        jLabelDest.setText("Destination Path");
+        jLabelDest.setText("Destination Path (must be different from WINLEMM path)");
 
         jTextFieldDest.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -143,7 +144,7 @@ public class FolderFrame extends javax.swing.JFrame {
                             .addComponent(jLabelHeader)
                             .addComponent(jLabelSrc)
                             .addComponent(jLabelDest))
-                        .addGap(0, 195, Short.MAX_VALUE))
+                        .addGap(0, 166, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
                         .addComponent(jTextFieldDest)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -220,13 +221,20 @@ public class FolderFrame extends javax.swing.JFrame {
     }//GEN-LAST:event_jButtonDestActionPerformed
 
     private void jButtonExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonExtractActionPerformed
+        source = jTextFieldSrc.getText();
+        destination = jTextFieldDest.getText();
         // check if source path exists
         Path sourcePath = Paths.get(source);
         if (Files.isDirectory(sourcePath)) {
-            doExtract = true;
-            dispose();
+            Path destinationPath = Paths.get(destination);
+            if (!sourcePath.equals(destinationPath)) {
+                doExtract = true;
+                dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "Target path must be different from the Windows Lemmings path.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         } else {
-            JOptionPane.showMessageDialog(this, String.format("Source path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, String.format("Windows Lemmings path %s doesn't exist!", sourcePath), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_jButtonExtractActionPerformed
 

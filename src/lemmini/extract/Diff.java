@@ -108,8 +108,8 @@ public class Diff {
             src.mark();
             trg.mark();
             // search for difference
-            int s = src.get() & 0xff;
-            int t = trg.get() & 0xff;
+            int s = Byte.toUnsignedInt(src.get());
+            int t = Byte.toUnsignedInt(trg.get());
             if (s == t) {
                 ofs++;
                 continue;
@@ -274,7 +274,7 @@ public class Diff {
                 }
                 // now there must follow a command followed by a
                 int cmdIdx = patch.position(); // just for exception
-                int cmd = patch.get() & 0xff;
+                int cmd = Byte.toUnsignedInt(patch.get());
                 int len = getLen(patch);
                 switch (cmd) {
                     case Diff.DELETE:
@@ -334,7 +334,7 @@ public class Diff {
         int v;
         int shift = 0;
         do {
-            v = b.get() & 0xff;
+            v = Byte.toUnsignedInt(b.get());
             if ((v & 0x80) == 0) {
                 // no continue bit set
                 val |= (v << shift);

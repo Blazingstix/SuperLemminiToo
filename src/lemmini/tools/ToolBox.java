@@ -1,7 +1,11 @@
 package lemmini.tools;
 
 import java.awt.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -57,6 +61,11 @@ public class ToolBox {
         ByteOrderMark.UTF_32BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_8,
         ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_16LE};
     //private static final GraphicsConfiguration GC = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
+    private static final ColorModel BITMASK_COLOR_MODEL = new ComponentColorModel(
+            ColorSpace.getInstance(ColorSpace.CS_sRGB),
+            new int[]{1, 8, 8, 8},
+            true, false,
+            Transparency.BITMASK, DataBuffer.TYPE_BYTE);
     
     /**
      * Creates a graphics operation
@@ -81,12 +90,23 @@ public class ToolBox {
      * Create a compatible buffered image.
      * @param width width of image in pixels
      * @param height height of image in pixels
-     * @param transparency {@link java.awt.Transparency}
+     * @param transparency {@link Transparency}
      * @return compatible buffered image
      */
     public static BufferedImage createImage(final int width, final int height, final int transparency) {
         //return GC.createCompatibleImage(width, height, transparency);
-        return new BufferedImage(width, height, transparency == Transparency.OPAQUE ? BufferedImage.TYPE_INT_RGB : BufferedImage.TYPE_INT_ARGB);
+        switch (transparency) {
+            case Transparency.OPAQUE:
+                return new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+            case Transparency.BITMASK:
+                return new BufferedImage(BITMASK_COLOR_MODEL,
+                        BITMASK_COLOR_MODEL.createCompatibleWritableRaster(width, height),
+                        false, null);
+            case Transparency.TRANSLUCENT:
+                return new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+            default:
+                throw new IllegalArgumentException("Invalid transparency: " + transparency);
+        }
     }
 
     /**
@@ -95,34 +115,25 @@ public class ToolBox {
      * @param height height of image in pixels
      * @return compatible buffered image
      */
-    public static LemmImage createBitmaskImage(final int width, final int height) {
-        return new LemmImage(createImage(width, height, Transparency.BITMASK));
+    public static LemmImage createLemmImage(final int width, final int height) {
+        return createLemmImage(width, height, Transparency.TRANSLUCENT);
     }
 
     /**
      * Create a compatible buffered image.
      * @param width width of image in pixels
      * @param height height of image in pixels
+     * @param transparency {@link Transparency}
      * @return compatible buffered image
      */
-    public static LemmImage createOpaqueImage(final int width, final int height) {
-        return new LemmImage(createImage(width, height, Transparency.OPAQUE));
-    }
-
-    /**
-     * Create a compatible buffered image.
-     * @param width width of image in pixels
-     * @param height height of image in pixels
-     * @return compatible buffered image
-     */
-    public static LemmImage createTranslucentImage(final int width, final int height) {
-        return new LemmImage(createImage(width, height, Transparency.TRANSLUCENT));
+    public static LemmImage createLemmImage(final int width, final int height, final int transparency) {
+        return new LemmImage(createImage(width, height, transparency));
     }
 
     /**
      * Create a compatible buffered image from an image.
-     * @param img existing {@link java.awt.Image}
-     * @param transparency {@link java.awt.Transparency}
+     * @param img existing {@link Image}
+     * @param transparency {@link Transparency}
      * @return compatible buffered image
      */
     public static LemmImage imageToBuffered(final Image img, final int transparency) {
@@ -164,7 +175,7 @@ public class ToolBox {
      * Return a list of buffered images which contain an animation.
      * @param img image containing all the frames one above each other
      * @param frames number of frames
-     * @param transparency {@link java.awt.Transparency}
+     * @param transparency {@link Transparency}
      * @param width image width
      * @return a list of images which contains an animation
      */
@@ -567,8 +578,110 @@ public class ToolBox {
                 .equals(Normalizer.normalize(s2.trim().toLowerCase(Locale.ROOT), Normalizer.Form.NFKC));
     }
     
+    public static String literalToRegex(String s) {
+        StringBuilder sb = null;
+        
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            switch (c) {
+                case '$':
+                case '(':
+                case '*':
+                case '+':
+                case '.':
+                case '?':
+                case '[':
+                case '\\':
+                case '^':
+                case '{':
+                case '|':
+                    if (sb == null) {
+                        sb = new StringBuilder(s.length() * 2);
+                        sb.append(s.substring(0, i));
+                    }
+                    sb.append('\\').append(c);
+                    break;
+                default:
+                    if (sb != null) {
+                        sb.append(c);
+                    }
+                    break;
+            }
+        }
+        
+        return (sb == null) ? s : sb.toString();
+    }
+    
     public static void deleteFileTree(Path path) throws IOException {
         Files.walkFileTree(path, new DeleteTreeFileVisitor());
+    }
+    
+    public static String getFileName(String path) {
+        if (path.isEmpty() || path.equals("/") || path.equals("\\")) {
+            return path;
+        } else {
+            int slashPos = -1;
+            boolean searchForSlash = true;
+            while (searchForSlash) {
+                int forwardSlashPos = path.indexOf('/', slashPos + 1);
+                int backslashPos = path.indexOf('\\', slashPos + 1);
+                int newSlashPos = -1;
+                if (forwardSlashPos >= 0) {
+                    if (backslashPos >= 0) {
+                        newSlashPos = StrictMath.min(forwardSlashPos, backslashPos);
+                    } else {
+                        newSlashPos = forwardSlashPos;
+                    }
+                } else if (backslashPos >= 0) {
+                    newSlashPos = backslashPos;
+                }
+                if (newSlashPos >= 0 && newSlashPos < path.length() - 1) {
+                    slashPos = newSlashPos;
+                } else {
+                    searchForSlash = false;
+                }
+            }
+            if (slashPos >= 0) {
+                return path.substring(slashPos + 1);
+            } else {
+                return path;
+            }
+        }
+    }
+    
+    public static String getParent(String path) {
+        if (path.isEmpty() || path.equals("/") || path.equals("\\")) {
+            return path;
+        } else {
+            int slashPos = -1;
+            boolean searchForSlash = true;
+            while (searchForSlash) {
+                int forwardSlashPos = path.indexOf('/', slashPos + 1);
+                int backslashPos = path.indexOf('\\', slashPos + 1);
+                int newSlashPos = -1;
+                if (forwardSlashPos >= 0) {
+                    if (backslashPos >= 0) {
+                        newSlashPos = StrictMath.min(forwardSlashPos, backslashPos);
+                    } else {
+                        newSlashPos = forwardSlashPos;
+                    }
+                } else if (backslashPos >= 0) {
+                    newSlashPos = backslashPos;
+                }
+                if (newSlashPos >= 0 && newSlashPos < path.length() - 1) {
+                    slashPos = newSlashPos;
+                } else {
+                    searchForSlash = false;
+                }
+            }
+            if (slashPos >= 0) {
+                return path.substring(0, slashPos + 1);
+            } else if (path.endsWith("\\")) {
+                return "\\";
+            } else {
+                return "/";
+            }
+        }
     }
 }
 

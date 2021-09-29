@@ -103,7 +103,7 @@ public class LevelCode {
                 bi[i] -= 26;
             }
             bo[(i + 8 - (level % 8)) % 7] = bi[i]; // rotate
-            sum += bi[i] & 0xff; // checksum
+            sum += Byte.toUnsignedInt(bi[i]); // checksum
         }
         // create 8th and 9th bytes (level)
         bo[7] = (byte) (bi[7] + (level & 0xf));
@@ -114,7 +114,7 @@ public class LevelCode {
         if (bo[8] > LAST_LETTER) {
             bo[8] -= 26;
         }
-        sum += (bo[7] & 0xff) + (bo[8] & 0xff);
+        sum += Byte.toUnsignedInt(bo[7]) + Byte.toUnsignedInt(bo[8]);
         // create 10th byte (checksum)
         bo[9] = (byte) (bi[9] + (sum & 0x0f));
         if (bo[9] > LAST_LETTER) {

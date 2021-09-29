@@ -131,14 +131,14 @@ public class Icons {
         if (iconGfx != null) {
             iconGfx.dispose();
         }
-        iconImg = ToolBox.createTranslucentImage(WIDTH * (1 + LAST_DRAWN), HEIGHT);
+        iconImg = ToolBox.createLemmImage(WIDTH * (1 + LAST_DRAWN), HEIGHT);
         iconGfx = iconImg.createGraphicsContext();
         Type[] iconTypes = Type.values();
         for (int i = 0; i <= LAST_DRAWN; i++) {
             Resource res = Core.findResource(
                     "gfx/icons/icon_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png",
                     true, Core.IMAGE_EXTENSIONS);
-            LemmImage sourceImg = Core.loadTranslucentImage(res);
+            LemmImage sourceImg = Core.loadLemmImage(res);
             Sprite icon = new Sprite(sourceImg, 2, 1);
             icons.add(icon);
             iconGfx.drawImage(icon.getImage(), WIDTH * i, 0);

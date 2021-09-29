@@ -2,7 +2,6 @@ package lemmini.game;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import lemmini.tools.Props;
@@ -72,7 +71,7 @@ public class LevelInfo {
         name = StringUtils.EMPTY;
         author = StringUtils.EMPTY;
         music = StringUtils.EMPTY;
-        levelRes = new FileResource(StringUtils.EMPTY, Paths.get(StringUtils.EMPTY));
+        levelRes = new FileResource(StringUtils.EMPTY, StringUtils.EMPTY, Core.resourceTree);
         releaseRate = 0;
         numLemmings = 1;
         numToRescue = 0;
@@ -88,17 +87,12 @@ public class LevelInfo {
         validLevel = false;
     }
     
-    public LevelInfo(String fname, boolean absolutePath, String newMusic) {
+    public LevelInfo(String fname, String newMusic) {
         Resource res;
-        if (absolutePath) {
-            System.out.println(fname);
-            res = new FileResource(fname, Paths.get(fname));
-        } else {
-            try {
-                res = Core.findResource(fname, false);
-            } catch (ResourceException ex) {
-                res = null;
-            }
+        try {
+            res = Core.findResource(fname, false);
+        } catch (ResourceException ex) {
+            res = null;
         }
         init(res, newMusic);
     }

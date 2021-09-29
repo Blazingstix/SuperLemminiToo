@@ -48,6 +48,8 @@ public class Fader {
     public static enum State {
         /** don't fade */
         OFF,
+        /** done fading out */
+        BLACK,
         /** fade in */
         IN,
         /** fade out */
@@ -94,7 +96,7 @@ public class Fader {
         Color fillColor; /* ARGB color of the fading rectangle composed from alpha and color */
         // create alpha image if needed
         if (alphaImg == null) {
-            alphaImg = ToolBox.createTranslucentImage(WIDTH, HEIGHT);
+            alphaImg = ToolBox.createLemmImage(WIDTH, HEIGHT);
             alphaGfx = alphaImg.createGraphicsContext();
         }
         // fill with alpha blended color
@@ -124,10 +126,12 @@ public class Fader {
     public static synchronized void setState(final State s) {
         fadeState = s;
         switch (fadeState) {
+            case BLACK:
             case IN:
                 fadeValue = MAX_ALPHA; // opaque
                 setAlpha(fadeValue);
                 break;
+            case OFF:
             case OUT:
                 fadeValue = 0; // transparent
                 setAlpha(fadeValue);
@@ -177,11 +181,11 @@ public class Fader {
                 // System.out.println(fadeValue);
                 break;
             case OUT:
-                if (fadeValue <= MAX_ALPHA-fadeStep) {
+                if (fadeValue <= MAX_ALPHA - fadeStep) {
                     fadeValue += fadeStep;
                 } else {
                     fadeValue = MAX_ALPHA;
-                    fadeState = State.OFF;
+                    fadeState = State.BLACK;
                 }
                 Fader.setAlpha(fadeValue);
                 // System.out.println(fadeValue);

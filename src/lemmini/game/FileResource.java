@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import lemmini.tools.CaseInsensitiveFileTree;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
 
@@ -31,15 +32,30 @@ import org.apache.commons.io.FilenameUtils;
 public class FileResource implements Resource {
     
     private final String origPath;
+    private final String realPath;
+    private final CaseInsensitiveFileTree tree;
     private final Path file;
     
-    public FileResource(Path file) {
+    public FileResource(Path file) throws IOException {
         this.origPath = FilenameUtils.separatorsToUnix(file.toString());
+        this.realPath = origPath;
+        this.tree = new CaseInsensitiveFileTree(file.getParent(), 1);
         this.file = file;
     }
     
-    public FileResource(String origPath, Path file) {
+    public FileResource(String origPath, CaseInsensitiveFileTree tree) {
+        this(origPath, origPath, tree, tree.getPath(origPath));
+    }
+    
+    public FileResource(String origPath, String realPath, CaseInsensitiveFileTree tree) {
+        this(origPath, realPath, tree, tree.getPath(realPath));
+    }
+    
+    private FileResource(String origPath, String realPath,
+            CaseInsensitiveFileTree tree, Path file) {
         this.origPath = origPath;
+        this.realPath = realPath;
+        this.tree = tree;
         this.file = file;
     }
     
@@ -60,9 +76,10 @@ public class FileResource implements Resource {
     
     @Override
     public FileResource getSibling(String sibling) {
-        String newOrigPath = FilenameUtils.getPath(origPath) + sibling;
+        String newOrigPath = ToolBox.getParent(origPath) + sibling;
+        String newRealPath = ToolBox.getParent(realPath) + sibling;
         Path newFile = file.resolveSibling(sibling);
-        return new FileResource(newOrigPath, newFile);
+        return new FileResource(newOrigPath, newRealPath, tree, newFile);
     }
 
     @Override

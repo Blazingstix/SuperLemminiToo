@@ -45,7 +45,7 @@
                           <Component id="jLabelSrc" alignment="0" min="-2" max="-2" attributes="0"/>
                           <Component id="jLabelDest" alignment="0" min="-2" max="-2" attributes="0"/>
                       </Group>
-                      <EmptySpace min="0" pref="195" max="32767" attributes="0"/>
+                      <EmptySpace min="0" pref="166" max="32767" attributes="0"/>
                   </Group>
                   <Group type="102" alignment="0" attributes="0">
                       <Component id="jTextFieldDest" max="32767" attributes="0"/>
@@ -124,7 +124,7 @@
         <Property name="labelFor" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
           <ComponentRef name="jTextFieldDest"/>
         </Property>
-        <Property name="text" type="java.lang.String" value="Destination Path"/>
+        <Property name="text" type="java.lang.String" value="Destination Path (must be different from WINLEMM path)"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JTextField" name="jTextFieldDest">
