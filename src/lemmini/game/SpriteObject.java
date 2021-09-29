@@ -30,16 +30,16 @@ public class SpriteObject extends Sprite {
 
     /** Type of level object */
     public static enum Type {
-        /** no influence on gameplay *//** no influence on gameplay */
+        /** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay */
         PASSIVE,
         /** Makes a lemming turn left. */
         TURN_LEFT,
         /** Makes a lemming turn right. */
         TURN_RIGHT,
         /** right arrows - no digging to the left */
-        NO_DIG_LEFT,
+        NO_BASH_LEFT,
         /** left arrows - no digging to the right */
-        NO_DIG_RIGHT,
+        NO_BASH_RIGHT,
         /** trap triggering drowning animation */
         TRAP_DROWN,
         /** trap triggering a replacement with special death animation */
@@ -80,9 +80,9 @@ public class SpriteObject extends Sprite {
             case 2:
                 return Type.TURN_RIGHT;
             case 3:
-                return Type.NO_DIG_LEFT;
+                return Type.NO_BASH_LEFT;
             case 4:
-                return Type.NO_DIG_RIGHT;
+                return Type.NO_BASH_RIGHT;
             case 5:
                 return Type.TRAP_DROWN;
             case 6:
@@ -166,9 +166,9 @@ public class SpriteObject extends Sprite {
                 return Stencil.MSK_TURN_LEFT;
             case TURN_RIGHT:
                 return Stencil.MSK_TURN_RIGHT;
-            case NO_DIG_LEFT:
+            case NO_BASH_LEFT:
                 return Stencil.MSK_NO_BASH_LEFT;
-            case NO_DIG_RIGHT:
+            case NO_BASH_RIGHT:
                 return Stencil.MSK_NO_BASH_RIGHT;
             case TRAP_DROWN:
                 return Stencil.MSK_TRAP_LIQUID;

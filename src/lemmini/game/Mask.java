@@ -79,10 +79,11 @@ public class Mask {
      * @param x0 x position in pixels
      * @param y0 y position in pixels
      * @param maskNum index of mask if there are multiple animation frames, else 0
+     * @param eraseMask Stencil attributes to erase
      * @param checkMask Stencil bitmask with attributes that make the pixel indestructible
      * @return true if the number of indestructible pixels was > than maxMaskPixels
      */
-    public boolean eraseMask(final int x0, final int y0, final int maskNum, final int checkMask) {
+    public boolean eraseMask(final int x0, final int y0, final int maskNum, final int eraseMask, final int checkMask) {
         int ctrIndestructible = 0;
         Image fgImage = GameController.getFgImage();
         Image fgImageSmall = Minimap.getImage();
@@ -126,7 +127,7 @@ public class Mask {
                             }
                         }
                         // erase pixel
-                        stencil.andMask(sPos + x, ~Stencil.MSK_BRICK); // erase brick in stencil
+                        stencil.andMask(sPos + x, ~eraseMask); // erase brick in stencil
                         fgImage.setRGB(x, y, 0); // erase pixel in fgImage
                         if (drawSmallX && drawSmallY) {
                             fgImageSmall.setRGB(x / scaleX, y / scaleY, bgCol); // erase pixel in fgImageSmall

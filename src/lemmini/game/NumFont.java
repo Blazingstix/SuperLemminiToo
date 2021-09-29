@@ -50,23 +50,42 @@ public class NumFont {
         if (fn == null) {
             throw new ResourceException("gfx/misc/numfont.png");
         }
+        numImg = new Image[15];
         Image sourceImg = Core.loadTranslucentImage(fn);
-        numImg = ToolBox.getAnimation(sourceImg, 10);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
+        Image[] numImgTemp = ToolBox.getAnimation(sourceImg, 10);
+        System.arraycopy(numImgTemp, 0, numImg, 0, 10);
+        fn = Core.findResource("gfx/misc/numfont2.png", Core.IMAGE_EXTENSIONS);
+        if (fn == null) {
+            throw new ResourceException("gfx/misc/numfont2.png");
+        }
+        sourceImg = Core.loadTranslucentImage(fn);
+        numImgTemp = ToolBox.getAnimation(sourceImg, 5);
+        System.arraycopy(numImgTemp, 0, numImg, 10, 5);
+        
         numImgMap.clear();
+        Image numImgTemp2;
+        GraphicsContext g;
         for (int i = 0; i < 100; i++) {
-            Image numImgTemp = ToolBox.createTranslucentImage(width * 2, height);
-            GraphicsContext g = numImgTemp.createGraphicsContext();
+            numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
+            g = numImgTemp2.createGraphicsContext();
             g.drawImage(numImg[i / 10], 0, 0);
             g.drawImage(numImg[i % 10], width, 0);
             g.dispose();
-            numImgMap.put(i, numImgTemp);
+            numImgMap.put(i, numImgTemp2);
         }
-    }
-    
-    public static int getWidth() {
-        return width;
+        numImgTemp2 = ToolBox.createTranslucentImage(width * 2, height);
+        g = numImgTemp2.createGraphicsContext();
+        g.drawImage(numImg[13], 0, 0);
+        g.drawImage(numImg[14], width, 0);
+        numImgMap.put(Integer.MAX_VALUE, numImgTemp2);
+        numImgTemp2 = ToolBox.createTranslucentImage(width * 3, height);
+        g = numImgTemp2.createGraphicsContext();
+        g.drawImage(numImg[10], 0, 0);
+        g.drawImage(numImg[13], width, 0);
+        g.drawImage(numImg[14], width * 2, 0);
+        numImgMap.put(Integer.MIN_VALUE, numImgTemp2);
     }
 
     /**
@@ -85,6 +104,9 @@ public class NumFont {
             for (int i = 0; i < numString.length(); i++) {
                 int numIndex = -1;
                 switch (numString.charAt(i)) {
+                    case '-':
+                        numIndex = 10;
+                        break;
                     case '0':
                         numIndex = 0;
                         break;

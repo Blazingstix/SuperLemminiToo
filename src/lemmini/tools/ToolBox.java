@@ -59,7 +59,7 @@ public class ToolBox {
      * @return the cursor
      */
     public static Cursor createCursor(Image image, int width, int height) {
-        return Toolkit.getDefaultToolkit().createCustomCursor(getBufferedImage(image), new Point(width, height), "");
+        return Toolkit.getDefaultToolkit().createCustomCursor(image.getImage(), new Point(width, height), "");
     }
     
     /**
@@ -103,13 +103,6 @@ public class ToolBox {
     public static Image createTranslucentImage(final int width, final int height) {
         return new Image(createImage(width, height, Transparency.TRANSLUCENT));
     }
-    
-    public static BufferedImage getBufferedImage(Image image) {
-        if (!(image instanceof Image)) {
-            throw new IllegalArgumentException(String.format("Image must be of type %s.", Image.class.getName()));
-        }
-        return ((Image) image).getImage();
-    }
 
     /**
      * Create a compatible buffered image from an image.
@@ -143,7 +136,7 @@ public class ToolBox {
      * @return an array of buffered images which contain an animation
      */
     public static Image[] getAnimation(final Image img, final int frames, final int width) {
-        return getAnimation(img, frames, getBufferedImage(img).getColorModel().getTransparency(), width);
+        return getAnimation(img, frames, img.getImage().getColorModel().getTransparency(), width);
     }
 
     /**

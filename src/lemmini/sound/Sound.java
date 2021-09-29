@@ -160,7 +160,7 @@ public class Sound {
      * @throws ResourceException
      */
     public Sound() throws ResourceException {
-        Props programProps = Core.getProgramProps();
+        Props programProps = Core.programProps;
         sampleRate = (float) programProps.getDouble("sampleRate", 44100.0);
         bufferSize = programProps.getInt("bufferSize", 8192);
         Quality[] rqArray = Quality.values();

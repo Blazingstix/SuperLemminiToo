@@ -554,6 +554,7 @@ public class Lemming {
                     }
 
                     Mask m;
+                    int eraseMask;
                     int checkMask;
                     int idx = frameIdx + 1;
                     if (idx >= lemRes.frames * TIME_SCALE) {
@@ -567,13 +568,15 @@ public class Lemming {
                             {
                                 // bash mask should have the same height as the lemming
                                 m = lemRes.getMask(dir);
+                                eraseMask = Stencil.MSK_BRICK;
                                 checkMask = 0;
                                 if (!GameController.getLevel().getClassicSteel()) {
+                                    eraseMask |= Stencil.MSK_NO_BASH;
                                     checkMask |= Stencil.MSK_STEEL;
                                     checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
                                 }
                                 if (y >= BASHER_CHECK_STEP) {
-                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 2, checkMask);
+                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 2, eraseMask, checkMask);
                                 }
                                 if (idx == 5 * TIME_SCALE) {
                                     // check for conversion to walker because there are no bricks left
@@ -591,13 +594,15 @@ public class Lemming {
                             {
                                 // bash mask should have the same height as the lemming
                                 m = lemRes.getMask(dir);
+                                eraseMask = Stencil.MSK_BRICK;
                                 checkMask = 0;
                                 if (!GameController.getLevel().getClassicSteel()) {
+                                    eraseMask |= Stencil.MSK_NO_BASH;
                                     checkMask |= Stencil.MSK_STEEL;
                                     checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
                                 }
                                 if (y >= BASHER_CHECK_STEP) {
-                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 18, checkMask);
+                                    m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 18, eraseMask, checkMask);
                                 }
                                 break;
                             }
@@ -661,13 +666,15 @@ public class Lemming {
                         case 2 * TIME_SCALE:
                             // check for steel in mask
                             m = lemRes.getMask(dir);
+                            int eraseMask = Stencil.MSK_BRICK;
                             int checkMask = 0;
                             if (!GameController.getLevel().getClassicSteel()) {
+                                eraseMask |= Stencil.MSK_NO_BASH;
                                 checkMask |= Stencil.MSK_STEEL;
                                 checkMask |= (dir == Direction.LEFT) ? Stencil.MSK_NO_BASH_LEFT : Stencil.MSK_NO_BASH_RIGHT;
                             }
                             if (y >= GameController.getLevel().getTopBoundary() + 10) {
-                                m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 1, checkMask);
+                                m.eraseMask(screenMaskX(), screenMaskY(), idx / TIME_SCALE - 1, eraseMask, checkMask);
                             }
                             break;
                         case 3 * TIME_SCALE:
@@ -864,13 +871,14 @@ public class Lemming {
                     Mask m = lemRes.getMask(Direction.RIGHT);
                     GameController.sound.play(Sound.Effect.EXPLODE, getPan());
                     if (!GameController.getLevel().getClassicSteel()) {
-                        m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, Stencil.MSK_STEEL);
+                        m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0,
+                                Stencil.MSK_BRICK | Stencil.MSK_NO_BASH, Stencil.MSK_STEEL);
                     } else if (x >= GameController.getLevel().getLeftBoundary()
                             && x < GameController.getWidth() + GameController.getLevel().getRightBoundary()
                             && y < Level.DEFAULT_HEIGHT
                             && (stencil.getMask(x, y) & Stencil.MSK_STEEL) == 0
                             && (stencil.getMask(x, y) & Stencil.MSK_EXIT) == 0 && !drowner) {
-                        m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, 0);
+                        m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0, Stencil.MSK_BRICK, 0);
                     }
                 } else if (counter >= EXPLODER_LIFE) {
                     hasDied = true;
@@ -1089,7 +1097,13 @@ public class Lemming {
                         
                         y += DIGGER_STEP; // move down
                         
-                        m.eraseMask(screenMaskX(), screenMaskY(), 0, GameController.getLevel().getClassicSteel() ? 0 : Stencil.MSK_STEEL);
+                        int eraseMask = Stencil.MSK_BRICK;
+                        int checkMask = 0;
+                        if (!GameController.getLevel().getClassicSteel()) {
+                            eraseMask |= Stencil.MSK_NO_BASH;
+                            checkMask |= Stencil.MSK_STEEL;
+                        }
+                        m.eraseMask(screenMaskX(), screenMaskY(), 0, eraseMask, checkMask);
                         
                         // check for conversion to walker when hitting steel
                         if (!canDig(true)) {

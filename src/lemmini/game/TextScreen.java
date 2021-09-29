@@ -115,6 +115,8 @@ public class TextScreen {
     private static GraphicsContext scrollerGfx;
     /** screen type to display */
     private static Mode mode;
+    
+    private static int oldScale = Core.getScale();
 
     /**
      * Set mode.
@@ -122,15 +124,16 @@ public class TextScreen {
      */
     public static void setMode(final Mode m) {
         synchronized (monitor) {
-            if (mode != m) {
+            int scale = Core.getScale();
+            if (mode != m || oldScale != scale) {
                 switch (m) {
                     case INTRO:
                         textDialog.init();
                         textDialog.fillBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN));
                         textDialog.printCentered("A game engine for Lemmings(tm) in Java", -1, RED);
-                        textDialog.printCentered("Release " + Lemmini.REVISION + " 08/2014", 0, BLUE);
+                        textDialog.printCentered("Release " + Lemmini.REVISION + " 09/2014", 0, BLUE);
                         textDialog.printCentered("Coded by Ryan Sakowski 2013-2014", 1, BROWN);
-                        textDialog.printCentered("Original Lemmini by Volker Oth 2005-2010", 2, VIOLET);
+                        textDialog.printCentered("Original Lemmini by Volker Oth 2005-2014", 2, VIOLET);
                         textDialog.printCentered("Original website: www.lemmini.de", 3, GREEN);
                         //textDialog.addTextButton(-4, 4, 1, "  Start ", "Let's go", BLUE, RED);
                         textDialog.copyToBackBuffer();
@@ -146,6 +149,7 @@ public class TextScreen {
                 }
             }
             mode = m;
+            oldScale = scale;
         }
     }
 
@@ -298,25 +302,26 @@ public class TextScreen {
      * @param height height in pixels
      */
     public static void init(final int width, final int height) {
-        rotFact = 1.0;
-        rotDelta = -0.1;
-        imgSrc = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
-        at = ToolBox.createGraphicsOperation();
-        flip = false;
-        rotCtr = 0 ;
-        flipCtr = 0;
-        imgTrg = ToolBox.createTranslucentImage(imgSrc.getWidth(), imgSrc.getHeight());
-        imgGfx = imgTrg.createGraphicsContext();
-        imgGfx.setBackground(new Color(0, 0, 0, 0)); // invisible
-        scrollCharCtr = 0;
-        scrollPixCtr = 0;
+        synchronized (monitor) {
+            rotFact = 1.0;
+            rotDelta = -0.1;
+            imgSrc = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
+            at = ToolBox.createGraphicsOperation();
+            flip = false;
+            rotCtr = 0 ;
+            flipCtr = 0;
+            imgTrg = ToolBox.createTranslucentImage(imgSrc.getWidth(), imgSrc.getHeight());
+            imgGfx = imgTrg.createGraphicsContext();
+            imgGfx.setBackground(new Color(0, 0, 0, 0)); // invisible
+            scrollCharCtr = 0;
+            scrollPixCtr = 0;
 
-        scrollerImg = ToolBox.createTranslucentImage(LemmFont.getWidth() * (1 + SCROLL_WIDTH), SCROLL_HEIGHT);
-        scrollerGfx = scrollerImg.createGraphicsContext();
-        scrollerGfx.setBackground(new Color(0, 0, 0, 0));
+            scrollerImg = ToolBox.createTranslucentImage(LemmFont.getWidth() * (1 + SCROLL_WIDTH), SCROLL_HEIGHT);
+            scrollerGfx = scrollerImg.createGraphicsContext();
+            scrollerGfx.setBackground(new Color(0, 0, 0, 0));
 
-        textDialog  = new TextDialog(width, height);
-
+            textDialog  = new TextDialog(width, height);
+        }
     }
 
     /**

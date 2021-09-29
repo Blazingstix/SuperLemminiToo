@@ -38,10 +38,6 @@ public class Minimap {
 
     /** image used for minimap */
     private static Image img;
-    /** X position in main gfx */
-    private static int xPos;
-    /** Y position in main gfx */
-    private static int yPos;
     /** X scale */
     private static int scaleX;
     /** Y scale */
@@ -54,15 +50,11 @@ public class Minimap {
 
     /**
      * init
-     * @param x X position in main gfx used in drawLemming() and move()
-     * @param y Y position in main gfx used in drawLemming() and move()
      * @param sx X Scale (2 -> 0.5)
      * @param sy Y Scale (3 -> 0.333)
      * @param tint true: apply greenish tint, false: use original colors
      */
-    public static void init(final int x, final int y, final int sx, final int sy, final boolean tint) {
-        xPos = x;
-        yPos = y;
+    public static void init(final int sx, final int sy, final boolean tint) {
         scaleX = sx;
         scaleY = sy;
         tinted = tint;
@@ -89,23 +81,23 @@ public class Minimap {
      * @param lx original lemming x position in pixels
      * @param ly original lemming y position in pixels
      */
-    public static void drawLemming(final GraphicsContext g, final int lx, final int ly) {
-        int x = xPos + lx / scaleX;
-        int y = yPos + ly / scaleY;
-        if (x > xPos + width - LEMM_DOT_SCALE) {
-            x = xPos + width - LEMM_DOT_SCALE;
+    public static void drawLemming(final GraphicsContext g, final int x, final int y, final int lx, final int ly) {
+        int sx = x + lx / scaleX;
+        int sy = y + ly / scaleY;
+        if (sx > x + width - LEMM_DOT_SCALE) {
+            sx = x + width - LEMM_DOT_SCALE;
         } 
-        if (x < xPos) {
-            x = xPos;
+        if (sx < x) {
+            sx = x;
         }
-        if (y > yPos + height - LEMM_DOT_SCALE) {
-            y = yPos + height - LEMM_DOT_SCALE;
+        if (sy > y + height - LEMM_DOT_SCALE) {
+            sy = y + height - LEMM_DOT_SCALE;
         }
-        if (y < yPos) {
-            y = yPos;
+        if (sy < y) {
+            sy = y;
         }
         g.setColor(LEMM_COLOR);
-        g.fillRect(x, y, LEMM_DOT_SCALE, LEMM_DOT_SCALE);
+        g.fillRect(sx, sy, LEMM_DOT_SCALE, LEMM_DOT_SCALE);
     }
     
     /**
@@ -116,9 +108,9 @@ public class Minimap {
      * @param xOfs horizontal level offset
      */
     public static void drawFrame(final GraphicsContext g, final int x, final int y, final int xOfs) {
-        int wWidth = Lemmini.getPaneWidth();
+        int wWidth = Lemmini.getPaneWidth() / Core.getScale();
         g.setColor(FRAME_COLOR);
-        if (GameController.getWidth() < Lemmini.getPaneWidth()) {
+        if (GameController.getWidth() < Lemmini.getPaneWidth() / Core.getScale()) {
             g.drawRect(x, y, GameController.getWidth() / scaleX, img.getHeight() - 1);
         } else {
             g.drawRect(x + xOfs / scaleX, y, wWidth / scaleX, img.getHeight() - 1);
@@ -135,20 +127,20 @@ public class Minimap {
 
     /**
      * Move screen frame via minimap.
-     * @param x cursor x position in original gfx.
-     * @param y cursor y position in original gfx.
-     * @param swidth
+     * @param x cursor x position relative to minimap in original gfx.
+     * @param y cursor y position relative to minimap in original gfx.
+     * @param swidth screen width
      * @return new horizontal screen offset
      */
     public static int move(final int x, final int y, final int swidth) {
-        if (y < yPos || y >= yPos + height || x < xPos || x >= xPos + width) {
+        if (y < 0 || y >= height || x < 0 || x >= width) {
             return -1; // cursor outside the minimap
         }
         int xOfs;
         if (swidth > GameController.getWidth()) {
             xOfs = (GameController.getWidth() - swidth) / 2;
         } else {
-            xOfs = (x - xPos) * scaleX - swidth / 2;
+            xOfs = x * scaleX - swidth / 2;
             if (xOfs > GameController.getWidth() - swidth) {
                 xOfs = GameController.getWidth() - swidth;
             }

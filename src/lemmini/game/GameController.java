@@ -268,13 +268,15 @@ public class GameController {
         level = new Level();
         // read level packs
 
-        File dir = new File(Core.getResourcePath(), "levels");
+        File dir = new File(Core.resourcePath, "levels");
         File[] files = dir.listFiles();
         // now get the names of the directories
         List<String> dirs = new ArrayList<>(32);
-        for (File file : files) {
-            if (file.isDirectory()) {
-                dirs.add(file.getName());
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    dirs.add(file.getName());
+                }
             }
         }
         Collections.sort(dirs);
@@ -292,7 +294,9 @@ public class GameController {
         curLevelPack = 1; // since 0 is dummy
         curLevelNumber = 0;
         
-        mods = levelPack[curLevelPack].getMods();
+        if (levelPack.length >= 2) {
+            mods = levelPack[curLevelPack].getMods();
+        }
         
         sound = new Sound();
         sound.setGain(soundGain);
@@ -443,7 +447,7 @@ public class GameController {
         initLevel();
         if (doReplay) {
             replayMode = true;
-            replay.save(Core.getResourcePath() + "/replay.rpl");
+            replay.save(Core.resourcePath + "/replay.rpl");
             replay.rewind();
         } else {
             replayMode = false;
@@ -693,15 +697,12 @@ public class GameController {
      * @return fitting Lemming or null if none found
      */
     public static synchronized Lemming lemmUnderCursor(final LemmCursor.CursorType type) {
-        if (lemmSkill != null
-                && type != LemmCursor.CursorType.WALKER
-                && type != LemmCursor.CursorType.WALKER_LEFT
-                && type != LemmCursor.CursorType.WALKER_RIGHT) {
+        if (lemmSkill != null && !type.isWalkerOnly()) {
             for (Lemming l : lemmsUnderCursor) {
-                if (type == LemmCursor.CursorType.LEFT && l.getDirection() != Lemming.Direction.LEFT) {
+                if (type.isLeftOnly() && l.getDirection() != Lemming.Direction.LEFT) {
                     continue;
                 }
-                if (type == LemmCursor.CursorType.RIGHT && l.getDirection() != Lemming.Direction.RIGHT) {
+                if (type.isRightOnly() && l.getDirection() != Lemming.Direction.RIGHT) {
                     continue;
                 }
                 switch (l.getSkill()) {
@@ -752,17 +753,13 @@ public class GameController {
         }
         for (Lemming l : lemmsUnderCursor) {
             // Walker-only cursor: ignore non-walkers
-            if ((type == LemmCursor.CursorType.WALKER
-                    || type == LemmCursor.CursorType.WALKER_LEFT
-                    || type == LemmCursor.CursorType.WALKER_RIGHT) && l.getSkill() != Lemming.Type.WALKER) {
+            if (type.isWalkerOnly() && l.getSkill() != Lemming.Type.WALKER) {
                 continue;
             }
-            if ((type == LemmCursor.CursorType.LEFT
-                    || type == LemmCursor.CursorType.WALKER_LEFT) && l.getDirection() != Lemming.Direction.LEFT) {
+            if (type.isLeftOnly() && l.getDirection() != Lemming.Direction.LEFT) {
                 continue;
             }
-            if ((type == LemmCursor.CursorType.RIGHT
-                    || type == LemmCursor.CursorType.WALKER_RIGHT) && l.getDirection() != Lemming.Direction.RIGHT) {
+            if (type.isRightOnly() && l.getDirection() != Lemming.Direction.RIGHT) {
                 continue;
             }
             switch (l.getSkill()) {
@@ -933,7 +930,7 @@ public class GameController {
                 }
                 // replay: xPos changed?
                 if (getXPos() != xPosOld) {
-                    replay.addPosEvent(replayFrame, getXPos() + Lemmini.getPaneWidth() / 2, 0, 0);
+                    replay.addPosEvent(replayFrame, getXPos() + Lemmini.getPaneWidth() / Core.getScale() / 2, 0, 0);
                     xPosOld = getXPos();
                 }
                 // skill changed
@@ -1229,7 +1226,9 @@ public class GameController {
                 case CLIMBER:
                     if (numClimbers > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numClimbers -= 1;
+                            if (numClimbers != Integer.MAX_VALUE) {
+                                numClimbers--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1239,7 +1238,9 @@ public class GameController {
                 case FLOATER:
                     if (numFloaters > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numFloaters -= 1;
+                            if (numFloaters != Integer.MAX_VALUE) {
+                                numFloaters--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1249,7 +1250,9 @@ public class GameController {
                 case FLAPPER:
                     if (numBombers > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numBombers -= 1;
+                            if (numBombers != Integer.MAX_VALUE) {
+                                numBombers--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1259,7 +1262,9 @@ public class GameController {
                 case BLOCKER:
                     if (numBlockers > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numBlockers -= 1;
+                            if (numBlockers != Integer.MAX_VALUE) {
+                                numBlockers--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1269,7 +1274,9 @@ public class GameController {
                 case BUILDER:
                     if (numBuilders > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numBuilders -= 1;
+                            if (numBuilders != Integer.MAX_VALUE) {
+                                numBuilders--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1279,7 +1286,9 @@ public class GameController {
                 case BASHER:
                     if (numBashers > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numBashers -= 1;
+                            if (numBashers != Integer.MAX_VALUE) {
+                                numBashers--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1289,7 +1298,9 @@ public class GameController {
                 case MINER:
                     if (numMiners > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numMiners -= 1;
+                            if (numMiners != Integer.MAX_VALUE) {
+                                numMiners--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1299,7 +1310,9 @@ public class GameController {
                 case DIGGER:
                     if (numDiggers > 0) {
                         if (lemm.setSkill(lemmSkill, true)) {
-                            numDiggers -= 1;
+                            if (numDiggers != Integer.MAX_VALUE) {
+                                numDiggers--;
+                            }
                             canSet = true;
                         }
                     } else {
@@ -1479,7 +1492,7 @@ public class GameController {
                     gameState = State.INTRO;
                     break;
                 case TO_LEVEL:
-                    setXPos(xPosCenter - Lemmini.getPaneWidth() / 2);
+                    setXPos(xPosCenter - Lemmini.getPaneWidth() / Core.getScale() / 2);
                     xPosOld = xPos;
                     gameState = State.LEVEL;
                     break;
@@ -1578,9 +1591,10 @@ public class GameController {
     /**
      * Draw the skill/release rate values
      * @param g graphics object
+     * @param x x offset in pixels
      * @param y y offset in pixels
      */
-    public static void drawCounters(final GraphicsContext g, final int y) {
+    public static void drawCounters(final GraphicsContext g, final int x, final int y) {
         // draw counters
         int val = 0;
         for (int i = 0; i < 10; i++) {
@@ -1625,7 +1639,7 @@ public class GameController {
                 val = 0;
             }
             Image numImage = NumFont.numImage(val);
-            g.drawImage(numImage, Icons.WIDTH * i + Icons.WIDTH / 2 - numImage.getWidth() / 2, y);
+            g.drawImage(numImage, x + Icons.WIDTH * i + Icons.WIDTH / 2 - numImage.getWidth() / 2, y);
         }
     }
 
@@ -1684,7 +1698,15 @@ public class GameController {
      * @param x horizontal scrolling offset in pixels
      */
     public static void setXPos(final int x) {
-        xPos = fixXPos(x);
+        if (width < Lemmini.getPaneWidth() / Core.getScale()) {
+            xPos = (width - Lemmini.getPaneWidth() / Core.getScale()) / 2;
+        } else if (x >= width - Lemmini.getPaneWidth() / Core.getScale()) {
+            xPos = width - Lemmini.getPaneWidth() / Core.getScale();
+        } else if (x < 0) {
+            xPos = 0;
+        } else {
+            xPos = x;
+        }
     }
 
     /**
@@ -1693,20 +1715,6 @@ public class GameController {
      */
     public static int getXPos() {
         return xPos;
-    }
-    
-    private static int fixXPos(int x) {
-        if (width < Lemmini.getPaneWidth()) {
-            return (width - Lemmini.getPaneWidth()) / 2;
-        } else {
-            if (x >= width - Lemmini.getPaneWidth()) {
-                return width - Lemmini.getPaneWidth();
-            } else if (x < 0) {
-                return 0;
-            } else {
-                return x;
-            }
-        }
     }
 
     /**
@@ -1943,7 +1951,7 @@ public class GameController {
         if (sound != null) {
             sound.setGain(soundGain);
         }
-        Core.getProgramProps().setDouble("soundGain", g);
+        Core.programProps.setDouble("soundGain", g);
     }
     
     /**
@@ -1963,7 +1971,7 @@ public class GameController {
         if (Music.getType() != null) {
             Music.setGain(musicGain);
         }
-        Core.getProgramProps().setDouble("musicGain", g);
+        Core.programProps.setDouble("musicGain", g);
     }
     
     /**

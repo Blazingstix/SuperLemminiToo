@@ -2,7 +2,9 @@ package lemmini.game;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.Image;
@@ -34,6 +36,12 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class Level {
+    
+    private static enum AutosteelMode {
+        NONE,
+        SIMPLE,
+        ADVANCED;
+    }
     
     /** maximum width of level */
     public static final int DEFAULT_WIDTH = 1600 * 2;
@@ -97,6 +105,7 @@ public class Level {
     /** maximum safe fall distance */
     private int maxFallDistance;
     private boolean classicSteel;
+    private AutosteelMode autosteelMode;
     /** this level is a SuperLemming level (runs faster) */
     private boolean superlemming;
     private boolean forceNormalTimerSpeed;
@@ -109,6 +118,7 @@ public class Level {
     private Image[] tileMasks;
     private Image special;
     private Image specialMask;
+    private Set<Integer> steelTiles;
     /** sprite objects of all sprite objects available in this style */
     private SpriteObject[] sprObjAvailable;
     /** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
@@ -132,6 +142,7 @@ public class Level {
         terrain = new ArrayList<>(512);
         steel = new ArrayList<>(64);
         backgrounds = new ArrayList<>(4);
+        steelTiles = new HashSet<>(16);
     }
 
     /**
@@ -155,6 +166,18 @@ public class Level {
         //out(fname + " - " + lvlName);
         maxFallDistance = p.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
         classicSteel = p.getBoolean("classicSteel", false);
+        switch (p.getInt("autosteelMode", 0)) {
+            case 0:
+            default:
+                autosteelMode = AutosteelMode.NONE;
+                break;
+            case 1:
+                autosteelMode = AutosteelMode.SIMPLE;
+                break;
+            case 2:
+                autosteelMode = AutosteelMode.ADVANCED;
+                break;
+        }
         levelWidth = p.getInt("width", DEFAULT_WIDTH);
         topBoundary = p.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
         bottomBoundary = p.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
@@ -169,7 +192,14 @@ public class Level {
         timeLimitSeconds = p.getInt("timeLimitSeconds", Integer.MIN_VALUE);
         if (timeLimitSeconds == Integer.MIN_VALUE) {
             int timeLimit = p.getInt("timeLimit", 0);
+            // prevent integer overflow upon conversion to seconds
+            if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
+                timeLimit = 0;
+            }
             timeLimitSeconds = timeLimit * 60;
+        }
+        if (timeLimitSeconds == Integer.MAX_VALUE) {
+            timeLimitSeconds = 0;
         }
 
         //out("timeLimit = " + timeLimit);
@@ -248,6 +278,13 @@ public class Level {
         }
         tiles = loadTileSet(strStyle);
         tileMasks = loadTileMaskSet(strStyle);
+        steelTiles.clear();
+        int[] steelTilesArray = props.getIntArray("steelTiles", null);
+        if (steelTilesArray != null) {
+            for (int steelTile : steelTilesArray) {
+                steelTiles.add(steelTile);
+            }
+        }
         
         sprObjAvailable = loadObjects(strStyle);
         
@@ -376,6 +413,8 @@ public class Level {
             int height = i.getHeight();
             int maskWidth = mask.getWidth();
             int maskHeight = mask.getHeight();
+            boolean isSteel = autosteelMode != AutosteelMode.NONE
+                    && !t.specialGraphic && steelTiles.contains(t.id);
             
             int[] source = new int[width * height];
             int[] sourceMask = new int[maskWidth * maskHeight];
@@ -418,11 +457,47 @@ public class Level {
                         }
                     }
                     if (!fake && (maskCol & 0xff000000) != 0) {
+                        int newMask;
                         if (remove) {
-                            stencil.andMask(x + tx, y + ty, ~Stencil.MSK_BRICK);
+                            newMask = Stencil.MSK_EMPTY;
+                        } else if (noOverwrite) {
+                            newMask = stencil.getMask(x + tx, y + ty) | Stencil.MSK_BRICK;
+                            switch (autosteelMode) {
+                                case NONE:
+                                default:
+                                    break;
+                                case SIMPLE:
+                                    if (isSteel) {
+                                        newMask |= Stencil.MSK_STEEL;
+                                    }
+                                    break;
+                                case ADVANCED:
+                                    if (isSteel && (stencil.getMask(x + tx, y + ty) & Stencil.MSK_BRICK) == 0) {
+                                        newMask |= Stencil.MSK_STEEL;
+                                    }
+                                    break;
+                            }
                         } else {
-                            stencil.orMask(x + tx, y + ty, Stencil.MSK_BRICK);
+                            newMask = stencil.getMask(x + tx, y + ty) | Stencil.MSK_BRICK;
+                            switch (autosteelMode) {
+                                case NONE:
+                                default:
+                                    break;
+                                case SIMPLE:
+                                    if (isSteel) {
+                                        newMask |= Stencil.MSK_STEEL;
+                                    }
+                                    break;
+                                case ADVANCED:
+                                    if (isSteel) {
+                                        newMask |= Stencil.MSK_STEEL;
+                                    } else {
+                                        newMask &= Stencil.MSK_STEEL;
+                                    }
+                                    break;
+                            }
                         }
+                        stencil.setMask(x + tx, y + ty, newMask);
                     }
                 }
             }
@@ -437,10 +512,15 @@ public class Level {
                     continue;
                 }
                 for (int x = 0; x < stl.width; x++) {
-                    if (x + sx < 0 || x + sx >= fgWidth) {
+                    if ((!classicSteel && (stencil.getMask(x + sx, y + sy) & Stencil.MSK_BRICK) == 0)
+                            || x + sx < 0 || x + sx >= fgWidth) {
                         continue;
                     }
-                    stencil.orMask(x + sx, y + sy, Stencil.MSK_STEEL);
+                    if (stl.negative) {
+                        stencil.andMask(x + sx, y + sy, ~Stencil.MSK_STEEL);
+                    } else {
+                        stencil.orMask(x + sx, y + sy, Stencil.MSK_STEEL);
+                    }
                 }
             }
         }
@@ -503,7 +583,12 @@ public class Level {
                         continue;
                     }
                     for (int x = spr.getMaskOffsetX(); x < spr.getMaskWidth() + spr.getMaskOffsetX(); x++) {
-                        if (x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
+                        if ((!classicSteel
+                                && (spr.getType() == SpriteObject.Type.NO_BASH_LEFT
+                                || spr.getType() == SpriteObject.Type.NO_BASH_RIGHT
+                                || spr.getType() == SpriteObject.Type.STEEL)
+                                && (stencil.getMask(x + spr.getX(), y + spr.getY()) & Stencil.MSK_BRICK) == 0)
+                                || x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
                             continue;
                         }
                         // manage collision mask
@@ -948,8 +1033,8 @@ public class Level {
                 case EXIT:
                 case TURN_LEFT:
                 case TURN_RIGHT:
-                case NO_DIG_LEFT:
-                case NO_DIG_RIGHT:
+                case NO_BASH_LEFT:
+                case NO_BASH_RIGHT:
                 case TRAP_DIE:
                 case TRAP_REPLACE:
                 case TRAP_DROWN:
@@ -1350,8 +1435,6 @@ class LvlObject {
     
     static final int OPTION_ENTRANCE_LEFT = 1;
 
-    private static final long serialVersionUID = 0x01;
-
     /** identifier */
     int id;
     /** x position in pixels */
@@ -1395,8 +1478,6 @@ class Terrain {
     /** paint mode: don't draw terrain pixels */
     static final int MODE_INVISIBLE = 1;
 
-    private static final long serialVersionUID = 0x01;
-
     /** identifier */
     int id;
     /** x position in pixels */
@@ -1426,7 +1507,6 @@ class Terrain {
  * @author Volker Oth
  */
 class Steel {
-    private static final long serialVersionUID = 0x01;
 
     /** x position in pixels */
     int xPos;
@@ -1436,6 +1516,7 @@ class Steel {
     int width;
     /** height in pixels */
     int height;
+    boolean negative;
 
     /**
      * Constructor.
@@ -1446,6 +1527,7 @@ class Steel {
         yPos = val[1];
         width = val[2];
         height = val[3];
+        negative = (val.length >= 5) ? ((val[4] & 0x01) != 0) : false;
     }
 }
 

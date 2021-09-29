@@ -36,33 +36,77 @@ public class LemmCursor  {
     /** cursor type */
     public enum CursorType {
         /** normal cursor */
-        NORMAL,
+        NORMAL (false, false, false),
         /** select left cursor */
-        LEFT,
+        LEFT (true, false, false),
         /** select right cursor */
-        RIGHT,
+        RIGHT (false, true, false),
         /** select walkers cursor */
-        WALKER,
+        WALKER (false, false, true),
         /** select left walkers cursor */
-        WALKER_LEFT,
+        WALKER_LEFT (true, false, true),
         /** select right walkers cursor */
-        WALKER_RIGHT
+        WALKER_RIGHT (false, true, true);
+        
+        private final boolean leftOnly;
+        private final boolean rightOnly;
+        private final boolean walkerOnly;
+        
+        CursorType(boolean leftOnly, boolean rightOnly, boolean walkerOnly) {
+            this.leftOnly = leftOnly;
+            this.rightOnly = rightOnly;
+            this.walkerOnly = walkerOnly;
+        }
+        
+        public boolean isLeftOnly() {
+            return leftOnly;
+        }
+        
+        public boolean isRightOnly() {
+            return rightOnly;
+        }
+        
+        public boolean isWalkerOnly() {
+            return walkerOnly;
+        }
     }
     
     /** box type */
     public enum BoxType {
         /** normal cursor with selection box */
-        NORMAL,
+        NORMAL (false, false, false),
         /** select left cursor with selection box */
-        LEFT,
+        LEFT (true, false, false),
         /** select right cursor with selection box */
-        RIGHT,
+        RIGHT (false, true, false),
         /** select walkers cursor with selection box */
-        WALKER,
+        WALKER (false, false, true),
         /** select left walkers cursor with selection box */
-        WALKER_LEFT,
+        WALKER_LEFT (true, false, true),
         /** select right walkers cursor with selection box */
-        WALKER_RIGHT
+        WALKER_RIGHT (false, true, true);
+        
+        private final boolean leftOnly;
+        private final boolean rightOnly;
+        private final boolean walkerOnly;
+        
+        BoxType(boolean leftOnly, boolean rightOnly, boolean walkerOnly) {
+            this.leftOnly = leftOnly;
+            this.rightOnly = rightOnly;
+            this.walkerOnly = walkerOnly;
+        }
+        
+        public boolean isLeftOnly() {
+            return leftOnly;
+        }
+        
+        public boolean isRightOnly() {
+            return rightOnly;
+        }
+        
+        public boolean isWalkerOnly() {
+            return walkerOnly;
+        }
     }
 
     /** x position in pixels */

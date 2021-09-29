@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import java.awt.Component;
 import java.awt.MediaTracker;
 import java.awt.Toolkit;
 import java.awt.Transparency;
@@ -59,27 +58,35 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.92";
+    private static final String REVISION = "0.93";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
 
     /** program properties */
-    static Props programProps;
+    public static Props programProps;
     /** path of (extracted) resources */
-    static String resourcePath;
+    public static String resourcePath;
     /** current player */
     public static Player player;
-    /** name of program properties file */
-    static String programPropsFileStr;
-    /** name of player properties file */
-    static String playerPropsFileStr;
-    /** player properties */
-    static Props playerProps;
-    /** list of all players */
-    static List<String> players;
     
     /** parent component (main frame) */
     private static JFrame cmp;
+    /** name of program properties file */
+    private static String programPropsFileStr;
+    /** name of player properties file */
+    private static String playerPropsFileStr;
+    /** player properties */
+    private static Props playerProps;
+    /** list of all players */
+    private static List<String> players;
+    /** Zoom scale */
+    private static int scale;
+    private static boolean bilinear;
+    /** draw width */
+    private static int drawWidth;
+    /** draw height */
+    private static int drawHeight;
+    
     
     /**
      * Initialize some core elements.
@@ -135,6 +142,8 @@ public class Core {
             }
         }
 
+        scale = Core.programProps.getInt("scale", 1);
+        bilinear = Core.programProps.getBoolean("bilinear", false);
         resourcePath = programProps.get("resourcePath", "");
         String sourcePath = programProps.get("sourcePath", "");
         String rev = programProps.get("revision", "");
@@ -197,32 +206,8 @@ public class Core {
      * Get parent component (main frame).
      * @return parent component
      */
-    public static Component getCmp() {
+    public static JFrame getCmp() {
         return cmp;
-    }
-
-    /**
-     * Returns the program properties.
-     * @return the program properties
-     */
-    public static Props getProgramProps() {
-        return programProps;
-    }
-
-    /**
-     * Returns the width of the game
-     * @return the width of the game
-     */
-    public static int getWidth() {
-        return cmp.getWidth();
-    }
-    
-    /**
-     * Returns the resource path.
-     * @return the resource path
-     */
-    public static String getResourcePath() {
-        return resourcePath;
     }
     
     public static String removeExtension(String fname) {
@@ -266,6 +251,14 @@ public class Core {
         }
         return null;
     }
+
+    /**
+     * Set the title
+     * @param title
+     */
+    public static void setTitle(String title) {
+        cmp.setTitle(title);
+    }
     
     /**
      * Get String to resource in resource path.
@@ -298,19 +291,12 @@ public class Core {
         }
         return null;
     }
-
-    /**
-     * Set the title
-     * @param title
-     */
-    public static void setTitle(String title) {
-        cmp.setTitle(title);
-    }
     
     /**
      * Store program properties.
      */
     public static void saveProgramProps() {
+        programProps.setInt("scale", scale);
         programProps.save(programPropsFileStr);
         playerProps.set("defaultPlayer", player.getName());
         playerProps.save(playerPropsFileStr);
@@ -503,5 +489,61 @@ public class Core {
     public static void addPlayer(final String name) {
         players.add(name);
         playerProps.set("player_" + (players.size() - 1), name);
+    }
+    
+    /**
+     * Get internal Draw Width
+     * @return internal draw width
+     */
+    public static int getDrawWidth() {
+        return drawWidth;
+    }
+    
+    /**
+     * Set internal Draw Width
+     * @param w draw width
+     */
+    public static void setDrawWidth(int w) {
+        drawWidth = w;
+    }
+    
+    /**
+     * Get internal Draw Height
+     * @return internal draw width
+     */
+    public static int getDrawHeight() {
+        return drawHeight;
+    }
+    
+    /**
+     * Set internal Draw Width
+     * @param w draw width
+     */
+    public static void setDrawHeight(int h) {
+        drawHeight = h;
+    }
+    
+    /**
+     * Get Zoom scale
+     * @return zoom scale
+     */
+    public static int getScale() {
+        return scale;
+    }
+    
+    /**
+     * Set zoom scale
+     * @param s zoom scale
+     */
+    public static void setScale(int s) {
+        scale = s;
+    }
+    
+    public static boolean isBilinear() {
+        return bilinear;
+    }
+    
+    public static void setBilinear(final boolean b) {
+        bilinear = b;
     }
 }

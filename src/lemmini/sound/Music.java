@@ -123,7 +123,7 @@ public class Music {
      * @return file name of a random track
      */
     public static String getRandomTrack(final String style, final String specialStyle) {
-        File dir = new File(Core.getResourcePath(), "music");
+        File dir = new File(Core.resourcePath, "music");
         FileFilter filter = new FileFilter() {
             @Override
             public boolean accept(final File f) {

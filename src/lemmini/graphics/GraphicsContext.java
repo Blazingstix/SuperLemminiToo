@@ -59,15 +59,15 @@ public class GraphicsContext {
     }
 
     public void drawImage(Image image, int x, int y) {
-        graphics.drawImage(ToolBox.getBufferedImage(image), x, y, null);
+        graphics.drawImage(image.getImage(), x, y, null);
     }
 
     public void drawImage(Image image, int x, int y, int width, int height) {
-        graphics.drawImage(ToolBox.getBufferedImage(image), x, y, width, height, null);
+        graphics.drawImage(image.getImage(), x, y, width, height, null);
     }
 
     public void drawImage(Image image, int dx1, int dy1, int dx2, int dy2, int sx1, int sy1, int sx2, int sy2) {
-        graphics.drawImage(ToolBox.getBufferedImage(image), dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
+        graphics.drawImage(image.getImage(), dx1, dy1, dx2, dy2, sx1, sy1, sx2, sy2, null);
     }
     
     public void setRenderingHint(RenderingHints.Key hintKey, Object hintValue) {
@@ -75,7 +75,7 @@ public class GraphicsContext {
     }
 
     public void grabPixels(Image image, int x, int y, int w, int h, int[] pix, int off, int scanSize) {
-        PixelGrabber pixelgrabber = new PixelGrabber(ToolBox.getBufferedImage(image), x, y, w, h, pix, off, scanSize);
+        PixelGrabber pixelgrabber = new PixelGrabber(image.getImage(), x, y, w, h, pix, off, scanSize);
         try {
             pixelgrabber.grabPixels();
         } catch (InterruptedException ex) {
@@ -83,8 +83,8 @@ public class GraphicsContext {
     }
 
     public void copy(Image source, Image target) {
-        WritableRaster rImgSpr = ToolBox.getBufferedImage(target).getRaster();
-        rImgSpr.setRect(ToolBox.getBufferedImage(source).getRaster()); // just copy
+        WritableRaster rImgSpr = target.getImage().getRaster();
+        rImgSpr.setRect(source.getImage().getRaster()); // just copy
     }
 
     public void dispose() {

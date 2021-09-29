@@ -31,8 +31,6 @@ import java.util.Properties;
  */
 public class Props {
 
-    private static final long serialVersionUID = 0x01;
-
     /** extended hash to store properties */
     private final Properties hash;
     /** header string */
@@ -297,6 +295,15 @@ public class Props {
      * @return Integer value of string
      */
     public static int parseInt(final String s) {
+        switch (s) {
+            case "Infinity":
+                return Integer.MAX_VALUE;
+            case "-Infinity":
+                return Integer.MIN_VALUE;
+            default:
+                break;
+        }
+        
         int index = 0;
         boolean hasSign = isSign(s.charAt(index));
         if (hasSign) {

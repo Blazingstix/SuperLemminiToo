@@ -38,6 +38,6 @@ public class GraphicsOperation {
 
     public void execute(Image source, Image destination) {
         AffineTransformOp op = new AffineTransformOp(affineTransform, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
-        op.filter(ToolBox.getBufferedImage(source), ToolBox.getBufferedImage(destination));
+        op.filter(source.getImage(), destination.getImage());
     }
 }

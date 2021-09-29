@@ -141,7 +141,7 @@ public class Icons {
      * @return Icon type
      */
     public static Type getType(final int x) {
-        if (x >= (LAST_DRAWN + 1) * WIDTH) {
+        if (x < 0 || x >= (LAST_DRAWN + 1) * WIDTH) {
             return null; // invalid
         }
         return Type.get(x / WIDTH);
