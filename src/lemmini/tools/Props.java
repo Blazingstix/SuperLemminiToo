@@ -401,9 +401,7 @@ public class Props {
         try (Reader r = ToolBox.getBufferedReader(fname)) {
             hash.load(r);
             return true;
-        } catch (FileNotFoundException e) {
-            return false;
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             return false;
         }
     }
@@ -417,9 +415,7 @@ public class Props {
         try (Reader r = ToolBox.getBufferedReader(file)) {
             hash.load(r);
             return true;
-        } catch (FileNotFoundException e) {
-            return false;
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             return false;
         }
     }
@@ -433,7 +429,7 @@ public class Props {
         try {
             hash.load(r);
             return true;
-        } catch (IOException e) {
+        } catch (IOException | NullPointerException e) {
             return false;
         }
     }

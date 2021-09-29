@@ -19,6 +19,7 @@ package lemmini.sound;
 import java.io.BufferedInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import javax.sound.sampled.*;
@@ -51,11 +52,21 @@ public class WaveMusic implements Runnable, MusicPlayer {
         try {
             file = fn;
             introFile = fn.resolveSibling(Core.appendBeforeExtension(fn.getFileName().toString(), "_intro"));
-            in = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(file)));
+            InputStream tempIn = Files.newInputStream(file);
+            if (tempIn.markSupported()) {
+                in = AudioSystem.getAudioInputStream(tempIn);
+            } else {
+                in = AudioSystem.getAudioInputStream(new BufferedInputStream(tempIn));
+            }
             if (in != null) {
                 format = getDecodeFormat(in.getFormat());
                 if (Files.isReadable(introFile)) {
-                    introIn = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(introFile)));
+                    tempIn = Files.newInputStream(introFile);
+                    if (tempIn.markSupported()) {
+                        introIn = AudioSystem.getAudioInputStream(tempIn);
+                    } else {
+                        introIn = AudioSystem.getAudioInputStream(new BufferedInputStream(tempIn));
+                    }
                     AudioFormat introFormat = getDecodeFormat(introIn.getFormat());
                     if (introFormat.matches(format)) {
                         playIntro = true;
@@ -124,7 +135,12 @@ public class WaveMusic implements Runnable, MusicPlayer {
                             din.reset();
                         } else {
                             din.close();
-                            in = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(file)));
+                            InputStream tempIn = Files.newInputStream(file);
+                            if (tempIn.markSupported()) {
+                                in = AudioSystem.getAudioInputStream(tempIn);
+                            } else {
+                                in = AudioSystem.getAudioInputStream(new BufferedInputStream(tempIn));
+                            }
                             din = AudioSystem.getAudioInputStream(format, in);
                             din.mark(Integer.MAX_VALUE);
                         }

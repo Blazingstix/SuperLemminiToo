@@ -141,6 +141,7 @@ public class Level {
     /** level name - originally 32 bytes ASCII filled with whitespace */
     private String lvlName;
     private String author;
+    private List<String> hints;
     /** used to read in the configuration file */
     private Props props;
     private Props props2;
@@ -158,6 +159,7 @@ public class Level {
         steel = new ArrayList<>(64);
         backgrounds = new ArrayList<>(4);
         steelTiles = new HashSet<>(16);
+        hints = new ArrayList<>(4);
     }
 
     /**
@@ -191,8 +193,18 @@ public class Level {
 
         // read name and author
         lvlName = Props.get(levelProps, "name", StringUtils.EMPTY);
-        author = Props.get(levelProps, "author", StringUtils.EMPTY);
         //out(fname + " - " + lvlName);
+        author = Props.get(levelProps, "author", StringUtils.EMPTY);
+        // read hints
+        hints.clear();
+        for (int i = 0; true; i++) {
+            String hint = levelProps.get(0).get("hint_" + i, null);
+            if (hint != null) {
+                hints.add(hint);
+            } else {
+                break;
+            }
+        }
         maxFallDistance = Props.getInt(levelProps, "maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
         classicSteel = Props.getBoolean(levelProps, "classicSteel", false);
         switch (p.getInt("autosteelMode", 0)) {
@@ -890,24 +902,17 @@ public class Level {
                     }
                 }
                 
-                bg.sprObjects = new SpriteObject[bgOCombined.size()];
-                bg.sprObjects = bgOCombined.toArray(bg.sprObjects);
-                bg.sprObjFront = new SpriteObject[bgOFront.size()];
-                bg.sprObjFront = bgOFront.toArray(bg.sprObjFront);
-                bg.sprObjBehind = new SpriteObject[bgOBehind.size()];
-                bg.sprObjBehind = bgOBehind.toArray(bg.sprObjBehind);
+                bg.sprObjects = bgOCombined.toArray(new SpriteObject[bgOCombined.size()]);
+                bg.sprObjFront = bgOFront.toArray(new SpriteObject[bgOFront.size()]);
+                bg.sprObjBehind = bgOBehind.toArray(new SpriteObject[bgOBehind.size()]);
             }
         }
         
-        entrances = new Entrance[entrance.size()];
-        entrances = entrance.toArray(entrances);
+        entrances = entrance.toArray(new Entrance[entrance.size()]);
         
-        sprObjects = new SpriteObject[oCombined.size()];
-        sprObjects = oCombined.toArray(sprObjects);
-        sprObjFront = new SpriteObject[oFront.size()];
-        sprObjFront = oFront.toArray(sprObjFront);
-        sprObjBehind = new SpriteObject[oBehind.size()];
-        sprObjBehind = oBehind.toArray(sprObjBehind);
+        sprObjects = oCombined.toArray(new SpriteObject[oCombined.size()]);
+        sprObjFront = oFront.toArray(new SpriteObject[oFront.size()]);
+        sprObjBehind = oBehind.toArray(new SpriteObject[oBehind.size()]);
         System.gc();
         
         return stencil;
@@ -1067,9 +1072,7 @@ public class Level {
                     Core.IMAGE_EXTENSIONS);
             images.add(Core.loadTranslucentImage(fName));
         }
-        LemmImage[] ret = new LemmImage[images.size()];
-        ret = images.toArray(ret);
-        return ret;
+        return images.toArray(new LemmImage[images.size()]);
     }
     
     /**
@@ -1094,9 +1097,7 @@ public class Level {
             }
             images.add(Core.loadBitmaskImage(fName));
         }
-        LemmImage[] ret = new LemmImage[images.size()];
-        ret = images.toArray(ret);
-        return ret;
+        return images.toArray(new LemmImage[images.size()]);
     }
     
     /**
@@ -1235,9 +1236,7 @@ public class Level {
 
             sprites.add(sprite);
         }
-        SpriteObject[] ret = new SpriteObject[sprites.size()];
-        ret = sprites.toArray(ret);
-        return ret;
+        return sprites.toArray(new SpriteObject[sprites.size()]);
     }
 
     /**
@@ -1601,6 +1600,18 @@ public class Level {
      */
     public String getAuthor() {
         return author;
+    }
+    
+    public int getNumHints() {
+        return hints.size();
+    }
+    
+    public String getHint(int index) {
+        if (index < hints.size()) {
+            return hints.get(index);
+        } else {
+            return null;
+        }
     }
 }
 

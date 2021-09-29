@@ -44,7 +44,7 @@
                       <Group type="103" groupAlignment="0" max="-2" attributes="0">
                           <Group type="102" attributes="0">
                               <Group type="103" groupAlignment="0" max="-2" attributes="0">
-                                  <Component id="jLabelLevelStats" alignment="1" max="32767" attributes="0"/>
+                                  <Component id="jLabelLevelInfo" alignment="1" max="32767" attributes="0"/>
                                   <Component id="jSeparatorLevelStats" alignment="1" max="32767" attributes="0"/>
                                   <Component id="jSeparatorSkills" max="32767" attributes="0"/>
                                   <Group type="102" alignment="1" attributes="0">
@@ -146,7 +146,7 @@
                       <Group type="103" groupAlignment="0" attributes="0">
                           <Group type="102" attributes="0">
                               <Group type="103" groupAlignment="3" attributes="0">
-                                  <Component id="jLabelLevelStats" alignment="3" min="-2" max="-2" attributes="0"/>
+                                  <Component id="jLabelLevelInfo" alignment="3" min="-2" max="-2" attributes="0"/>
                                   <Component id="jLabelRecords" alignment="3" min="-2" max="-2" attributes="0"/>
                               </Group>
                               <EmptySpace max="-2" attributes="0"/>
@@ -299,10 +299,10 @@
     </Component>
     <Component class="javax.swing.JSeparator" name="jSeparator1">
     </Component>
-    <Component class="javax.swing.JLabel" name="jLabelLevelStats">
+    <Component class="javax.swing.JLabel" name="jLabelLevelInfo">
       <Properties>
         <Property name="horizontalAlignment" type="int" value="0"/>
-        <Property name="text" type="java.lang.String" value="Level stats"/>
+        <Property name="text" type="java.lang.String" value="Level info"/>
       </Properties>
     </Component>
     <Component class="javax.swing.JSeparator" name="jSeparatorLevelStats">

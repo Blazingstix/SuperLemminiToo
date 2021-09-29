@@ -631,7 +631,7 @@ public class ExtractLevel {
             for (int j = 0; j < terBytes[i].length; j++) {
                 terBytes[i][j] = b.get();
             }
-            Terrain ter = new Terrain(terBytes[i], SCALE, format);
+            Terrain ter = new Terrain(terBytes[i], SCALE, classic, format);
             if (toBoolean(optionFlags & OPTION_FLAG_INVERT_ONE_WAY)) {
                 if (toBoolean(ter.modifier & Terrain.FLAG_NO_ONE_WAY)) {
                     ter.modifier &= ~Terrain.FLAG_NO_ONE_WAY;
@@ -1053,7 +1053,7 @@ class Terrain {
      * @param b buffer
      * @param scale Scale (to convert lowres levels into hires levels)
      */
-    Terrain(final byte[] b, final int scale, final int format) throws Exception {
+    Terrain(final byte[] b, final int scale, final boolean classic, final int format) throws Exception {
         switch (format) {
             case 0:
                 int mask = 0xff;
@@ -1068,7 +1068,7 @@ class Terrain {
                 // 0 indicates normal.
                 // eg: 0xC011 means draw at xpos=1, do not overwrite, upside-down.
                 modifier = (b[0] & 0xe0) >> 4;
-                xPos = (((b[0] & 0x1f) << 8) | (b[1] & 0xff)) - 16;
+                xPos = (((b[0] & (classic ? 0x1f : 0x0f)) << 8) | (b[1] & 0xff)) - 16;
                 xPos *= scale;
                 // y pos : 9-bit value. min 0xEF0, max 0x518.  0xEF0 = -38, 0xEF8 = -37,
                 // 0x020 = 0, 0x028 = 1, 0x030 = 2, 0x038 = 3, ... , 0x518 = 159
@@ -1081,6 +1081,9 @@ class Terrain {
                 yPos *= scale;
                 // terrain id: min 0x00, max 0x3F.  not all graphic sets have all 64 graphics.
                 id = b[3] & 0x3f;
+                if (!classic && toBoolean(b[0] & 0x10)) {
+                    id += 64;
+                }
                 break;
             case 1:
             case 2:

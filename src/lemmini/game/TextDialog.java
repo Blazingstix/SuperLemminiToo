@@ -65,13 +65,19 @@ public class TextDialog {
      * @param height
      */
     public void drawScreen(GraphicsContext g, int x, int y, int width, int height) {
-        int centerX = width / 2 + x;
-        int centerY = height / 2 + y;
+        int widthHalf = width / 2;
+        int heightHalf = height / 2;
+        int centerX = widthHalf + x;
+        int centerY = heightHalf + y;
         
         if (backgroundImage != null) {
             if (tileBackground) {
-                for (int xa = x; xa < x + width; xa += backgroundImage.getWidth()) {
-                    for (int ya = y; ya < y + width; ya += backgroundImage.getHeight()) {
+                int imageWidth = backgroundImage.getWidth();
+                int imageHeight = backgroundImage.getHeight();
+                int xMin = (widthHalf % imageWidth == 0) ? 0 : ((centerX - (widthHalf / imageWidth + 1) * imageWidth));
+                int yMin = (heightHalf % imageHeight == 0) ? 0 : ((centerY - (heightHalf / imageHeight + 1) * imageHeight));
+                for (int xa = xMin; xa < x + width; xa += imageWidth) {
+                    for (int ya = yMin; ya < y + width; ya += imageHeight) {
                         g.drawImage(backgroundImage, xa, ya);
                     }
                 }
@@ -117,10 +123,18 @@ public class TextDialog {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
-        int x = x0 * LemmFont.getWidth();
-        int y = y0 * (LemmFont.getHeight() + 4);
+        String[] sa = LemmFont.split(s);
         addImageGroup(group);
-        images.get(group).add(new TextDialogImage(s, x, y, col));
+        List<TextDialogImage> groupList = images.get(group);
+        int width = LemmFont.getWidth();
+        int height = LemmFont.getHeight();
+        int x = x0 * width;
+        for (int i = 0; i < sa.length; i++) {
+            if (LemmFont.getCharCount(sa[i]) > 0) {
+                int y = (y0 + i) * (height + 4);
+                groupList.add(new TextDialogImage(sa[i], x, y, col));
+            }
+        }
     }
 
     /**
@@ -143,17 +157,25 @@ public class TextDialog {
      */
     public void addStringCentered(final String s, final String group,
             final int y0, final LemmFont.Color col) {
-        int charCount = LemmFont.getCharCount(s);
-        if (charCount <= 0) {
+        if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
-        if (charCount % 2 > 0) {
-            charCount = (charCount + 2) - charCount % 2;
-        }
-        int y = y0 * (LemmFont.getHeight() + 4);
-        int x = -(charCount * LemmFont.getWidth() / 2);
+        String[] sa = LemmFont.split(s);
         addImageGroup(group);
-        images.get(group).add(new TextDialogImage(s, x, y, col));
+        List<TextDialogImage> groupList = images.get(group);
+        int width = LemmFont.getWidth();
+        int height = LemmFont.getHeight();
+        for (int i = 0; i < sa.length; i++) {
+            int charCount = LemmFont.getCharCount(sa[i]);
+            if (charCount > 0) {
+                if (charCount % 2 > 0) {
+                    charCount = (charCount + 2) - charCount % 2;
+                }
+                int y = (y0 + i) * (height + 4);
+                int x = -(charCount * width / 2);
+                groupList.add(new TextDialogImage(sa[i], x, y, col));
+            }
+        }
     }
 
     /**

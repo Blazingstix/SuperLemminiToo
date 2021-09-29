@@ -169,8 +169,6 @@ public class Lemming {
     private static final int FALL_DISTANCE_FLOAT = 32;
     /** number of free pixels below needed to convert a lemming to a faller */
     private static final int FALL_DISTANCE_FALL  = 8;
-    /** used as "free below" value to convert most skills into a faller */
-    private static final int FALL_DISTANCE_FORCE_FALL = 2 * FALL_DISTANCE_FALL;
     /** number of steps a builder can build */
     private static final int STEPS_MAX = 12;
     /** number of steps before the warning sound is played */
@@ -321,11 +319,7 @@ public class Lemming {
                     break;
                 }
                 free = freeBelow(FALLER_STEP);
-                if (free == FALL_DISTANCE_FORCE_FALL) {
-                    y += FALLER_STEP;
-                } else {
-                    y += free; // max: FALLER_STEP
-                }
+                y += StrictMath.min(FALLER_STEP, free); // max: FALLER_STEP
                 if (!crossedLowerBorder()) {
                     counter += free; // fall counter
                     // check conversion to floater
@@ -419,11 +413,7 @@ public class Lemming {
                     break;
                 }
                 free = freeBelow(FLOATER_STEP);
-                if (free == FALL_DISTANCE_FORCE_FALL) {
-                    y += FLOATER_STEP;
-                } else {
-                    y += free; // max: FLOATER_STEP
-                }
+                y += StrictMath.min(FLOATER_STEP, free); // max: FLOATER_STEP
                 if (!crossedLowerBorder()) {
                     counter += free; // fall counter
                     // check ground hit
@@ -696,12 +686,21 @@ public class Lemming {
                             }
                             // check for conversion to faller
                             free = freeBelow(MINER_FALL_DISTANCE);
-                            if (free >= MINER_FALL_DISTANCE) {
-                                if (free == FALL_DISTANCE_FORCE_FALL) {
-                                    y += FALLER_STEP;
-                                } else {
-                                    y += free;
+                            int free2;
+                            if (dir == Direction.RIGHT) {
+                                // this is needed to help prevent miners from occasionally falling through solid floors
+                                int oldX2 = x;
+                                x += 1;
+                                free2 = freeBelow(MINER_FALL_DISTANCE);
+                                x = oldX2;
+                            } else {
+                                free2 = free;
+                            }
+                            if (free2 >= MINER_FALL_DISTANCE) {
+                                if (dir == Direction.RIGHT && free < MINER_FALL_DISTANCE) {
+                                    x += 1;
                                 }
+                                y += StrictMath.min(FALLER_STEP, free2); // max: FALLER_STEP
                                 newType = Type.FALLER;
                                 break;
                             }
@@ -788,11 +787,7 @@ public class Lemming {
                     if (free > 0) {
                         // conversion to faller or walker -> erase blocker mask
                         eraseBlockerMask();
-                        if (free == FALL_DISTANCE_FORCE_FALL) {
-                            y += FALLER_STEP;
-                        } else {
-                            y += free;
-                        }
+                        y += StrictMath.min(FALLER_STEP, free); // max: FALLER_STEP
                         counter += free;
                         if (counter >= FALL_DISTANCE_FALL) {
                             newType = Type.FALLER;
@@ -828,11 +823,7 @@ public class Lemming {
                         GameController.sound.play(Sound.Effect.OHNO, getPan());
                     }
                     free = freeBelow(FALLER_STEP);
-                    if (free == FALL_DISTANCE_FORCE_FALL) {
-                        y += FALLER_STEP;
-                    } else {
-                        y += free;
-                    }
+                    y += StrictMath.min(FALLER_STEP, free); // max: FALLER_STEP
                     crossedLowerBorder();
                     break;
                 }
@@ -1433,7 +1424,7 @@ public class Lemming {
         pos = x + yb * GameController.getWidth(); // line below the lemming
         for (int i = 0; i < step; i++) {
             if (yb + i >= GameController.getHeight()) {
-                return FALL_DISTANCE_FORCE_FALL; // convert most skill to faller
+                return Integer.MAX_VALUE; // convert most skills to faller
             }
             int s = stencil.getMask(pos);
             if (!BooleanUtils.toBoolean(s & Stencil.MSK_BRICK)) {
@@ -1473,8 +1464,8 @@ public class Lemming {
     }
 
     /**
-     * Get number of free pixels above the lemming (max of step is checked).
-     * @return number of free pixels above the lemming
+     * Checks whether there are any free pixels above the the builder (max of step is checked).
+     * @return whether there are any free pixels above the the builder
      */
     private boolean freeAboveBuilder() {
         if (dir == Direction.LEFT && x - 3 < GameController.getLevel().getLeftBoundary()
@@ -1488,7 +1479,7 @@ public class Lemming {
         if (dir == Direction.RIGHT) {
             xm = x + 4;
         } else {
-            xm = x - 3;
+            xm = x - 4;
         }
         Stencil stencil = GameController.getStencil();
         for (int yb = yMin; yb <= yMax; yb++) {

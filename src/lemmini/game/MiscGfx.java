@@ -115,8 +115,7 @@ public class MiscGfx {
         img = Core.loadTranslucentImage(fn);
         images.add(img);
 
-        image = new LemmImage[images.size()];
-        image = images.toArray(image);
+        image = images.toArray(new LemmImage[images.size()]);
         
         /* Assemble minimap */
         minimapWidth = -1;

@@ -50,7 +50,7 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends javax.swing.JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "0.97";
+    public static final String REVISION = "0.98";
     
     private static final long serialVersionUID = 0x01L;
     

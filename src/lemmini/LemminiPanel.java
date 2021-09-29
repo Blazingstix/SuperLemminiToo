@@ -296,6 +296,18 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
                     TextScreen.Button button = TextScreen.getDialog().handleLeftClick(
                             x - Core.getDrawWidth() / 2, y - Core.getDrawHeight() / 2);
                     switch (button) {
+                        case SHOW_HINT:
+                            TextScreen.showHint();
+                            break;
+                        case SHOW_INFO:
+                            TextScreen.showLevelInfo();
+                            break;
+                        case NEXT_HINT:
+                            TextScreen.nextHint();
+                            break;
+                        case PREVIOUS_HINT:
+                            TextScreen.previousHint();
+                            break;
                         case START_LEVEL:
                             Minimap.init(1.0 / 16.0, 1.0 / 8.0, true);
                             GameController.setTransition(GameController.TransitionState.TO_LEVEL);
@@ -801,10 +813,16 @@ public class LemminiPanel extends javax.swing.JPanel implements Runnable {
             case INTRO:
                 TextScreen.setMode(TextScreen.Mode.INTRO);
                 TextScreen.update();
+                TextScreen.getDialog().handleMouseMove(
+                        Core.unscale(xMouseScreen) - Core.getDrawWidth() / 2,
+                        Core.unscale(yMouseScreen) - Core.getDrawHeight() / 2);
                 break;
             case BRIEFING:
                 TextScreen.setMode(TextScreen.Mode.BRIEFING);
                 TextScreen.update();
+                TextScreen.getDialog().handleMouseMove(
+                        Core.unscale(xMouseScreen) - Core.getDrawWidth() / 2,
+                        Core.unscale(yMouseScreen) - Core.getDrawHeight() / 2);
                 break;
             case DEBRIEFING:
                 TextScreen.setMode(TextScreen.Mode.DEBRIEFING);

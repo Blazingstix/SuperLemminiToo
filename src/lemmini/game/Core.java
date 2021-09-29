@@ -9,7 +9,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
 import lemmini.extract.Extract;
@@ -19,6 +21,7 @@ import lemmini.gui.LegalFrame;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 
@@ -59,11 +62,13 @@ public class Core {
         "ogg", "xm", "s3m", "mod", "mid"};
     public static final String[] SOUNDBANK_EXTENSIONS = {"sf2", "dls"};
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
+    /** file name of patching configuration */
+    public static final String PATCH_INI_NAME = "patch.ini";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
     /** The revision string for resource compatibility - not necessarily the version number */
-    private static final String REVISION = "0.97";
+    private static final String REVISION = "0.98";
     /** name of the INI file */
     private static final String INI_NAME = "superlemmini.ini";
     
@@ -84,6 +89,7 @@ public class Core {
     private static Props playerProps;
     /** list of all players */
     private static List<String> players;
+    private static Set<Path> resourceSet;
     /** Zoom scale */
     private static double scale = 1.0;
     private static boolean bilinear;
@@ -152,8 +158,38 @@ public class Core {
                 programProps.save(programPropsFilePath);
             }
         }
+        resourceSet = new HashSet<>(2048);
+        Props patchINI = new Props();
+        if (patchINI.load(ToolBox.findFile(PATCH_INI_NAME))) {
+            for (int i = 0; true; i++) {
+                String[] entry = patchINI.getArray("extract_" + i, null);
+                if (ArrayUtils.isNotEmpty(entry)) {
+                    resourceSet.add(Paths.get(entry[0]));
+                } else {
+                    break;
+                }
+            }
+            for (int i = 0; true; i++) {
+                String[] entry = patchINI.getArray("check_" + i, null);
+                if (ArrayUtils.isNotEmpty(entry)) {
+                    resourceSet.add(Paths.get(entry[0]));
+                } else {
+                    break;
+                }
+            }
+            for (int i = 0; true; i++) {
+                String[] entry = patchINI.getArray("patch_" + i, null);
+                if (ArrayUtils.isNotEmpty(entry)) {
+                    resourceSet.add(Paths.get(entry[0]));
+                } else {
+                    break;
+                }
+            }
+        }
+        // create temp folder
         tempPath = resourcePath.resolve("temp");
         Files.createDirectories(tempPath);
+        
         System.gc(); // force garbage collection here before the game starts
 
         // read player names
@@ -188,6 +224,13 @@ public class Core {
         }
     }
     
+    public static Path removeResourcePath(Path fname) {
+        if (fname.startsWith(resourcePath)) {
+            fname = fname.subpath(resourcePath.getNameCount(), fname.getNameCount());
+        }
+        return fname;
+    }
+    
     /**
      * Get Path to resource in resource path.
      * @param fname file name (with or without resource path)
@@ -195,10 +238,7 @@ public class Core {
      * @throws ResourceException if file is not found
      */
     public static Path findResource(Path fname) throws ResourceException {
-        // remove the resource path if it exists
-        if (fname.startsWith(resourcePath)) {
-            fname = fname.subpath(resourcePath.getNameCount(), fname.getNameCount());
-        }
+        fname = removeResourcePath(fname);
         // check for the file in the mod folder
         for (Path mod : GameController.getModPaths()) {
             Path file = resourcePath.resolve(mod).resolve(fname);
@@ -223,10 +263,7 @@ public class Core {
      * @throws ResourceException if file is not found
      */
     public static Path findResource(Path fname, String[] extensions) throws ResourceException {
-        // remove the resource path and extension if they exist
-        if (fname.startsWith(resourcePath)) {
-            fname = fname.subpath(resourcePath.getNameCount(), fname.getNameCount());
-        }
+        fname = removeResourcePath(fname);
         String fnameNoExt = FilenameUtils.removeExtension(fname.toString());
         // try to load the file from the mod paths with each extension
         for (Path mod : GameController.getModPaths()) {
@@ -269,16 +306,21 @@ public class Core {
 
     /**
      * Output error message box in case of a missing resource.
-     * @param rsrc name missing of resource.
+     * @param rsrc name of missing resource.
      */
     public static void resourceError(final String rsrc) {
-        
-        String out = String.format("The resource %s is missing.%n"
-                + "Please restart to extract all resources.", rsrc);
-        JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
-        // invalidate resources
-        programProps.set("revision", "invalid");
-        programProps.save(programPropsFilePath);
+        Path rsrcPath = removeResourcePath(Paths.get(rsrc));
+        if (resourceSet.contains(rsrcPath)) {
+            String out = String.format("The resource %s is missing.%n"
+                    + "Please restart to extract all resources.", rsrc);
+            JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
+            // invalidate resources
+            programProps.set("revision", "invalid");
+            programProps.save(programPropsFilePath);
+        } else {
+            String out = String.format("The resource %s is missing.%n", rsrc);
+            JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
+        }
         System.exit(1);
     }
 

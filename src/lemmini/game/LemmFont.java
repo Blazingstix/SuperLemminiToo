@@ -3,13 +3,16 @@ package lemmini.game;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 /*
@@ -155,20 +158,13 @@ public class LemmFont {
             if (!Character.isDefined(c)) {
                 drawMissingChar(g, c, x, y, color);
                 x += width;
-                continue;
-            }
-            
-            if (Character.isIdentifierIgnorable(c)) {
-                continue;
-            }
-            
-            if (Character.isSpaceChar(c) || Character.isISOControl(c)) {
+            } else if (Character.isIdentifierIgnorable(c)) {
+            } else if (Character.isSpaceChar(c) || Character.isISOControl(c)) {
                 x += width;
-                continue;
+            } else {
+                drawCharacter(g, c, x, y, color);
+                x += width;
             }
-            
-            drawCharacter(g, c, x, y, color);
-            x += width;
         }
     }
 
@@ -273,6 +269,59 @@ public class LemmFont {
             }
         }
         return charCount;
+    }
+    
+    public static String[] split(final String s) {
+        /*List<String> sl = new ArrayList<>(4);
+        int lastBreak = 0;
+        int lineLength = 0;
+        int i = 0;
+        for (int c; i < s.length(); i += Character.charCount(c)) {
+            c = s.codePointAt(i);
+            int type = Character.getType(c);
+            boolean breakHere = false;
+            boolean windowsBreak = false;
+            
+            if (type == Character.LINE_SEPARATOR || type == Character.PARAGRAPH_SEPARATOR) {
+                breakHere = true;
+            } else if (Character.isISOControl(c)) {
+                switch (c) {
+                    case '\r':
+                        windowsBreak = i < s.length() - 1 && s.codePointAt(i + 1) == '\n';*/
+                        /* falls through */
+                    /*case '\n':
+                    case 0x0b:
+                    case 0x0c:
+                    case 0x85:
+                        breakHere = true;
+                        break;
+                    default:
+                        if (Character.isIdentifierIgnorable(c)) {
+                            continue;
+                        }
+                        break;
+                }
+            } else if (Character.isIdentifierIgnorable(c)) {
+                continue;
+            }
+            
+            if (breakHere) {
+                sl.add(s.substring(lastBreak, i));
+                if (windowsBreak) {
+                    i += Character.charCount(c);
+                }
+                lastBreak = i + Character.charCount(c);
+                lineLength = 0;
+            } else {
+                lineLength++;
+            }
+        }
+        
+        if (i > lastBreak) {
+            sl.add(s.substring(lastBreak, i));
+        }
+        return sl.toArray(ArrayUtils.EMPTY_STRING_ARRAY);*/
+        return s.split("\\u000D\\u000A|[\\u000A\\u000B\\u000C\\u000D\\u0085\\u2028\\u2029]");
     }
     
     private static class Subset {

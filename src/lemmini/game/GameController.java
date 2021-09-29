@@ -1382,11 +1382,11 @@ public class GameController {
      * Calculate the counter threshold for releasing a new Lemmings.
      */
     private static void calcReleaseBase() {
-        // the original formula is: release lemming every 4+(99-speed)/2 time steps
+        // the original formula is: release lemming every (107-releaseRate)/2 time steps
         // where one step is 60ms (3s/50) or 66ms (4s/60).
         // Lemmini runs at 30ms/33ms, so the term has to be multiplied by 2
-        // 8+(99-releaseRate) should be correct
-        releaseBase = 8 + (99 - releaseRate);
+        // 107-releaseRate should be correct
+        releaseBase = 107 - releaseRate;
     }
 
     /**

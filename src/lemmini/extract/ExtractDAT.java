@@ -50,9 +50,7 @@ public class ExtractDAT {
         } catch (IOException e) {
             throw new Exception(String.format("I/O error while reading %s.", source));
         }
-        byte[][] retArray = new byte[decompressedSections.size()][];
-        retArray = decompressedSections.toArray(retArray);
-        return retArray;
+        return decompressedSections.toArray(new byte[decompressedSections.size()][]);
     }
 }
 

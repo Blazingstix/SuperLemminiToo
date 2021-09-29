@@ -208,8 +208,7 @@ public class Sound {
                 mix.add(mixer);
             }
         }
-        mixers = new Mixer[mix.size()];
-        mixers = mix.toArray(mixers);
+        mixers = mix.toArray(new Mixer[mix.size()]);
         
         lineHandlers = new LineHandler[MAX_SIMUL_SOUNDS];
         availableLineHandlers = new LinkedList<>();

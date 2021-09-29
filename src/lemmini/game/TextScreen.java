@@ -62,6 +62,14 @@ public class TextScreen {
         EXIT,
         /** start level */
         START_LEVEL,
+        /** show hint */
+        SHOW_HINT,
+        /** show info */
+        SHOW_INFO,
+        /** next hint */
+        NEXT_HINT,
+        /** previous hint */
+        PREVIOUS_HINT,
         /** continue */
         CONTINUE,
         /** restart level */
@@ -87,6 +95,7 @@ public class TextScreen {
     private static final int SCROLL_PADDING = 4;
     /** step width of scroll text in pixels */
     private static final int SCROLL_STEP = 2;
+    private static final int FAILURE_THRESHOLD_FOR_HINTS = 3;
     /** scroll text */
     private static final String SCROLL_TEXT =
         "SuperLemmini - a game engine for Lemmings(tm) in Java. "
@@ -127,6 +136,7 @@ public class TextScreen {
     private static LemmImage scrollerImg;
     /** screen type to display */
     private static Mode mode;
+    private static int hintIndex;
 
     /**
      * Set mode.
@@ -173,30 +183,12 @@ public class TextScreen {
      */
     static void initBriefing() {
         textDialog.clear();
+        hintIndex = 0;
         textDialog.setBackground(MiscGfx.getImage(MiscGfx.Index.TILE_GREEN), true);
         Level level = GameController.getLevel();
-        String rating = GameController.getCurLevelPack().getRatings()[GameController.getCurRating()];
         textDialog.addImage(GameController.getMapPreview(), null, -200);
-        textDialog.addString(String.format("Level %d", GameController.getCurLevelNumber() + 1), null, -21, -2, RED);
-        textDialog.addString(level.getLevelName(), null, -11, -2, RED);
-        textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), null, -9, 0, BLUE);
-        if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
-            textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), null, -9, 1, GREEN);
-        } else {
-            textDialog.addString(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), null, -9, 1, GREEN);
-        }
-        textDialog.addString(String.format("Release Rate %d", level.getReleaseRate()), null, -9, 2, BROWN);
-        int minutes = level.getTimeLimitSeconds() / 60;
-        int seconds = level.getTimeLimitSeconds() % 60;
-        if (!GameController.isTimed()) {
-            textDialog.addString("No time limit", null, -9, 3, TURQUOISE);
-        } else if (seconds == 0) {
-            String minuteWord = (minutes == 1) ? "Minute" : "Minutes";
-            textDialog.addString(String.format("Time         %d %s", minutes, minuteWord), null, -9, 3, TURQUOISE);
-        } else {
-            textDialog.addString(String.format("Time         %d-%02d", minutes, seconds), null, -9, 3, TURQUOISE);
-        }
-        textDialog.addString(String.format("Rating       %s", rating), null, -9, 4, VIOLET);
+        textDialog.addString(String.format("Level %-3d %s", GameController.getCurLevelNumber() + 1, level.getLevelName()), null, -21, -3, RED);
+        showLevelInfo();
         textDialog.addTextButton("Start Level", "Start Level", null, -12, 6, Button.START_LEVEL, BLUE, BROWN);
         textDialog.addTextButton("Menu", "Menu", null, 4, 6, Button.MENU, BLUE, BROWN);
     }
@@ -236,37 +228,32 @@ public class TextScreen {
         LevelPack lp = GameController.getCurLevelPack();
         String[] debriefings = lp.getDebriefings();
         if (GameController.wasLost()) {
+            String debriefing;
             if (GameController.getNumExited() <= 0) {
-                textDialog.addStringCentered(debriefings[0], null, -1, RED);
-                textDialog.addStringCentered(debriefings[1], null, 0, RED);
+                debriefing = debriefings[0];
             } else if (rescuedOfToRescue < 50) {
-                textDialog.addStringCentered(debriefings[2], null, -1, RED);
-                textDialog.addStringCentered(debriefings[3], null, 0, RED);
+                debriefing = debriefings[1];
             } else if (rescuedPercent < toRescuePercent - 5) {
-                textDialog.addStringCentered(debriefings[4], null, -1, RED);
-                textDialog.addStringCentered(debriefings[5], null, 0, RED);
+                debriefing = debriefings[2];
             } else if (rescuedPercent < toRescuePercent - 1) {
-                textDialog.addStringCentered(debriefings[6], null, -1, RED);
-                textDialog.addStringCentered(debriefings[7], null, 0, RED);
+                debriefing = debriefings[3];
             } else {
-                textDialog.addStringCentered(debriefings[8], null, -1, RED);
-                textDialog.addStringCentered(debriefings[9], null, 0, RED);
+                debriefing = debriefings[4];
             }
+            textDialog.addStringCentered(debriefing, null, -1, RED);
             textDialog.addTextButton("Retry", "Retry", null, -2, 6, Button.RESTART, BLUE, BROWN);
         } else {
+            String debriefing;
             if (rescued <= toRescue && rescued < numLemmings) {
-                textDialog.addStringCentered(debriefings[10], null, -1, RED);
-                textDialog.addStringCentered(debriefings[11], null, 0, RED);
+                debriefing = debriefings[5];
             } else if (rescuedPercent < toRescuePercent + 20 && rescued < numLemmings) {
-                textDialog.addStringCentered(debriefings[12], null, -1, RED);
-                textDialog.addStringCentered(debriefings[13], null, 0, RED);
+                debriefing = debriefings[6];
             } else if (rescued < numLemmings) {
-                textDialog.addStringCentered(debriefings[14], null, -1, RED);
-                textDialog.addStringCentered(debriefings[15], null, 0, RED);
+                debriefing = debriefings[7];
             } else {
-                textDialog.addStringCentered(debriefings[16], null, -1, RED);
-                textDialog.addStringCentered(debriefings[17], null, 0, RED);
+                debriefing = debriefings[8];
             }
+            textDialog.addStringCentered(debriefing, null, -1, RED);
             int lpn = GameController.getCurLevelPackIdx();
             int r = GameController.getCurRating();
             int ln = GameController.getCurLevelNumber();
@@ -275,8 +262,7 @@ public class TextScreen {
                 String code = LevelCode.create(lp.getCodeSeed(), absLevel, rescuedPercent,
                         GameController.getTimesFailed(), 0, lp.getCodeOffset());
                 if (code != null) {
-                    textDialog.addStringCentered(String.format("Your access code for level %d", ln + 2), null, 2, BROWN);
-                    textDialog.addStringCentered(String.format("is %s", code), null, 3, BROWN);
+                    textDialog.addStringCentered(String.format("Your access code for level %d%nis %s", ln + 2, code), null, 2, BROWN);
                 }
                 textDialog.addTextButton("Continue", "Continue", null, -4, 6, Button.CONTINUE, BLUE, BROWN);
             } else if (!(lpn == 0 && r == 0)) {
@@ -295,6 +281,61 @@ public class TextScreen {
         }
         textDialog.addTextButton("Menu", "Menu", null, 9, 5, Button.MENU, BLUE, BROWN);
     }
+    
+    public static void showLevelInfo() {
+        synchronized (monitor) {
+            textDialog.clearGroup("info");
+            Level level = GameController.getLevel();
+            String rating = GameController.getCurLevelPack().getRatings()[GameController.getCurRating()];
+            textDialog.addString(String.format("Number of Lemmings %d", level.getNumLemmings()), "info", -9, -1, BLUE);
+            if (GameController.isNoPercentages() || level.getNumLemmings() > 100) {
+                textDialog.addString(String.format("%d to be saved", level.getNumToRescue()), "info", -9, 0, GREEN);
+            } else {
+                textDialog.addString(String.format("%d%% to be saved", level.getNumToRescue() * 100 / level.getNumLemmings()), "info", -9, 0, GREEN);
+            }
+            textDialog.addString(String.format("Release Rate %d", level.getReleaseRate()), "info", -9, 1, BROWN);
+            int minutes = level.getTimeLimitSeconds() / 60;
+            int seconds = level.getTimeLimitSeconds() % 60;
+            if (!GameController.isTimed()) {
+                textDialog.addString("No time limit", "info", -9, 2, TURQUOISE);
+            } else if (seconds == 0) {
+                String minuteWord = (minutes == 1) ? "Minute" : "Minutes";
+                textDialog.addString(String.format("Time         %d %s", minutes, minuteWord), "info", -9, 2, TURQUOISE);
+            } else {
+                textDialog.addString(String.format("Time         %d-%02d", minutes, seconds), "info", -9, 2, TURQUOISE);
+            }
+            textDialog.addString(String.format("Rating       %s", rating), "info", -9, 3, VIOLET);
+            if (GameController.getTimesFailed() >= FAILURE_THRESHOLD_FOR_HINTS && level.getNumHints() > 0) {
+                textDialog.addTextButton("Show Hint", "Show Hint", "info", -4, 5, Button.SHOW_HINT, BLUE, BROWN);
+            }
+        }
+    }
+    
+    public static void showHint() {
+        synchronized (monitor) {
+            textDialog.clearGroup("info");
+            Level level = GameController.getLevel();
+            textDialog.addString(String.format("Hint %d", hintIndex + 1), "info", -3, -1, TURQUOISE);
+            textDialog.addStringCentered(level.getHint(hintIndex), "info", 1, GREEN);
+            textDialog.addTextButton("Show Info", "Show Info", "info", -4, 5, Button.SHOW_INFO, BLUE, BROWN);
+            if (hintIndex > 0) {
+                textDialog.addTextButton("Previous Hint", "Previous Hint", "info", -19, 5, Button.PREVIOUS_HINT, BLUE, BROWN);
+            }
+            if (hintIndex < Math.min(level.getNumHints() - 1, GameController.getTimesFailed() - FAILURE_THRESHOLD_FOR_HINTS)) {
+                textDialog.addTextButton("Next Hint", "Next Hint", "info", 8, 5, Button.NEXT_HINT, BLUE, BROWN);
+            }
+        }
+    }
+    
+    public static void nextHint() {
+        hintIndex++;
+        showHint();
+    }
+    
+    public static void previousHint() {
+        hintIndex--;
+        showHint();
+    }
 
     /**
      * Get text dialog.
@@ -308,8 +349,6 @@ public class TextScreen {
 
     /**
      * Initialize text screen.
-     * @param width width in pixels
-     * @param height height in pixels
      */
     public static void init() {
         synchronized (monitor) {

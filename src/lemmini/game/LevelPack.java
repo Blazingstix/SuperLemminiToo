@@ -38,24 +38,24 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class LevelPack {
     
-    public static final String FAILURE_A1_DEF = "ROCK BOTTOM! I hope for your sake";
-    public static final String FAILURE_A2_DEF = "that you nuked that level.";
-    public static final String FAILURE_B1_DEF = "Better rethink your strategy before";
-    public static final String FAILURE_B2_DEF = "you try this level again!";
-    public static final String FAILURE_C1_DEF = "A little more practice on this level";
-    public static final String FAILURE_C2_DEF = "is definitely recommended.";
-    public static final String FAILURE_D1_DEF = "You got pretty close that time.";
-    public static final String FAILURE_D2_DEF = "Now try again for that few % extra.";
-    public static final String FAILURE_E1_DEF = "OH NO, So near and yet so far (teehee)";
-    public static final String FAILURE_E2_DEF = "Maybe this time.....";
-    public static final String SUCCESS_A1_DEF = "SPOT ON. You can't get much closer";
-    public static final String SUCCESS_A2_DEF = "than that. Let's try the next....";
-    public static final String SUCCESS_B1_DEF = "That level seemed no problem to you on";
-    public static final String SUCCESS_B2_DEF = "that attempt. Onto the next....";
-    public static final String SUCCESS_C1_DEF = "You totally stormed that level!";
-    public static final String SUCCESS_C2_DEF = "Let's see if you can storm the next...";
-    public static final String SUCCESS_D1_DEF = "Superb! You rescued every lemming on";
-    public static final String SUCCESS_D2_DEF = "that level. Can you do it again....?";
+    public static final String FAILURE_A_DEF =
+            "ROCK BOTTOM! I hope for your sake\nthat you nuked that level.";
+    public static final String FAILURE_B_DEF =
+            "Better rethink your strategy before\nyou try this level again!";
+    public static final String FAILURE_C_DEF =
+            "A little more practice on this level\nis definitely recommended.";
+    public static final String FAILURE_D_DEF =
+            "You got pretty close that time.\nNow try again for that few % extra.";
+    public static final String FAILURE_E_DEF =
+            "OH NO, So near and yet so far (teehee)\nMaybe this time.....";
+    public static final String SUCCESS_A_DEF =
+            "SPOT ON. You can't get much closer\nthan that. Let's try the next....";
+    public static final String SUCCESS_B_DEF =
+            "That level seemed no problem to you on\nthat attempt. Onto the next....";
+    public static final String SUCCESS_C_DEF =
+            "You totally stormed that level!\nLet's see if you can storm the next...";
+    public static final String SUCCESS_D_DEF =
+            "Superb! You rescued every lemming on\nthat level. Can you do it again....?";
 
     /** name of the level pack */
     private String name;
@@ -73,7 +73,7 @@ public class LevelPack {
     /** offset to apply in level code algorithm */
     private int codeOffset;
     
-    private final String[] debriefings = new String[18];
+    private final String[] debriefings = new String[9];
     private Path[] mods;
 
     /**
@@ -93,24 +93,15 @@ public class LevelPack {
 
         lvlInfo = new LevelInfo[1][0];
         
-        debriefings[0]  = FAILURE_A1_DEF;
-        debriefings[1]  = FAILURE_A2_DEF;
-        debriefings[2]  = FAILURE_B1_DEF;
-        debriefings[3]  = FAILURE_B2_DEF;
-        debriefings[4]  = FAILURE_C1_DEF;
-        debriefings[5]  = FAILURE_C2_DEF;
-        debriefings[6]  = FAILURE_D1_DEF;
-        debriefings[7]  = FAILURE_D2_DEF;
-        debriefings[8]  = FAILURE_E1_DEF;
-        debriefings[9]  = FAILURE_E2_DEF;
-        debriefings[10] = SUCCESS_A1_DEF;
-        debriefings[11] = SUCCESS_A2_DEF;
-        debriefings[12] = SUCCESS_B1_DEF;
-        debriefings[13] = SUCCESS_B2_DEF;
-        debriefings[14] = SUCCESS_C1_DEF;
-        debriefings[15] = SUCCESS_C2_DEF;
-        debriefings[16] = SUCCESS_D1_DEF;
-        debriefings[17] = SUCCESS_D2_DEF;
+        debriefings[0] = FAILURE_A_DEF;
+        debriefings[1] = FAILURE_B_DEF;
+        debriefings[2] = FAILURE_C_DEF;
+        debriefings[3] = FAILURE_D_DEF;
+        debriefings[4] = FAILURE_E_DEF;
+        debriefings[5] = SUCCESS_A_DEF;
+        debriefings[6] = SUCCESS_B_DEF;
+        debriefings[7] = SUCCESS_C_DEF;
+        debriefings[8] = SUCCESS_D_DEF;
     }
 
     /**
@@ -156,24 +147,15 @@ public class LevelPack {
             }
         } while (!track.isEmpty());
         // read debriefings
-        debriefings[0]  = props.get("failureA1", FAILURE_A1_DEF);
-        debriefings[1]  = props.get("failureA2", FAILURE_A2_DEF);
-        debriefings[2]  = props.get("failureB1", FAILURE_B1_DEF);
-        debriefings[3]  = props.get("failureB2", FAILURE_B2_DEF);
-        debriefings[4]  = props.get("failureC1", FAILURE_C1_DEF);
-        debriefings[5]  = props.get("failureC2", FAILURE_C2_DEF);
-        debriefings[6]  = props.get("failureD1", FAILURE_D1_DEF);
-        debriefings[7]  = props.get("failureD2", FAILURE_D2_DEF);
-        debriefings[8]  = props.get("failureE1", FAILURE_E1_DEF);
-        debriefings[9]  = props.get("failureE2", FAILURE_E2_DEF);
-        debriefings[10] = props.get("successA1", SUCCESS_A1_DEF);
-        debriefings[11] = props.get("successA2", SUCCESS_A2_DEF);
-        debriefings[12] = props.get("successB1", SUCCESS_B1_DEF);
-        debriefings[13] = props.get("successB2", SUCCESS_B2_DEF);
-        debriefings[14] = props.get("successC1", SUCCESS_C1_DEF);
-        debriefings[15] = props.get("successC2", SUCCESS_C2_DEF);
-        debriefings[16] = props.get("successD1", SUCCESS_D1_DEF);
-        debriefings[17] = props.get("successD2", SUCCESS_D2_DEF);
+        debriefings[0] = props.get("failureA", FAILURE_A_DEF);
+        debriefings[1] = props.get("failureB", FAILURE_B_DEF);
+        debriefings[2] = props.get("failureC", FAILURE_C_DEF);
+        debriefings[3] = props.get("failureD", FAILURE_D_DEF);
+        debriefings[4] = props.get("failureE", FAILURE_E_DEF);
+        debriefings[5] = props.get("successA", SUCCESS_A_DEF);
+        debriefings[6] = props.get("successB", SUCCESS_B_DEF);
+        debriefings[7] = props.get("successC", SUCCESS_C_DEF);
+        debriefings[8] = props.get("successD", SUCCESS_D_DEF);
         // read ratings
         List<String> ratingList = new ArrayList<>(8);
         idx = 0;
@@ -185,8 +167,7 @@ public class LevelPack {
                 ratingList.add(rating);
             }
         } while (!rating.isEmpty());
-        ratings = new String[ratingList.size()];
-        ratings = ratingList.toArray(ratings);
+        ratings = ratingList.toArray(ArrayUtils.EMPTY_STRING_ARRAY);
         // read levels
         lvlInfo = new LevelInfo[ratingList.size()][];
         String[] levelStr;
@@ -196,7 +177,7 @@ public class LevelPack {
             levels.clear();
             rating = Normalizer.normalize(ratingList.get(r).trim(), Normalizer.Form.NFKC);
             do {
-                levelStr = props.getArray(rating.toLowerCase(Locale.ROOT) + "_" + idx, null);
+                levelStr = props.getArray(rating.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT) + "_" + idx, null);
                 // filename, music number
                 if (levelStr != null && levelStr.length >= 2) {
                     LevelInfo info = new LevelInfo(path.resolve(levelStr[0]),
@@ -205,8 +186,7 @@ public class LevelPack {
                 }
                 idx++;
             } while (levelStr != null && levelStr.length >= 2);
-            lvlInfo[r] = new LevelInfo[levels.size()];
-            lvlInfo[r] = levels.toArray(lvlInfo[r]);
+            lvlInfo[r] = levels.toArray(new LevelInfo[levels.size()]);
         }
     }
 
@@ -217,8 +197,8 @@ public class LevelPack {
      * @return String formed from level pack and rating
      */
     public static String getID(String pack, String rating) {
-        pack = Normalizer.normalize(pack.toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
-        rating = Normalizer.normalize(rating.toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
+        pack = Normalizer.normalize(pack.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
+        rating = Normalizer.normalize(rating.toUpperCase(Locale.ROOT).toLowerCase(Locale.ROOT), Normalizer.Form.NFKC);
         
         return pack + "-" + rating;
     }

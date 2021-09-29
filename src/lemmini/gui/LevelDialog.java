@@ -73,7 +73,7 @@ public class LevelDialog extends javax.swing.JDialog {
         jLabelAuthor = new javax.swing.JLabel();
         jTextFieldAuthor = new javax.swing.JTextField();
         jSeparator1 = new javax.swing.JSeparator();
-        jLabelLevelStats = new javax.swing.JLabel();
+        jLabelLevelInfo = new javax.swing.JLabel();
         jSeparatorLevelStats = new javax.swing.JSeparator();
         jLabelNumLemmings = new javax.swing.JLabel();
         jLabelNumToRescue = new javax.swing.JLabel();
@@ -144,8 +144,8 @@ public class LevelDialog extends javax.swing.JDialog {
         jTextFieldAuthor.setEditable(false);
         jTextFieldAuthor.setHighlighter(null);
 
-        jLabelLevelStats.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-        jLabelLevelStats.setText("Level stats");
+        jLabelLevelInfo.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelLevelInfo.setText("Level info");
 
         jLabelNumLemmings.setLabelFor(jTextFieldNumLemmings);
         jLabelNumLemmings.setText("Number of Lemmings:");
@@ -291,7 +291,7 @@ public class LevelDialog extends javax.swing.JDialog {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                    .addComponent(jLabelLevelStats, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jLabelLevelInfo, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jSeparatorLevelStats, javax.swing.GroupLayout.Alignment.TRAILING)
                                     .addComponent(jSeparatorSkills)
                                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
@@ -371,7 +371,7 @@ public class LevelDialog extends javax.swing.JDialog {
                         .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(layout.createSequentialGroup()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabelLevelStats)
+                                    .addComponent(jLabelLevelInfo)
                                     .addComponent(jLabelRecords))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -681,7 +681,7 @@ public class LevelDialog extends javax.swing.JDialog {
     private javax.swing.JButton jButtonOK;
     private javax.swing.JLabel jLabelAuthor;
     private javax.swing.JLabel jLabelLemmingsSaved;
-    private javax.swing.JLabel jLabelLevelStats;
+    private javax.swing.JLabel jLabelLevelInfo;
     private javax.swing.JLabel jLabelNumBashers;
     private javax.swing.JLabel jLabelNumBlockers;
     private javax.swing.JLabel jLabelNumBombers;

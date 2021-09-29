@@ -8,6 +8,7 @@ import java.nio.file.*;
 import java.util.*;
 import java.util.zip.Adler32;
 import javax.swing.JOptionPane;
+import lemmini.game.Core;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.io.FilenameUtils;
@@ -42,8 +43,6 @@ public class Extract implements Runnable {
 
     /** file name of extraction configuration */
     private static final String INI_NAME = "extract.ini";
-    /** file name of patching configuration */
-    private static final String PATCH_INI_NAME = "patch.ini";
     /** file name of resource CRCs (WINLEMM) */
     private static final String CRC_INI_NAME = "crc.ini";
     /** allows to use this module for creation of the CRC.ini */
@@ -72,8 +71,6 @@ public class Extract implements Runnable {
     private static Path referencePath;
     /** path of the DIF files */
     private static Path patchPath;
-    /** path of the CRC INI (without the file name) */
-    private static Path crcPath;
     /** exception caught in the thread */
     private static ExtractException threadException = null;
     /** static self reference to access thread from outside */
@@ -278,15 +275,14 @@ public class Extract implements Runnable {
                 }
                 checkCancel();
             }
-            
-            Path patchINIPath = patchPath.resolve(PATCH_INI_NAME);
 
             if (doCreatePatches) {
+                Path patchINIPath = destinationPath.resolve(Core.PATCH_INI_NAME);
                 // this is not needed by Lemmini, but to create the DIF files (and CRCs)
                 if (DO_CREATE_CRC) {
                     // create crc.ini
                     out(String.format("%nCreate crc.ini"));
-                    Path crcINIPath = crcPath.resolve(CRC_INI_NAME);
+                    Path crcINIPath = destinationPath.resolve(CRC_INI_NAME);
                     try (Writer fCRCList = Files.newBufferedWriter(crcINIPath, StandardCharsets.UTF_8)) {
                         for (int i = 0; true; i++) {
                             String ppath;
@@ -323,9 +319,9 @@ public class Extract implements Runnable {
             // step eight: use patch.ini to extract/patch all files
             // read patch.ini file
             Props pprops = new Props();
-            URL fnp = findFile(patchINIPath); // if it's in the JAR or local directory
+            URL fnp = findFile(Paths.get(Core.PATCH_INI_NAME)); // if it's in the JAR or local directory
             if (!pprops.load(fnp)) {
-                throw new ExtractException("File " + PATCH_INI_NAME + " not found or error while reading.");
+                throw new ExtractException("File " + Core.PATCH_INI_NAME + " not found or error while reading.");
             }
             // copy
             out(String.format("%nExtract files"));
@@ -427,7 +423,6 @@ public class Extract implements Runnable {
             referencePath = refPath;
         }
         patchPath = pPath;
-        crcPath = destinationPath; // OK, this is the wrong path, but this is executed once in a lifetime
 
         loader = Extract.class.getClassLoader();
 

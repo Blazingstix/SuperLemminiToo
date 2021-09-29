@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import javax.imageio.ImageIO;
+import lemmini.game.Core;
 import org.apache.commons.lang3.BooleanUtils;
 
 /*
@@ -298,8 +299,7 @@ public class ExtractSPR {
                 height = images[idx].getHeight();
             }
         }
-        Path[] fileArray = new Path[files.size()];
-        return files.toArray(fileArray);
+        return files.toArray(Core.EMPTY_PATH_ARRAY);
     }
 
     /**
