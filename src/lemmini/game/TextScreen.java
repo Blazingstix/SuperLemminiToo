@@ -128,7 +128,7 @@ public class TextScreen {
                         textDialog.init();
                         textDialog.fillBackground(MiscGfx.getImage(MiscGfx.Index.TILE_BROWN));
                         textDialog.printCentered("A game engine for Lemmings(tm) in Java", -1, RED);
-                        textDialog.printCentered("Release " + Lemmini.REVISION + " 06/2014", 0, BLUE);
+                        textDialog.printCentered("Release " + Lemmini.REVISION + " 08/2014", 0, BLUE);
                         textDialog.printCentered("Coded by Ryan Sakowski 2013-2014", 1, BROWN);
                         textDialog.printCentered("Original Lemmini by Volker Oth 2005-2010", 2, VIOLET);
                         textDialog.printCentered("Original website: www.lemmini.de", 3, GREEN);

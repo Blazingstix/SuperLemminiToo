@@ -475,10 +475,12 @@ public class Level {
             
             spr.setVisOnTerrain(drawOnVis);
             
-            if (inFront) {
-                oFront.add(spr);
-            } else {
-                oBehind.add(spr);
+            if (!invisible) {
+                if (inFront) {
+                    oFront.add(spr);
+                } else {
+                    oBehind.add(spr);
+                }
             }
             oCombined.add(spr);
             
