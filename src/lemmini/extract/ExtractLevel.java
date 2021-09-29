@@ -6,7 +6,9 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
+import lemmini.tools.ToolBox;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -40,11 +42,29 @@ public class ExtractLevel {
     private static final int MAX_GREEN_FLAGS = 1;
     
     /** names for default styles */
-    private static final String[] STYLES = {"dirt", "fire", "marble", "pillar", "crystal",
-        "brick", "rock", "snow", "bubble", "xmas"};
+    private static final Map<Integer, String> STYLES = new HashMap<>();
     /** names for default special styles */
-    private static final String[] SPECIAL_STYLES = {"awesome", "menace", "beastii", "beasti",
-        "covox", "prima", "apple"};
+    private static final Map<Integer, String> SPECIAL_STYLES = new HashMap<>();
+    static {
+        STYLES.put(0, "dirt");
+        STYLES.put(1, "fire");
+        STYLES.put(2, "marble");
+        STYLES.put(3, "pillar");
+        STYLES.put(4, "crystal");
+        STYLES.put(5, "brick");
+        STYLES.put(6, "rock");
+        STYLES.put(7, "snow");
+        STYLES.put(8, "bubble");
+        STYLES.put(9, "xmas");
+        
+        SPECIAL_STYLES.put(0, "awesome");
+        SPECIAL_STYLES.put(1, "menace");
+        SPECIAL_STYLES.put(2, "beastii");
+        SPECIAL_STYLES.put(3, "beasti");
+        SPECIAL_STYLES.put(4, "covox");
+        SPECIAL_STYLES.put(5, "prima");
+        SPECIAL_STYLES.put(101, "apple");
+    }
     
     private static final int GIMMICK_FLAG_SUPERLEMMING = 1;
     
@@ -63,62 +83,7 @@ public class ExtractLevel {
     private static final int OPTION_FLAG_SIMPLE_AUTOSTEEL = 1 << 3;
     private static final int OPTION_FLAG_CUSTOM_GIMMICKS = 1 << 5;
     private static final int OPTION_FLAG_CUSTOM_SKILL_SET = 1 << 6;
-
-    private static long fileSize;
-    private static int format;
-    /** release rate : 0 is slowest, 0x0FA (250) is fastest */
-    private static int releaseRate;
-    /** number of Lemmings in this level (maximum 0x0072 in original LVL format) */
-    private static int numLemmings;
-    /** number of Lemmings to rescue : should be less than or equal to number of Lemmings */
-    private static int numToRescue;
-    private static int timeLimitSeconds;
-    /** Time Limit: max 0x00FF, 0x0001 to 0x0009 works best */
-    private static int timeLimit;
-    private static int gimmickFlags;
-    private static int skillFlags;
-    private static int[] skillCounts;
-    /** number of climbers in this level : max 0xfa (250) */
-    private static int numClimbers;
-    /** number of floaters in this level : max 0xfa (250) */
-    private static int numFloaters;
-    /** number of bombers in this level : max 0xfa (250) */
-    private static int numBombers;
-    /** number of blockers in this level : max 0xfa (250) */
-    private static int numBlockers;
-    /** number of builders in this level : max 0xfa (250) */
-    private static int numBuilders;
-    /** number of bashers in this level : max 0xfa (250) */
-    private static int numBashers;
-    /** number of miners in this level : max 0xfa (250) */
-    private static int numMiners;
-    /** number of diggers in this level : max 0xfa (250) */
-    private static int numDiggers;
-    /** start screen x pos : 0 - 0x04f0 (1264) rounded to modulo 8 */
-    private static int xPos;
-    private static int optionFlags;
-    /**
-     * 0x0000 is dirt,  <br>0x0001 is fire,   <br>0x0002 is marble,  <br>
-     * 0x0003 is pillar,<br>0x0004 is crystal,<br>0x0005 is brick,   <br>
-     * 0x0006 is rock,  <br>0x0007 is snow,   <br>0x0008 is bubble,  <br>
-     * 0x0009 is xmas
-     */
-    private static int style;
-    /** special style */
-    private static int specialStyle;
-    private static int extra1;
-    private static int extra2;
-    /** objects like doors - 32 objects each consists of 8 bytes */
-    private static LvlObject[] objects;
-    /** terrain the Lemmings walk on etc. - 400 tiles, 4 bytes each */
-    private static Terrain[] terrain;
-    /** steel areas which are indestructible - 32 objects, 4 bytes each */
-    private static Steel[] steel;
-    /** 32 byte level name - filled with whitespaces */
-    private static String lvlName;
-    private static int entranceCount;
-    private static int greenFlagCount;
-
+    
     /**
      * Convert one binary LVL file into text file
      * @param fnIn Name of binary LVL file
@@ -127,49 +92,103 @@ public class ExtractLevel {
      * @param classic Whether to convert in classic mode
      * @throws Exception
      */
-    public static void convertLevel(final String fnIn, final String fnOut, final boolean multi, final boolean classic) throws Exception {
-        entranceCount = 0;
-        greenFlagCount = 0;
-        // read file into buffer
-        ByteBuffer b;
+    public static void convertLevel(final Path fnIn, final Path fnOut, final boolean multi, final boolean classic) throws Exception {
+        byte[] b;
         try {
-            Path f = Paths.get(fnIn);
-            if (Files.notExists(f)) {
+            if (!Files.isRegularFile(fnIn)) {
                 throw new Exception(String.format("File %s not found.", fnIn));
             }
-            fileSize = Files.size(f);
+            long fileSize = Files.size(fnIn);
             if (fileSize != 2048L && fileSize != 10240L) {
                 throw new Exception("Lemmings level files must be 2,048 or 10,240 bytes in size!");
             }
-            byte[] buffer = Files.readAllBytes(f);
-            b = ByteBuffer.wrap(buffer).asReadOnlyBuffer();
+            b = Files.readAllBytes(fnIn);
         } catch (IOException e) {
             throw new Exception(String.format("I/O error while reading %s.", fnIn));
         }
+        convertLevel(b, fnIn.getFileName().toString(), fnOut, multi, classic);
+    }
+
+    /**
+     * Convert one binary LVL file into text file
+     * @param in Byte array of binary LVL file
+     * @param fnOut Name of target text file
+     * @param multi Whether this is a multiplayer level
+     * @param classic Whether to convert in classic mode
+     * @throws Exception
+     */
+    public static void convertLevel(final byte[] in, final String fName, final Path fnOut, final boolean multi, final boolean classic) throws Exception {
+        int format = 0;
+        /* release rate : 0 is slowest, 0x0FA (250) is fastest */
+        int releaseRate = 0;
+        /* number of Lemmings in this level (maximum 0x0072 in original LVL format) */
+        int numLemmings = 0;
+        /* number of Lemmings to rescue : should be less than or equal to number of Lemmings */
+        int numToRescue = 0;
+        /* time limit in seconds */
+        int timeLimitSeconds = 0;
+        /* time limit in minutes: max 0x00FF, 0x0001 to 0x0009 works best */
+        int timeLimit = 0;
+        int gimmickFlags = 0;
+        int skillFlags = 0;
+        int[] skillCounts;
+        /* number of climbers in this level : max 0xfa (250) */
+        int numClimbers = 0;
+        /* number of floaters in this level : max 0xfa (250) */
+        int numFloaters = 0;
+        /* number of bombers in this level : max 0xfa (250) */
+        int numBombers = 0;
+        /* number of blockers in this level : max 0xfa (250) */
+        int numBlockers = 0;
+        /* number of builders in this level : max 0xfa (250) */
+        int numBuilders = 0;
+        /* number of bashers in this level : max 0xfa (250) */
+        int numBashers = 0;
+        /* number of miners in this level : max 0xfa (250) */
+        int numMiners = 0;
+        /* number of diggers in this level : max 0xfa (250) */
+        int numDiggers = 0;
+        /* start screen x pos : 0 - 0x04f0 (1264) rounded to modulo 8 */
+        int xPos = 0;
+        int optionFlags = 0;
+        /*
+         * 0x0000 is dirt,  <br>0x0001 is fire,   <br>0x0002 is marble,  <br>
+         * 0x0003 is pillar,<br>0x0004 is crystal,<br>0x0005 is brick,   <br>
+         * 0x0006 is rock,  <br>0x0007 is snow,   <br>0x0008 is bubble,  <br>
+         * 0x0009 is xmas
+         */
+        Integer style;
+        String styleStr = null;
+        /* special style */
+        Integer specialStyle = -1;
+        String specialStyleStr = null;
+        int extra1 = 0;
+        int extra2 = 0;
+        /* objects like doors - 32 objects each consists of 8 bytes */
+        LvlObject[] objects;
+        /* terrain the Lemmings walk on etc. - 400 tiles, 4 bytes each */
+        Terrain[] terrain;
+        /* steel areas which are indestructible - 32 objects, 4 bytes each */
+        Steel[] steel;
+        /* 32 byte level name - filled with whitespaces */
+        String lvlName = "";
+        int entranceCount = 0;
+        int greenFlagCount = 0;
+        
+        // read file into buffer
+        if (in.length != 2048 && in.length != 10240) {
+            throw new Exception("Lemmings level files must be 2,048 or 10,240 bytes in size!");
+        }
+        ByteBuffer b = ByteBuffer.wrap(in).asReadOnlyBuffer();
         // output file
-        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fnOut), StandardCharsets.UTF_8))) {
+        try (Writer w = Files.newBufferedWriter(fnOut, StandardCharsets.UTF_8)) {
             // add only file name without the path in the first line
-            int p1 = fnIn.lastIndexOf("/");
-            int p2 = fnIn.lastIndexOf("\\");
-            if (p2 > p1) {
-                p1 = p2;
-            }
-            if (p1 < 0) {
-                p1 = 0;
-            } else {
-                p1++;
-            }
-            String fn = fnIn.substring(p1);
+            w.write("# LVL extracted by SuperLemmini # " + fName + "\r\n");
             // analyze buffer
-            w.write("# LVL extracted by SuperLemmini # " + fn + "\r\n");
             if (classic) {
-                format = 0;
-                if (fileSize != 2048L) {
+                if (in.length != 2048L) {
                     throw new Exception("Format 0 level files must be 2,048 bytes in size!");
                 }
-                gimmickFlags = 0;
-                skillFlags = 0;
-                optionFlags = 0;
                 // read configuration in big endian word
                 releaseRate = b.getShort();
                 if (releaseRate >= 100) {
@@ -180,7 +199,6 @@ public class ExtractLevel {
                 w.write("numLemmings = " + numLemmings + "\r\n");
                 numToRescue = b.getShort() & 0xffff;
                 w.write("numToRescue = " + numToRescue + "\r\n");
-                timeLimitSeconds = 0;
                 timeLimit = b.getShort() & 0xffff;
                 w.write("timeLimit = " + timeLimit + "\r\n");
                 numClimbers = b.getShort() & 0xffff;
@@ -204,18 +222,18 @@ public class ExtractLevel {
                 xPos *= SCALE;
                 w.write("xPosCenter = " + xPos + "\r\n");
                 style = b.getShort() & 0xffff;
-                if (style >= STYLES.length) {
-                    throw new Exception(fnIn + " uses an invalid style.");
+                styleStr = STYLES.get(style);
+                if (styleStr == null) {
+                    throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
                 }
-                w.write("style = " + STYLES[style] + "\r\n");
+                w.write("style = " + styleStr + "\r\n");
                 specialStyle = (b.getShort() & 0xffff) - 1;
-                if (specialStyle >= SPECIAL_STYLES.length && specialStyle != 101) {
-                    throw new Exception(fnIn + " uses an invalid special style.");
-                }
-                if (specialStyle == 101) {
-                    w.write("specialStyle = " + SPECIAL_STYLES[6] + "\r\n");
-                } else if (specialStyle > -1) {
-                    w.write("specialStyle = " + SPECIAL_STYLES[specialStyle] + "\r\n");
+                if (specialStyle > -1) {
+                    specialStyleStr = SPECIAL_STYLES.get(specialStyle);
+                    if (specialStyleStr == null) {
+                        throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
+                    }
+                    w.write("specialStyle = " + specialStyleStr + "\r\n");
                 }
                 extra1 = b.get();
                 extra2 = b.get();
@@ -231,17 +249,9 @@ public class ExtractLevel {
                 w.write("classicSteel = true\r\n");
             } else {
                 format = b.get();
-                numClimbers = 0;
-                numFloaters = 0;
-                numBombers = 0;
-                numBlockers = 0;
-                numBuilders = 0;
-                numBashers = 0;
-                numMiners = 0;
-                numDiggers = 0;
                 switch (format) {
                     case 0:
-                        if (fileSize != 2048L) {
+                        if (in.length != 2048L) {
                             throw new Exception("Format 0 level files must be 2,048 bytes in size!");
                         }
                         releaseRate = b.get();
@@ -252,6 +262,10 @@ public class ExtractLevel {
                         numToRescue = b.getShort() & 0xffff;
                         timeLimitSeconds = b.get() & 0xff;
                         timeLimit = b.get() & 0xff;
+                        if (timeLimit * 60 + timeLimitSeconds >= 6000) {
+                            timeLimitSeconds = 0;
+                            timeLimit = 0;
+                        }
                         skillCounts = new int[8];
                         gimmickFlags = (b.get() & 0xff) << 24;
                         skillCounts[0] = b.get() & 0xff;
@@ -270,7 +284,7 @@ public class ExtractLevel {
                         skillFlags |= b.get() & 0xff;
                         skillCounts[7] = b.get() & 0xff;
                         for (int i = 0; i < skillCounts.length; i++) {
-                            if (skillCounts[i] == 200) {
+                            if (skillCounts[i] >= 100) {
                                 skillCounts[i] = Integer.MAX_VALUE;
                             }
                         }
@@ -279,40 +293,49 @@ public class ExtractLevel {
                         xPos *= SCALE;
                         b.get();
                         style = b.get() & 0xff;
-                        if (style >= STYLES.length) {
-                            throw new Exception(fnIn + " uses an invalid style.");
+                        styleStr = STYLES.get(style);
+                        if (styleStr == null) {
+                            throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
                         }
                         optionFlags = b.get();
                         specialStyle = (b.get() & 0xff) - 1;
-                        if (specialStyle >= SPECIAL_STYLES.length && specialStyle != 101) {
-                            throw new Exception(fnIn + " uses an invalid special style.");
+                        if (specialStyle > -1) {
+                            specialStyleStr = SPECIAL_STYLES.get(specialStyle);
+                            if (specialStyleStr == null) {
+                                throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
+                            }
                         }
                         extra1 = b.get();
                         extra2 = b.get();
                         break;
                     case 1:
-                        if (fileSize != 10240L) {
+                        if (in.length != 10240L) {
                             throw new Exception("Format 1 level files must be 10,240 bytes in size!");
                         }
-                        extra1 = 0;
-                        extra2 = 0;
                         b.order(ByteOrder.LITTLE_ENDIAN);
                         b.get();
                         numLemmings = b.getShort() & 0xffff;
                         numToRescue = b.getShort() & 0xffff;
                         timeLimitSeconds = b.getShort() & 0xffff;
+                        if (timeLimitSeconds >= 6000) {
+                            timeLimitSeconds = 0;
+                        }
                         releaseRate = b.get();
                         if (releaseRate >= 100) {
                             releaseRate -= 256;
                         }
                         optionFlags = b.get();
                         style = b.get() & 0xff;
-                        if (style >= STYLES.length) {
-                            throw new Exception(fnIn + " uses an invalid style.");
+                        styleStr = STYLES.get(style);
+                        if (styleStr == null) {
+                            throw new Exception(String.format("%s uses an invalid style: %d%n", fName, style));
                         }
                         specialStyle = (b.get() & 0xff) - 1;
-                        if (specialStyle >= SPECIAL_STYLES.length && specialStyle != 101) {
-                            throw new Exception(fnIn + " uses an invalid special style.");
+                        if (specialStyle > -1) {
+                            specialStyleStr = SPECIAL_STYLES.get(specialStyle);
+                            if (specialStyleStr == null) {
+                                throw new Exception(String.format("%s uses an invalid special style: %d%n", fName, specialStyle));
+                            }
                         }
                         b.get();
                         b.get();
@@ -337,7 +360,7 @@ public class ExtractLevel {
                         skillCounts[14] = b.get() & 0xff;
                         skillCounts[15] = b.get() & 0xff;
                         for (int i = 0; i < skillCounts.length; i++) {
-                            if (skillCounts[i] == 200) {
+                            if (skillCounts[i] >= 100) {
                                 skillCounts[i] = Integer.MAX_VALUE;
                             }
                         }
@@ -453,20 +476,18 @@ public class ExtractLevel {
                 w.write("numLemmings = " + numLemmings + "\r\n");
                 w.write("numToRescue = " + numToRescue + "\r\n");
                 w.write("timeLimitSeconds = " + (timeLimit * 60 + timeLimitSeconds) + "\r\n");
-                w.write("numClimbers = " + ((numClimbers == Integer.MAX_VALUE) ? "Infinity" : numClimbers) + "\r\n");
-                w.write("numFloaters = " + ((numFloaters == Integer.MAX_VALUE) ? "Infinity" : numFloaters) + "\r\n");
-                w.write("numBombers = " + ((numBombers == Integer.MAX_VALUE) ? "Infinity" : numBombers) + "\r\n");
-                w.write("numBlockers = " + ((numBlockers == Integer.MAX_VALUE) ? "Infinity" : numBlockers) + "\r\n");
-                w.write("numBuilders = " + ((numBuilders == Integer.MAX_VALUE) ? "Infinity" : numBuilders) + "\r\n");
-                w.write("numBashers = " + ((numBashers == Integer.MAX_VALUE) ? "Infinity" : numBashers) + "\r\n");
-                w.write("numMiners = " + ((numMiners == Integer.MAX_VALUE) ? "Infinity" : numMiners) + "\r\n");
-                w.write("numDiggers = " + ((numDiggers == Integer.MAX_VALUE) ? "Infinity" : numDiggers) + "\r\n");
+                w.write("numClimbers = " + ToolBox.intToString(numClimbers, false) + "\r\n");
+                w.write("numFloaters = " + ToolBox.intToString(numFloaters, false) + "\r\n");
+                w.write("numBombers = " + ToolBox.intToString(numBombers, false) + "\r\n");
+                w.write("numBlockers = " + ToolBox.intToString(numBlockers, false) + "\r\n");
+                w.write("numBuilders = " + ToolBox.intToString(numBuilders, false) + "\r\n");
+                w.write("numBashers = " + ToolBox.intToString(numBashers, false) + "\r\n");
+                w.write("numMiners = " + ToolBox.intToString(numMiners, false) + "\r\n");
+                w.write("numDiggers = " + ToolBox.intToString(numDiggers, false) + "\r\n");
                 w.write("xPosCenter = " + xPos + "\r\n");
-                w.write("style = " + STYLES[style] + "\r\n");
-                if (specialStyle == 101) {
-                    w.write("specialStyle = " + SPECIAL_STYLES[6] + "\r\n");
-                } else if (specialStyle > -1) {
-                    w.write("specialStyle = " + SPECIAL_STYLES[specialStyle] + "\r\n");
+                w.write("style = " + styleStr + "\r\n");
+                if (specialStyle > -1) {
+                    w.write("specialStyle = " + specialStyleStr + "\r\n");
                 }
                 if ((optionFlags & OPTION_FLAG_AUTOSTEEL) != 0) {
                     if ((optionFlags & OPTION_FLAG_SIMPLE_AUTOSTEEL) != 0) {
@@ -504,7 +525,7 @@ public class ExtractLevel {
             w.write("\r\n# Objects\r\n");
             w.write("# ID, X position, Y position, paint mode, flags, object-specific modifier (optional)\r\n");
             w.write("# Paint modes: 0 = full, 2 = invisible, 4 = don't overwrite, 8 = visible only on terrain (only one value possible)\r\n");
-            w.write("# Flags: 1 = upside down, 2 = fake (combining allowed)\r\n");
+            w.write("# Flags: 1 = upside down, 2 = fake, 4 = upside-down mask, 8 = horizontally flipped (combining allowed)\r\n");
             byte[][] bytes;
             switch (format) {
                 case 0:
@@ -536,19 +557,17 @@ public class ExtractLevel {
                     if (classic) {
                         if (obj.id == LvlObject.ENTRANCE_ID) {
                             if (++entranceCount > (multi ? MAX_ENTRANCES_MULTI : MAX_ENTRANCES)) {
-                                obj.fake = true;
+                                obj.flags |= LvlObject.FLAG_FAKE;
                             }
                         } else if (obj.id == LvlObject.GREEN_FLAG_ID) {
                             if (++greenFlagCount > MAX_GREEN_FLAGS) {
-                                obj.fake = true;
+                                obj.flags |= LvlObject.FLAG_FAKE;
                             }
                         } else if (i >= FAKE_OBJECT_CUTOFF) {
-                            obj.fake = true;
+                            obj.flags |= LvlObject.FLAG_FAKE;
                         }
                     }
-                    int flags = obj.upsideDown ? 1 : 0;
-                    flags |= obj.fake ? 2 : 0;
-                    w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + flags);
+                    w.write("object_" + i + " = " + obj.id + ", " + obj.xPos + ", " + obj.yPos + ", " + obj.paintMode + ", " + obj.flags);
                     if (!classic) {
                         if (obj.id == LvlObject.ENTRANCE_ID && obj.leftFacing) {
                             w.write(", 1");
@@ -575,7 +594,8 @@ public class ExtractLevel {
             // read terrain
             w.write("\r\n# Terrain\r\n");
             w.write("# ID, X position, Y position, modifier\r\n");
-            w.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite, 16 = fake (combining allowed, 0 = full)\r\n");
+            w.write("# Modifier: 1 = invisible, 2 = remove, 4 = upside down, 8 = don't overwrite,\r\n");
+            w.write("#           16 = fake, 32 = horizontally flipped (combining allowed, 0 = full)\r\n");
             switch (format) {
                 case 0:
                     bytes = new byte[400][4];
@@ -646,9 +666,9 @@ public class ExtractLevel {
                     bytes[i][j] = b.get();
                 }
                 steel[i] = new Steel(bytes[i], SCALE, classic, format);
-            }
-            if (format == 0 && (optionFlags & OPTION_FLAG_NEGATIVE_STEEL) != 0) {
-                b.position(b.position() + 64);
+                if (format == 0 && (optionFlags & OPTION_FLAG_NEGATIVE_STEEL) != 0 && i >= 16) {
+                    steel[i].negative = true;
+                }
             }
             int maxSteelID = -1;
             if ((optionFlags & OPTION_FLAG_IGNORE_STEEL) == 0) {
@@ -678,7 +698,7 @@ public class ExtractLevel {
                 }
             }
             // read name
-            w.write("\r\n# Name" + "\r\n");
+            w.write("\r\n# Name\r\n");
             if (format == 0) {
                 byte[] bName = new byte[32];
                 b.get(bName);
@@ -708,9 +728,16 @@ public class ExtractLevel {
  */
 class LvlObject {
     /** paint mode: only visible on a terrain pixel */
-    private static final int MODE_VIS_ON_TERRAIN = 8;
+    static final int MODE_VIS_ON_TERRAIN = 8;
     /** paint mode: don't overwrite terrain pixel in the original foreground image */
-    private static final int MODE_NO_OVERWRITE = 4;
+    static final int MODE_NO_OVERWRITE = 4;
+    static final int MODE_INVISIBLE = 2;
+    
+    /** flag: paint object upside down */
+    static final int FLAG_UPSIDE_DOWN = 1;
+    static final int FLAG_FAKE = 2;
+    static final int FLAG_UPSIDE_DOWN_MASK = 4;
+    static final int FLAG_HORIZONTALLY_FLIPPED = 8;
     
     static final int ENTRANCE_ID = 1;
     static final int GREEN_FLAG_ID = 2;
@@ -723,9 +750,7 @@ class LvlObject {
     int id;
     /** paint mode */
     int paintMode;
-    /** flag: paint object upside down */
-    boolean upsideDown;
-    boolean fake;
+    int flags;
     boolean leftFacing;
     boolean exists;
 
@@ -762,14 +787,22 @@ class LvlObject {
                 // (must have terrain underneath to be visible). 00 specifies always draw full graphic.
                 // second byte can be 8F (display graphic upside-down) or 0F (display graphic normally)
                 paintMode = 0;
+                flags = 0;
                 if ((b[6] & 0x80) != 0) {
                     paintMode |= MODE_NO_OVERWRITE;
                 }
                 if ((b[6] & 0x40) != 0) {
                     paintMode |= MODE_VIS_ON_TERRAIN;
                 }
-                upsideDown = (b[7] & 0x80) != 0;
-                fake = classic ? false : ((b[6] & 0x10) != 0);
+                if ((b[6] & 0x10) != 0) {
+                    flags |= FLAG_UPSIDE_DOWN;
+                    if (!classic) {
+                        flags |= FLAG_UPSIDE_DOWN_MASK;
+                    }
+                }
+                if (!classic && (b[6] & 0x10) != 0) {
+                    flags |= FLAG_FAKE;
+                }
                 break;
             case 1:
                 xPos = (b[0] & 0xff) | (b[1] << 8);
@@ -778,15 +811,27 @@ class LvlObject {
                 yPos *= scale;
                 id = b[4] & 0xff;
                 paintMode = 0;
+                flags = 0;
                 if ((b[7] & 0x01) != 0) {
                     paintMode |= MODE_NO_OVERWRITE;
                 }
                 if ((b[7] & 0x02) != 0) {
                     paintMode |= MODE_VIS_ON_TERRAIN;
                 }
-                upsideDown = (b[7] & 0x04) != 0;
+                if ((b[7] & 0x04) != 0) {
+                    flags |= FLAG_UPSIDE_DOWN;
+                    flags |= FLAG_UPSIDE_DOWN_MASK;
+                }
                 leftFacing = (b[7] & 0x08) != 0;
-                fake = (b[7] & 0x10) != 0;
+                if ((b[7] & 0x10) != 0) {
+                    flags |= FLAG_FAKE;
+                }
+                if ((b[7] & 0x20) != 0) {
+                    paintMode |= MODE_INVISIBLE;
+                }
+                if ((b[7] & 0x40) != 0) {
+                    flags |= FLAG_HORIZONTALLY_FLIPPED;
+                }
                 exists = (b[7] & 0x80) != 0;
                 break;
             default:
@@ -800,9 +845,10 @@ class LvlObject {
  * @author Volker Oth
  */
 class Terrain {
-    private static final int FLAG_NO_OVERWRITE = 8;
-    private static final int FLAG_UPSIDE_DOWN = 4;
-    private static final int FLAG_ERASE = 2;
+    static final int FLAG_HORIZONTALLY_FLIPPED = 32;
+    static final int FLAG_NO_OVERWRITE = 8;
+    static final int FLAG_UPSIDE_DOWN = 4;
+    static final int FLAG_ERASE = 2;
 
     /** identifier */
     int id;
@@ -863,6 +909,9 @@ class Terrain {
                 }
                 if ((b[5] & 0x04) != 0) {
                     modifier |= FLAG_UPSIDE_DOWN;
+                }
+                if ((b[5] & 0x08) != 0) {
+                    modifier |= FLAG_HORIZONTALLY_FLIPPED;
                 }
                 exists = (b[5] & 0x80) != 0;
                 break;

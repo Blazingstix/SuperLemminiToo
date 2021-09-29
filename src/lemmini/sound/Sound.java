@@ -1,8 +1,12 @@
 package lemmini.sound;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -130,8 +134,8 @@ public class Sound {
     private boolean loaded = false;
     private final LineHandler[] lineHandlers;
     private Queue<LineHandler> availableLineHandlers;
-    private String[] fNames;
-    private final List<String> sampleNames;
+    private Path[] fNames;
+    private final List<Path> sampleNames;
     private final int[] pitchedSampleID;
     /** sound buffers to store the samples */
     private byte[][] soundBuffers;
@@ -220,16 +224,16 @@ public class Sound {
     }
     
     public final void load() throws ResourceException {
-        String fn = Core.findResource(SOUND_INI_STR);
+        Path fn = Core.findResource(Paths.get(SOUND_INI_STR));
         Props p = new Props();
-        if (fn == null || !p.load(fn)) {
+        if (!p.load(fn)) {
             throw new ResourceException(SOUND_INI_STR);
         }
         sampleNames.clear();
         for (int i = 0; true; i++) {
             String sName = p.get("sound_" + i, null);
             if (sName != null) {
-                sampleNames.add(sName);
+                sampleNames.add(Paths.get(sName));
             } else {
                 break;
             }
@@ -241,11 +245,11 @@ public class Sound {
         
         PitchedEffect[] peValues = PitchedEffect.values();
         
-        String fName = "";
+        Path fName = Paths.get("");
         boolean reloadPitched = false;
         if (!loaded) {
             sampleNum = sampleNames.size();
-            fNames = new String[sampleNum];
+            fNames = new Path[sampleNum];
             soundBuffers = new byte[sampleNum][];
             reloadPitched = true;
             for (int i = 0; i < peValues.length; i++) {
@@ -269,10 +273,8 @@ public class Sound {
         try {
             for (int i = 0; i < sampleNum; i++) {
                 fName = Core.findResource(
-                        "sound/" + sampleNames.get(i), Core.SOUND_EXTENSIONS);
-                if (fName == null) {
-                    throw new ResourceException("sound/" + sampleNames.get(i));
-                }
+                        Paths.get("sound").resolve(sampleNames.get(i)),
+                        Core.SOUND_EXTENSIONS);
                 if (loaded) {
                     if (fName.equals(fNames[i])) {
                         continue;
@@ -291,7 +293,8 @@ public class Sound {
                 
                 AudioFormat currentFormat;
                 
-                try (AudioInputStream ais = AudioSystem.getAudioInputStream(new File(fName))) {
+                try (InputStream in = new BufferedInputStream(Files.newInputStream(fName));
+                        AudioInputStream ais = AudioSystem.getAudioInputStream(in)) {
                     currentFormat = ais.getFormat();
                     soundBuffers[i] = new byte[(int) ais.getFrameLength() * currentFormat.getFrameSize()];
                     ais.read(soundBuffers[i]);
@@ -313,7 +316,7 @@ public class Sound {
                 soundBuffers[i] = resample(soundBuffers[i], currentFormat, format.getSampleRate(),  resamplingQuality);
             }
         } catch (UnsupportedAudioFileException | IOException ex) {
-            throw new ResourceException(fName);
+            throw new ResourceException(fName.toString());
         }
 
         if (reloadPitched) {

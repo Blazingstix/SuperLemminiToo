@@ -16,7 +16,11 @@
 
 package lemmini.sound;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.sound.sampled.*;
 import lemmini.game.Core;
 import lemmini.game.GameController;
@@ -29,8 +33,8 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private boolean play;
     private SourceDataLine line;
     private DataLine.Info info;
-    private File file;
-    private File introFile;
+    private Path file;
+    private Path introFile;
     private AudioInputStream in;
     private AudioInputStream introIn;
     private AudioInputStream din;
@@ -39,19 +43,19 @@ public class WaveMusic implements Runnable, MusicPlayer {
     private Thread waveThread;
 
     @Override
-    public void load(final String fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
         if (waveThread != null) {
             close();
         }
         loopSong = loop;
         try {
-            file = new File(fn);
-            introFile = new File(Core.appendBeforeExtension(fn, "_intro"));
-            in = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
+            file = fn;
+            introFile = fn.resolveSibling(Core.appendBeforeExtension(fn.getFileName().toString(), "_intro"));
+            in = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(file)));
             if (in != null) {
                 format = getDecodeFormat(in.getFormat());
-                if (introFile.canRead()) {
-                    introIn = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(introFile)));
+                if (Files.isReadable(introFile)) {
+                    introIn = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(introFile)));
                     AudioFormat introFormat = getDecodeFormat(introIn.getFormat());
                     if (introFormat.matches(format)) {
                         playIntro = true;
@@ -69,7 +73,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
                 din.mark(Integer.MAX_VALUE);
             }
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn);
+            throw new ResourceException(fn.toString());
         } catch (IOException ex) {
             throw new LemmException(fn + " (IO exception)");
         } catch (UnsupportedAudioFileException ex) {
@@ -120,7 +124,7 @@ public class WaveMusic implements Runnable, MusicPlayer {
                             din.reset();
                         } else {
                             din.close();
-                            in = AudioSystem.getAudioInputStream(new BufferedInputStream(new FileInputStream(file)));
+                            in = AudioSystem.getAudioInputStream(new BufferedInputStream(Files.newInputStream(file)));
                             din = AudioSystem.getAudioInputStream(format, in);
                             din.mark(Integer.MAX_VALUE);
                         }

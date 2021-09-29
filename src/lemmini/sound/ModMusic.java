@@ -60,20 +60,16 @@ public class ModMusic implements Runnable, MusicPlayer {
      * @throws LemmException
      */
     @Override
-    public void load(final String fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
         if (modThread != null) {
             close();
         }
         loopSong = loop;
         byte[] songData;
         try {
-            Path f = Paths.get(fn);
-            if (Files.notExists(f)) {
-                throw new ResourceException(fn);
-            }
-            songData = Files.readAllBytes(f);
+            songData = Files.readAllBytes(fn);
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn);
+            throw new ResourceException(fn.toString());
         } catch (IOException ex) {
             throw new LemmException(fn + " (IO exception)");
         }

@@ -16,6 +16,7 @@
 
 package lemmini.sound;
 
+import java.nio.file.Path;
 import lemmini.game.LemmException;
 import lemmini.game.ResourceException;
 
@@ -27,7 +28,7 @@ public interface MusicPlayer {
      * @throws ResourceException
      * @throws LemmException
      */
-    public void load(String fn, boolean loop) throws ResourceException, LemmException;
+    public void load(Path fn, boolean loop) throws ResourceException, LemmException;
     
     public void stop();
     public void play();

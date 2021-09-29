@@ -1,6 +1,8 @@
 package lemmini.game;
 
 import java.awt.Color;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -118,7 +120,7 @@ public class Level {
     private Image[] tileMasks;
     private Image special;
     private Image specialMask;
-    private Set<Integer> steelTiles;
+    private final Set<Integer> steelTiles;
     /** sprite objects of all sprite objects available in this style */
     private SpriteObject[] sprObjAvailable;
     /** terrain the Lemmings walk on etc. - originally 400 tiles, 4 bytes each */
@@ -151,22 +153,34 @@ public class Level {
      * @throws ResourceException
      * @throws LemmException
      */
-    void loadLevel(final String fname) throws ResourceException, LemmException {
+    void loadLevel(final Path fname) throws ResourceException, LemmException {
         ready = false;
         special = null;
         specialMask = null;
         // read level properties from file
         Props p = new Props();
         if (!p.load(fname)) {
-            throw new ResourceException(fname);
+            throw new ResourceException(fname.toString());
+        }
+        String mainLevel = p.get("mainLevel", "");
+        Props p2;
+        if (!mainLevel.isEmpty()) {
+            Path fname2 = fname.resolveSibling(mainLevel);
+            p2 = new Props();
+            if (!p2.load(fname2)) {
+                throw new ResourceException(fname2.toString());
+            }
+        } else {
+            p2 = p;
         }
 
         // read name
-        lvlName = p.get("name", "");
+        lvlName = p.get("name", p2.get("name", ""));
         //out(fname + " - " + lvlName);
-        maxFallDistance = p.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance());
-        classicSteel = p.getBoolean("classicSteel", false);
-        switch (p.getInt("autosteelMode", 0)) {
+        maxFallDistance = p.getInt("maxFallDistance",
+                p2.getInt("maxFallDistance", GameController.getCurLevelPack().getMaxFallDistance()));
+        classicSteel = p.getBoolean("classicSteel", p2.getBoolean("classicSteel", false));
+        switch (p2.getInt("autosteelMode", 0)) {
             case 0:
             default:
                 autosteelMode = AutosteelMode.NONE;
@@ -178,54 +192,74 @@ public class Level {
                 autosteelMode = AutosteelMode.ADVANCED;
                 break;
         }
-        levelWidth = p.getInt("width", DEFAULT_WIDTH);
-        topBoundary = p.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
-        bottomBoundary = p.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
-        leftBoundary = p.getInt("leftBoundary", DEFAULT_LEFT_BOUNDARY);
-        rightBoundary = p.getInt("rightBoundary", DEFAULT_RIGHT_BOUNDARY);
-        releaseRate = p.getInt("releaseRate", 0);
+        levelWidth = p2.getInt("width", DEFAULT_WIDTH);
+        topBoundary = p2.getInt("topBoundary", DEFAULT_TOP_BOUNDARY);
+        bottomBoundary = p2.getInt("bottomBoundary", DEFAULT_BOTTOM_BOUNDARY);
+        leftBoundary = p2.getInt("leftBoundary", DEFAULT_LEFT_BOUNDARY);
+        rightBoundary = p2.getInt("rightBoundary", DEFAULT_RIGHT_BOUNDARY);
+        releaseRate = p.getInt("releaseRate", p2.getInt("releaseRate", 0));
         //out("releaseRate = " + releaseRate);
-        numLemmings = p.getInt("numLemmings", 1);
+        numLemmings = p.getInt("numLemmings", p2.getInt("numLemmings", 1));
         //out("numLemmings = " + numLemmings);
-        numToRescue = p.getInt("numToRescue", 0);
+        numToRescue = p.getInt("numToRescue", p2.getInt("numToRescue", 0));
         //out("numToRescue = " + numToRescue);
         timeLimitSeconds = p.getInt("timeLimitSeconds", Integer.MIN_VALUE);
         if (timeLimitSeconds == Integer.MIN_VALUE) {
-            int timeLimit = p.getInt("timeLimit", 0);
-            // prevent integer overflow upon conversion to seconds
-            if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
-                timeLimit = 0;
+            int timeLimit = p.getInt("timeLimit", Integer.MIN_VALUE);
+            if (p2 != p && timeLimit == Integer.MIN_VALUE) {
+                timeLimitSeconds = p2.getInt("timeLimitSeconds", Integer.MIN_VALUE);
+                if (timeLimitSeconds == Integer.MIN_VALUE) {
+                    timeLimit = p2.getInt("timeLimit", Integer.MIN_VALUE);
+                    // prevent integer overflow upon conversion to seconds
+                    if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
+                        timeLimit = 0;
+                    }
+                    timeLimitSeconds = timeLimit * 60;
+                }
+            } else {
+                // prevent integer overflow upon conversion to seconds
+                if (timeLimit >= Integer.MAX_VALUE / 60 || timeLimit <= Integer.MIN_VALUE / 60) {
+                    timeLimit = 0;
+                }
+                timeLimitSeconds = timeLimit * 60;
             }
-            timeLimitSeconds = timeLimit * 60;
         }
-        if (timeLimitSeconds == Integer.MAX_VALUE) {
+        if (timeLimitSeconds == Integer.MAX_VALUE || timeLimitSeconds < 0) {
             timeLimitSeconds = 0;
         }
 
         //out("timeLimit = " + timeLimit);
-        numClimbers = p.getInt("numClimbers", 0);
+        numClimbers = p.getInt("numClimbers", p2.getInt("numClimbers", 0));
         //out("numClimbers = " + numClimbers);
-        numFloaters = p.getInt("numFloaters", 0);
+        numFloaters = p.getInt("numFloaters", p2.getInt("numFloaters", 0));
         //out("numFloaters = " + numFloaters);
-        numBombers = p.getInt("numBombers", 0);
+        numBombers = p.getInt("numBombers", p2.getInt("numBombers", 0));
         //out("numBombers = " + numBombers);
-        numBlockers = p.getInt("numBlockers", 0);
+        numBlockers = p.getInt("numBlockers", p2.getInt("numBlockers", 0));
         //out("numBlockers = " + numBlockers);
-        numBuilders = p.getInt("numBuilders", 0);
+        numBuilders = p.getInt("numBuilders", p2.getInt("numBuilders", 0));
         //out("numBuilders = " + numBuilders);
-        numBashers = p.getInt("numBashers", 0);
+        numBashers = p.getInt("numBashers", p2.getInt("numBashers", 0));
         //out("numBashers = " + numBashers);
-        numMiners = p.getInt("numMiners", 0);
+        numMiners = p.getInt("numMiners", p2.getInt("numMiners", 0));
         //out("numMiners = " + numMiners);
-        numDiggers = p.getInt("numDiggers", 0);
+        numDiggers = p.getInt("numDiggers", p2.getInt("numDiggers", 0));
         //out("numDiggers = " + numDiggers);
         xPosCenter = p.getInt("xPosCenter", Integer.MIN_VALUE);
         if (xPosCenter == Integer.MIN_VALUE) {
-            int xPos = p.getInt("xPos", 0);
-            xPosCenter = xPos + 400;
+            int xPos = p.getInt("xPos", Integer.MIN_VALUE);
+            if (p2 != p && xPos == Integer.MIN_VALUE) {
+                xPosCenter = p2.getInt("xPosCenter", Integer.MIN_VALUE);
+                if (xPosCenter == Integer.MIN_VALUE) {
+                    xPos = p2.getInt("xPos", Integer.MIN_VALUE);
+                    xPosCenter = xPos + 400;
+                }
+            } else {
+                xPosCenter = xPos + 400;
+            }
         }
         //out("xPosCenter = " + xPosCenter);
-        String strStyle = p.get("style", "");
+        String strStyle = p2.get("style", "");
         int style = -1;
         for (int i = 0; i < STYLES.length; i++) {
             if (strStyle.equalsIgnoreCase(STYLES[i])) {
@@ -234,7 +268,7 @@ public class Level {
             }
         }
         //out("style = " + STYLES[style]);
-        String strSpecialStyle = p.get("specialStyle", "");
+        String strSpecialStyle = p2.get("specialStyle", "");
         int specialStyle = -1;
         for (int i = 0; i < SPECIAL_STYLES.length; i++) {
             if (strSpecialStyle.equalsIgnoreCase(SPECIAL_STYLES[i])) {
@@ -243,27 +277,45 @@ public class Level {
             }
         }
         //out("specialStyle = " + strSpecialStyle);
-        superlemming = p.getBoolean("superlemming", false);
-        forceNormalTimerSpeed = p.getBoolean("forceNormalTimerSpeed", false);
+        superlemming = p.getBoolean("superlemming", p2.getBoolean("superlemming", false));
+        forceNormalTimerSpeed = p.getBoolean("forceNormalTimerSpeed", p2.getBoolean("forceNormalTimerSpeed", false));
         
         // load objects
         sprObjAvailable = null;
         // first load the data from object descriptor file xxx.ini
-        String fnames = Core.findResource("styles/" + strStyle + "/" + strStyle + ".ini");
         props = new Props();
-        if (fnames == null || !props.load(fnames)) {
+        try {
+            Path fnames = Paths.get("styles", strStyle, strStyle + ".ini");
+            Path fnames2 = Core.findResource(fnames);
+            if (!props.load(fnames2)) {
+                if (style != -1) {
+                    throw new ResourceException(fnames.toString());
+                } else {
+                    throw new LemmException("Style \"" + strStyle + "\" does not exist.");
+                }
+            }
+        } catch (ResourceException ex) {
             if (style != -1) {
-                throw new ResourceException("styles/" + strStyle + "/" + strStyle + ".ini");
+                throw ex;
             } else {
                 throw new LemmException("Style \"" + strStyle + "\" does not exist.");
             }
         }
         if (!strSpecialStyle.isEmpty()) {
-            String fnames2 = Core.findResource("styles/special/" + strSpecialStyle + "/" + strSpecialStyle + ".ini");
-            props2 = new Props();
-            if (fnames2 == null || !props2.load(fnames2)) {
-                if (specialStyle != -1) {
-                    throw new ResourceException("styles/special/" + strSpecialStyle + "/" + strSpecialStyle + ".ini");
+            try {
+                Path fnames = Paths.get("styles/special", strSpecialStyle, strSpecialStyle + ".ini");
+                Path fnames2 = Core.findResource(fnames);
+                props2 = new Props();
+                if (fnames2 == null || !props2.load(fnames2)) {
+                    if (specialStyle != -1) {
+                        throw new ResourceException(fnames.toString());
+                    } else {
+                        throw new LemmException("Special style \"" + strSpecialStyle + "\" does not exist.");
+                    }
+                }
+            } catch (ResourceException ex) {
+                if (style != -1) {
+                    throw ex;
                 } else {
                     throw new LemmException("Special style \"" + strSpecialStyle + "\" does not exist.");
                 }
@@ -292,7 +344,7 @@ public class Level {
         //out("\n[Objects]");
         objects.clear();
         for (int i = 0; true; i++) {
-            int[] val = p.getIntArray("object_" + i, null);
+            int[] val = p2.getIntArray("object_" + i, null);
             if (val != null && val.length >= 5) {
                 LvlObject obj = new LvlObject(val);
                 objects.add(obj);
@@ -313,7 +365,7 @@ public class Level {
             terrain.add(ter);
         }
         for (int i = 0; true; i++) {
-            int[] val = p.getIntArray("terrain_" + i, null);
+            int[] val = p2.getIntArray("terrain_" + i, null);
             if (val != null && val.length >= 4) {
                 Terrain ter = new Terrain(val, false);
                 terrain.add(ter);
@@ -326,7 +378,7 @@ public class Level {
         //out("\n[Steel]");
         steel.clear();
         for (int i = 0; true; i++) {
-            int[] val = p.getIntArray("steel_" + i, null);
+            int[] val = p2.getIntArray("steel_" + i, null);
             if (val != null && val.length >= 4) {
                 Steel stl = new Steel(val);
                 steel.add(stl);
@@ -337,18 +389,18 @@ public class Level {
         }
         // read background
         backgrounds.clear();
-        int numBackgrounds = p.getInt("numBackgrounds", 0);
+        int numBackgrounds = p2.getInt("numBackgrounds", 0);
         for (int i = 0; i < numBackgrounds; i++) {
             List<LvlObject> bgObjects = new ArrayList<>(16);
             List<Terrain> bgTerrain = new ArrayList<>(256);
-            boolean bgTiled = p.getBoolean("bg_" + i + "_tiled", false);
-            int bgWidth = p.getInt("bg_" + i + "_width", 0);
-            int bgHeight = p.getInt("bg_" + i + "_height", 0);
-            int bgOffsetX = p.getInt("bg_" + i + "_offsetX", 0);
-            int bgOffsetY = p.getInt("bg_" + i + "_offsetY", 0);
-            double bgScrollSpeedX = p.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
+            boolean bgTiled = p2.getBoolean("bg_" + i + "_tiled", false);
+            int bgWidth = p2.getInt("bg_" + i + "_width", 0);
+            int bgHeight = p2.getInt("bg_" + i + "_height", 0);
+            int bgOffsetX = p2.getInt("bg_" + i + "_offsetX", 0);
+            int bgOffsetY = p2.getInt("bg_" + i + "_offsetY", 0);
+            double bgScrollSpeedX = p2.getDouble("bg_" + i + "_scrollSpeedX", 0.0);
             for (int j = 0; true; j++) {
-                int[] val = p.getIntArray("bg_" + i + "_object_" + j, null);
+                int[] val = p2.getIntArray("bg_" + i + "_object_" + j, null);
                 if (val != null && val.length >= 5) {
                     LvlObject obj = new LvlObject(val);
                     bgObjects.add(obj);
@@ -357,7 +409,7 @@ public class Level {
                 }
             }
             for (int j = 0; true; j++) {
-                int[] val = p.getIntArray("bg_" + i + "_terrain_" + j, null);
+                int[] val = p2.getIntArray("bg_" + i + "_terrain_" + j, null);
                 if (val != null && val.length >= 4) {
                     Terrain ter = new Terrain(val, false);
                     bgTerrain.add(ter);
@@ -422,8 +474,11 @@ public class Level {
             GraphicsContext graphicsContextMask = mask.createGraphicsContext();
             graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
             graphicsContextMask.grabPixels(mask, 0, 0, width, height, sourceMask, 0, width);
+            graphicsContext.dispose();
+            graphicsContextMask.dispose();
             int tx = t.xPos;
             int ty = t.yPos;
+            boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
             boolean fake = (t.modifier & Terrain.MODE_FAKE) != 0;
             boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
             boolean noOverwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) != 0;
@@ -443,8 +498,14 @@ public class Level {
                     if (x + tx < 0 || x + tx >= fgWidth) {
                         continue;
                     }
-                    int col = source[yLine + x];
-                    int maskCol = sourceMask[yLine + x];
+                    int xSrc;
+                    if (horizontallyFlipped) {
+                        xSrc = width - x - 1;
+                    } else {
+                        xSrc = x;
+                    }
+                    int col = source[yLine + xSrc];
+                    int maskCol = sourceMask[yLine + xSrc];
                     // ignore transparent pixels
                     if (!invisible && (col & 0xff000000) != 0) {
                         //col = (col & 0xffffff) | 0x80000000;
@@ -492,7 +553,7 @@ public class Level {
                                     if (isSteel) {
                                         newMask |= Stencil.MSK_STEEL;
                                     } else {
-                                        newMask &= Stencil.MSK_STEEL;
+                                        newMask &= ~Stencil.MSK_STEEL;
                                     }
                                     break;
                             }
@@ -539,8 +600,13 @@ public class Level {
             SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
             spr.setX(o.xPos);
             spr.setY(o.yPos);
+            // flags
+            boolean upsideDown = (o.flags & LvlObject.FLAG_UPSIDE_DOWN) != 0;
+            boolean fake = (o.flags & LvlObject.FLAG_FAKE) != 0;
+            boolean upsideDownMask = (o.flags & LvlObject.FLAG_UPSIDE_DOWN_MASK) != 0;
+            boolean horizontallyFlipped = (o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED) != 0;
             // check for entrances
-            if (spr.getType() == SpriteObject.Type.ENTRANCE && !o.fake) {
+            if (spr.getType() == SpriteObject.Type.ENTRANCE && !fake) {
                 Entrance e = new Entrance(o.xPos + spr.getWidth() / 2 + spr.getMaskOffsetX(),
                         o.yPos + spr.getMaskOffsetY(), (o.objSpecificModifier & LvlObject.OPTION_ENTRANCE_LEFT) != 0);
                 e.id = oCombined.size();
@@ -577,26 +643,39 @@ public class Level {
             }
             
             // draw stencil
-            if (!o.fake) {
+            if (!fake) {
                 for (int y = spr.getMaskOffsetY(); y < spr.getMaskHeight() + spr.getMaskOffsetY(); y++) {
                     if (y + spr.getY() < 0 || y + spr.getY() >= fgHeight) {
                         continue;
                     }
+                    int yDest;
+                    if (upsideDownMask) {
+                        yDest = spr.getHeight() - y - 1;
+                        if (spr.getType().isTriggeredByFoot()) {
+                            yDest += Lemming.HEIGHT;
+                        }
+                    } else {
+                        yDest = y;
+                    }
                     for (int x = spr.getMaskOffsetX(); x < spr.getMaskWidth() + spr.getMaskOffsetX(); x++) {
+                        int xDest;
+                        if (horizontallyFlipped) {
+                            xDest = spr.getWidth() - x - 1;
+                        } else {
+                            xDest = x;
+                        }
                         if ((!classicSteel
-                                && (spr.getType() == SpriteObject.Type.NO_BASH_LEFT
-                                || spr.getType() == SpriteObject.Type.NO_BASH_RIGHT
-                                || spr.getType() == SpriteObject.Type.STEEL)
-                                && (stencil.getMask(x + spr.getX(), y + spr.getY()) & Stencil.MSK_BRICK) == 0)
-                                || x + spr.getX() < 0 || x + spr.getX() >= fgWidth) {
+                                && (!spr.getType().isTriggeredByFoot())
+                                && (stencil.getMask(xDest + spr.getX(), yDest + spr.getY()) & Stencil.MSK_BRICK) == 0)
+                                || xDest + spr.getX() < 0 || xDest + spr.getX() >= fgWidth) {
                             continue;
                         }
                         // manage collision mask
                         // now read stencil
                         if ((spr.getMask(x, y) & 0xff000000) != 0) { // not transparent
-                            stencil.andMask(spr.getX() + x, y + spr.getY(), Stencil.MSK_BRICK);
-                            stencil.orMask(spr.getX() + x, y + spr.getY(), spr.getMaskType());
-                            stencil.setMaskObjectID(spr.getX() + x, y + spr.getY(), n);
+                            stencil.andMask(spr.getX() + xDest, yDest + spr.getY(), Stencil.MSK_BRICK);
+                            stencil.orMask(spr.getX() + xDest, yDest + spr.getY(), spr.getMaskType());
+                            stencil.setMaskObjectID(spr.getX() + xDest, yDest + spr.getY(), n);
                         }
                     }
                 }
@@ -604,10 +683,7 @@ public class Level {
             // remove invisible pixels from all object frames that are "in front"
             if (!invisible) {
                 // get flipped or normal version
-                if (o.upsideDown) {
-                    // flip the image vertically
-                    spr.flipSprite();
-                }
+                spr.flipSprite(horizontallyFlipped, upsideDown);
                 for (int y = 0; y < spr.getHeight(); y++) {
                     for (int x = 0; x < spr.getWidth(); x++) {
                         boolean paint = true;
@@ -652,8 +728,10 @@ public class Level {
                     int[] source = new int[width * height];
                     GraphicsContext graphicsContext = i.createGraphicsContext();
                     graphicsContext.grabPixels(i, 0, 0, width, height, source, 0, width);
+                    graphicsContext.dispose();
                     int tx = t.xPos;
                     int ty = t.yPos;
+                    boolean horizontallyFlipped = (t.modifier & Terrain.MODE_HORIZONTALLY_FLIPPED) != 0;
                     boolean upsideDown = (t.modifier & Terrain.MODE_UPSIDE_DOWN) != 0;
                     boolean overwrite = (t.modifier & Terrain.MODE_NO_OVERWRITE) == 0;
                     boolean remove = (t.modifier & Terrain.MODE_REMOVE) != 0;
@@ -671,7 +749,13 @@ public class Level {
                             if (x + tx < 0 || x + tx >= fgWidth) {
                                 continue;
                             }
-                            int col = source[yLine + x];
+                            int xSrc;
+                            if (horizontallyFlipped) {
+                                xSrc = width - x - 1;
+                            } else {
+                                xSrc = x;
+                            }
+                            int col = source[yLine + xSrc];
                             // ignore transparent pixels
                             if ((col & 0xff000000) != 0) {
                                 if (!overwrite) {
@@ -693,6 +777,9 @@ public class Level {
                     SpriteObject spr = new SpriteObject(sprObjAvailable[o.id]);
                     spr.setX(o.xPos);
                     spr.setY(o.yPos);
+                    // flags
+                    boolean upsideDown = (o.flags & LvlObject.FLAG_UPSIDE_DOWN) != 0;
+                    boolean horizontallyFlipped = (o.flags & LvlObject.FLAG_HORIZONTALLY_FLIPPED) != 0;
                     // animated
                     boolean invisible = (o.paintMode & LvlObject.MODE_INVISIBLE) != 0;
                     boolean drawOnVis = !invisible && (o.paintMode & LvlObject.MODE_VIS_ON_TERRAIN) != 0;
@@ -712,10 +799,7 @@ public class Level {
                     // remove invisible pixels from all object frames that are "in front"
                     if (!invisible) {
                         // get flipped or normal version
-                        if (o.upsideDown) {
-                            // flip the image vertically
-                            spr.flipSprite();
-                        }
+                        spr.flipSprite(horizontallyFlipped, upsideDown);
                         for (int y = 0; y < spr.getHeight(); y++) {
                             for (int x = 0; x < spr.getWidth(); x++) {
                                 boolean paint = true;
@@ -900,13 +984,10 @@ public class Level {
         List<Image> images = new ArrayList<>(64);
         int tiles = props.getInt("tiles", 0);
         for (int n = 0; n < tiles; n++) {
-            String fName = Core.findResource(
-                    "styles/" + set + "/" + set + "_" + n + ".png", Core.IMAGE_EXTENSIONS);
-            if (fName == null) {
-                throw new ResourceException("styles/" + set + "/" + set + "_" + n + ".png");
-            }
-            Image img = Core.loadTranslucentImage(fName);
-            images.add(img);
+            Path fName = Core.findResource(
+                    Paths.get("styles", set, set + "_" + n + ".png"),
+                    Core.IMAGE_EXTENSIONS);
+            images.add(Core.loadTranslucentImage(fName));
         }
         Image[] ret = new Image[images.size()];
         ret = images.toArray(ret);
@@ -923,20 +1004,17 @@ public class Level {
         List<Image> images = new ArrayList<>(64);
         int tileMasks = props.getInt("tiles", 0);
         for (int n = 0; n < tileMasks; n++) {
-            Image img;
-            String fName = Core.findResource(
-                    "styles/" + set + "/" + set + "m_" + n + ".png", Core.IMAGE_EXTENSIONS);
-            if (fName != null) {
-                img = Core.loadBitmaskImage(fName);
-            } else {
+            Path fName;
+            try {
                 fName = Core.findResource(
-                        "styles/" + set + "/" + set + "_" + n + ".png", Core.IMAGE_EXTENSIONS);
-                if (fName == null) {
-                    throw new ResourceException("styles/" + set + "/" + set + "_" + n + ".png");
-                }
-                img = Core.loadBitmaskImage(fName);
+                        Paths.get("styles", set, set + "m_" + n + ".png"),
+                        Core.IMAGE_EXTENSIONS);
+            } catch (ResourceException ex) {
+                fName = Core.findResource(
+                        Paths.get("styles", set, set + "_" + n + ".png"),
+                        Core.IMAGE_EXTENSIONS);
             }
-            images.add(img);
+            images.add(Core.loadBitmaskImage(fName));
         }
         Image[] ret = new Image[images.size()];
         ret = images.toArray(ret);
@@ -950,13 +1028,10 @@ public class Level {
      * @throws ResourceException
      */
     private Image loadSpecialSet(final String specialSet) throws ResourceException {
-        String fName = Core.findResource(
-                "styles/special/" + specialSet + "/" + specialSet + ".png", Core.IMAGE_EXTENSIONS);
-        if (fName == null) {
-            throw new ResourceException("styles/special/" + specialSet + "/" + specialSet + ".png");
-        }
-        Image img = Core.loadTranslucentImage(fName);
-        return img;
+        Path fName = Core.findResource(
+                Paths.get("styles/special", specialSet, specialSet + ".png"),
+                Core.IMAGE_EXTENSIONS);
+        return Core.loadTranslucentImage(fName);
     }
     
     /**
@@ -966,20 +1041,17 @@ public class Level {
      * @throws ResourceException
      */
     private Image loadSpecialMaskSet(final String specialSet) throws ResourceException {
-        Image img;
-        String fName = Core.findResource(
-                "styles/special/" + specialSet + "/" + specialSet + "m.png", Core.IMAGE_EXTENSIONS);
-        if (fName != null) {
-            img = Core.loadBitmaskImage(fName);
-        } else {
+        Path fName;
+        try {
             fName = Core.findResource(
-                    "styles/special/" + specialSet + "/" + specialSet + ".png", Core.IMAGE_EXTENSIONS);
-            if (fName == null) {
-                throw new ResourceException("styles/special/" + specialSet + "/" + specialSet + ".png");
-            }
-            img = Core.loadBitmaskImage(fName);
+                    Paths.get("styles/special", specialSet, specialSet + "m.png"),
+                    Core.IMAGE_EXTENSIONS);
+        } catch (ResourceException ex) {
+            fName = Core.findResource(
+                    Paths.get("styles/special", specialSet, specialSet + ".png"),
+                    Core.IMAGE_EXTENSIONS);
         }
-        return img;
+        return Core.loadBitmaskImage(fName);
     }
 
 
@@ -1011,11 +1083,9 @@ public class Level {
                 break;
             }
             // load screen buffer
-            String fName = Core.findResource(
-                    "styles/" + set + "/" + set + "o_" + idx + ".png", Core.IMAGE_EXTENSIONS);
-            if (fName == null) {
-                throw new ResourceException("styles/" + set + "/" + set + "o_" + idx + ".png");
-            }
+            Path fName = Core.findResource(
+                    Paths.get("styles", set, set + "o_" + idx + ".png"),
+                    Core.IMAGE_EXTENSIONS);
             Image img = Core.loadTranslucentImage(fName);
             // load sprite
             int anim = props.getInt("anim_" + sIdx, -1);
@@ -1041,10 +1111,8 @@ public class Level {
                 case STEEL:
                     // load mask
                     fName = Core.findResource(
-                            "styles/" + set + "/" + set + "om_" + idx + ".png", Core.IMAGE_EXTENSIONS);
-                    if (fName == null) {
-                        throw new ResourceException("styles/" + set + "/" + set + "om_" + idx + ".png");
-                    }
+                            Paths.get("styles", set, set + "om_" + idx + ".png"),
+                            Core.IMAGE_EXTENSIONS);
                     int maskOffsetX = props.getInt("maskOffsetX_" + sIdx, 0);
                     int maskOffsetY = props.getInt("maskOffsetY_" + sIdx, 0);
                     img = Core.loadBitmaskImage(fName);
@@ -1106,7 +1174,6 @@ public class Level {
     public Image createMinimap(final Image image, final Image fgImage, final int scaleX, final int scaleY,
             final boolean tint, final boolean drawBackground) {
         Level level = GameController.getLevel();
-        int bgCol;
         int width = fgImage.getWidth() / scaleX;
         int height = fgImage.getHeight() / scaleY;
         Image img;
@@ -1433,6 +1500,12 @@ class LvlObject {
     /** paint mode: don't draw the object */
     static final int MODE_INVISIBLE = 2;
     
+    /** flag: paint the object upside down */
+    static final int FLAG_UPSIDE_DOWN = 1;
+    static final int FLAG_FAKE = 2;
+    static final int FLAG_UPSIDE_DOWN_MASK = 4;
+    static final int FLAG_HORIZONTALLY_FLIPPED = 8;
+    
     static final int OPTION_ENTRANCE_LEFT = 1;
 
     /** identifier */
@@ -1443,22 +1516,19 @@ class LvlObject {
     int yPos;
     /** paint mode - must be one of the MODEs above */
     int paintMode;
-    /** flag: paint the object upside down */
-    boolean upsideDown;
-    boolean fake;
+    int flags;
     int objSpecificModifier;
 
     /**
      * Constructor
-     * @param val five or six values as array [identifier, x position, y position, paint mode, flags]
+     * @param val five or six values as array [identifier, x position, y position, paint mode, flags, object-specific modifier]
      */
     public LvlObject(final int[] val) {
         id = val[0];
         xPos = val[1];
         yPos = val[2];
         paintMode = val[3];
-        upsideDown = (val[4] & 0x01) != 0;
-        fake = (val[4] & 0x02) != 0;
+        flags = val[4];
         objSpecificModifier = (val.length >= 6) ? val[5] : 0;
     }
 }
@@ -1468,6 +1538,7 @@ class LvlObject {
  * @author Volker Oth
  */
 class Terrain {
+    static final int MODE_HORIZONTALLY_FLIPPED = 32;
     static final int MODE_FAKE = 16;
     /** paint mode: don't overwrite existing terrain pixels */
     static final int MODE_NO_OVERWRITE = 8;
@@ -1520,7 +1591,7 @@ class Steel {
 
     /**
      * Constructor.
-     * @param val four values as array [x position, y position, width, height]
+     * @param val four or five values as array [x position, y position, width, height, flags]
      */
     public Steel(final int[] val) {
         xPos = val[0];

@@ -108,9 +108,9 @@ public class Minimap {
      * @param xOfs horizontal level offset
      */
     public static void drawFrame(final GraphicsContext g, final int x, final int y, final int xOfs) {
-        int wWidth = Lemmini.getPaneWidth() / Core.getScale();
+        int wWidth = Core.unscale(Lemmini.getPaneWidth());
         g.setColor(FRAME_COLOR);
-        if (GameController.getWidth() < Lemmini.getPaneWidth() / Core.getScale()) {
+        if (GameController.getWidth() < Core.unscale(Lemmini.getPaneWidth())) {
             g.drawRect(x, y, GameController.getWidth() / scaleX, img.getHeight() - 1);
         } else {
             g.drawRect(x + xOfs / scaleX, y, wWidth / scaleX, img.getHeight() - 1);

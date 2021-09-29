@@ -94,7 +94,7 @@ public class TextScreen {
     /** target image for rotation animation */
     private static Image imgTrg;
     /** graphics for rotation animation */
-    private static GraphicsContext imgGfx;
+    private static GraphicsContext imgGfx = null;
     /** flip state for rotation: true - image is flipped in Y direction */
     private static boolean flip;
     /** affine transformation used for rotation animation */
@@ -112,11 +112,11 @@ public class TextScreen {
     /** image used for scroller */
     private static Image scrollerImg;
     /** graphics used for scroller */
-    private static GraphicsContext scrollerGfx;
+    private static GraphicsContext scrollerGfx = null;
     /** screen type to display */
     private static Mode mode;
     
-    private static int oldScale = Core.getScale();
+    private static double oldScale = Core.getScale();
 
     /**
      * Set mode.
@@ -124,7 +124,7 @@ public class TextScreen {
      */
     public static void setMode(final Mode m) {
         synchronized (monitor) {
-            int scale = Core.getScale();
+            double scale = Core.getScale();
             if (mode != m || oldScale != scale) {
                 switch (m) {
                     case INTRO:
@@ -182,9 +182,7 @@ public class TextScreen {
         } else {
             textDialog.print(String.format("Time         %d-%02d", minutes, seconds), -9, 3, TURQUOISE);
         }
-        if (GameController.getCurLevelPackIdx() > 0) {
-            textDialog.print(String.format("Rating       %s", rating), -9, 4, VIOLET);
-        }
+        textDialog.print(String.format("Rating       %s", rating), -9, 4, VIOLET);
         textDialog.copyToBackBuffer(); // though not really needed
     }
 
@@ -196,7 +194,7 @@ public class TextScreen {
         textDialog.fillBackground(MiscGfx.getImage(MiscGfx.Index.TILE_GREEN));
         int numLemmings = GameController.getNumLemmingsMax();
         int toRescue = GameController.getNumToRescue();
-        int rescued = GameController.getNumLeft();
+        int rescued = GameController.getNumExited();
         int toRescuePercent = toRescue * 100 / numLemmings; // % to rescue of total number
         int rescuedPercent = rescued * 100 / numLemmings; // % rescued of total number
         int rescuedOfToRescue; // % rescued of no. to rescue
@@ -224,7 +222,7 @@ public class TextScreen {
         LevelPack lp = GameController.getCurLevelPack();
         String[] debriefings = lp.getDebriefings();
         if (GameController.wasLost()) {
-            if (GameController.getNumLeft() <= 0) {
+            if (GameController.getNumExited() <= 0) {
                 textDialog.printCentered(debriefings[0], -1, RED);
                 textDialog.printCentered(debriefings[1], 0, RED);
             } else if (rescuedOfToRescue < 50) {
@@ -255,10 +253,11 @@ public class TextScreen {
                 textDialog.printCentered(debriefings[16], -1, RED);
                 textDialog.printCentered(debriefings[17], 0, RED);
             }
-            int ln = GameController.getCurLevelNumber();
+            int lpn = GameController.getCurLevelPackIdx();
             int r = GameController.getCurRating();
+            int ln = GameController.getCurLevelNumber();
             if (lp.getLevels(r).length > ln + 1) {
-                int absLevel = GameController.absLevelNum(GameController.getCurLevelPackIdx(), GameController.getCurRating(), ln+1);
+                int absLevel = GameController.absLevelNum(lpn, r, ln + 1);
                 String code = LevelCode.create(lp.getCodeSeed(), absLevel, rescuedPercent,
                         GameController.getTimesFailed(), 0, lp.getCodeOffset());
                 if (code != null) {
@@ -268,10 +267,10 @@ public class TextScreen {
                     textDialog.printCentered(String.format("is %s", code), 3, BROWN);
                 }
                 textDialog.addTextButton(-4, 6, Button.CONTINUE, "Continue", "Continue", BLUE, BROWN);
-            } else {
+            } else if (!(lpn == 0 && r == 0)) {
                 textDialog.printCentered("Congratulations!", 2, BROWN);
                 textDialog.printCentered(String.format("You finished all the %s levels!", lp.getRatings()[GameController.getCurRating()]), 3, GREEN);
-                if (lp.getLevels(r).length <= ln + 1 && lp.getRatings().length > r + 1) {
+                if (lpn != 0 && lp.getLevels(r).length <= ln + 1 && lp.getRatings().length > r + 1) {
                     textDialog.addTextButton(-4, 6, Button.NEXT_RATING, "Continue", "Continue", BLUE, BROWN);
                 }
             }
@@ -303,6 +302,13 @@ public class TextScreen {
      */
     public static void init(final int width, final int height) {
         synchronized (monitor) {
+            if (imgGfx != null) {
+                imgGfx.dispose();
+            }
+            if (scrollerGfx != null) {
+                scrollerGfx.dispose();
+            }
+            
             rotFact = 1.0;
             rotDelta = -0.1;
             imgSrc = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
@@ -399,9 +405,9 @@ public class TextScreen {
         int w = SCROLL_WIDTH*LemmFont.getWidth();
         int dx = (textDialog.getScreen().getWidth() - w) / 2;
         int dy = (textDialog.getScreen().getHeight() / 2) + SCROLL_Y;
-        textDialog.getScreen().createGraphicsContext().drawImage(
-                scrollerImg, dx, dy, dx + w, dy + SCROLL_HEIGHT, scrollPixCtr, 0, scrollPixCtr + w, SCROLL_HEIGHT / 2
-                );
+        GraphicsContext g = textDialog.getScreen().createGraphicsContext();
+        g.drawImage(scrollerImg, dx, dy, dx + w, dy + SCROLL_HEIGHT, scrollPixCtr, 0, scrollPixCtr + w, SCROLL_HEIGHT / 2);
+        g.dispose();
 
         scrollPixCtr += SCROLL_STEP;
         if (scrollPixCtr >= LemmFont.getWidth()) {

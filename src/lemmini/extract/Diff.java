@@ -1,5 +1,8 @@
 package lemmini.extract;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.Adler32;
@@ -42,13 +45,13 @@ public class Diff {
     /** substitute n bytes with m bytes */
     private static final byte SUBSTITUTE = 3;
 
+    /** print info to System.out */
+    private static final boolean VERBATIM = false;
+
     /** magic number for header ID */
     private static final int HEADER_ID = 0xdeadbeef;
     /** magic number for data ID */
     private static final int DATA_ID = 0xfade0ff;
-
-    /** print info to System.out */
-    private static boolean verbatim = false;
 
     /** re-synchronization length */
     private static int resyncLength = 4;
@@ -74,46 +77,49 @@ public class Diff {
      * @param btrg target buffer (the file as it should be)
      * @return buffer of differences
      */
-    public static byte[] diffBuffers(final byte bsrc[], final byte btrg[]) {
-        List<Byte> patch = new ArrayList<>();
-        Buffer src = new Buffer(bsrc);
-        Buffer trg = new Buffer(btrg);
+    public static byte[] diffBuffers(final byte[] bsrc, final byte[] btrg) {
+        //List<Byte> patch = new ArrayList<>();
+        ByteArrayOutputStream patch = new ByteArrayOutputStream(16 * 1024);
+        ByteBuffer src = ByteBuffer.wrap(bsrc).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer trg = ByteBuffer.wrap(btrg).order(ByteOrder.LITTLE_ENDIAN);
 
         // compare crcs
         Adler32 crcSrc = new Adler32();
-        crcSrc.update(src.getData());
+        crcSrc.update(src.array());
         Adler32 crcTrg = new Adler32();
-        crcTrg.update(trg.getData());
+        crcTrg.update(trg.array());
         targetCRC = (int) crcTrg.getValue();
         if (crcTrg.getValue() == crcSrc.getValue()) {
             return null;
         }
 
         // write header
-        setDWord(patch, HEADER_ID);
+        writeInt(patch, HEADER_ID);
         // write lengths to patch list
-        setLen(patch, src.length());
-        setLen(patch, trg.length());
+        writeLen(patch, src.capacity());
+        writeLen(patch, trg.capacity());
         // write crcs to patch list
-        setDWord(patch, (int) crcSrc.getValue());
-        setDWord(patch, (int) crcTrg.getValue());
-        setDWord(patch, DATA_ID);
+        writeInt(patch, (int) crcSrc.getValue());
+        writeInt(patch, (int) crcTrg.getValue());
+        writeInt(patch, DATA_ID);
 
         // examine source buffer
         int ofs = 0;
-        while (src.getIndex() < src.length()) {
+        while (src.position() < src.capacity()) {
+            src.mark();
+            trg.mark();
             // search for difference
-            int s = src.getByte();
-            int t = trg.getByte();
+            int s = src.get() & 0xff;
+            int t = trg.get() & 0xff;
             if (s == t) {
                 ofs++;
                 continue;
             }
-            // reset indeces
-            src.setIndex(src.getIndex() - 1);
-            trg.setIndex(trg.getIndex() - 1);
+            // reset indices
+            src.reset();
+            trg.reset();
             // write offset
-            setLen(patch, ofs);
+            writeLen(patch, ofs);
             out(String.format("Offset: %d", ofs));
             ofs = 0;
             // check for insert, delete, replace
@@ -130,8 +136,8 @@ public class Diff {
             len = StrictMath.min(len, lens[1]);
             if (len > windowLength) {
                 // completely lost synchronisation
-                //int rs = src.length() - src.getIndex();
-                //int rt = trg.length() - trg.getIndex();
+                //int rs = src.capacity() - src.position();
+                //int rt = trg.capacity() - trg.position();
                 //if (rs == rt) {
                 //    len = rs;
                 //    state = REPLACE;
@@ -155,39 +161,39 @@ public class Diff {
                 case INSERT:
                     // insert
                     out(String.format("Insert: %d", len));
-                    patch.add(INSERT);
-                    setLen(patch, len);
-                    for (int i = 0; i < len; i++) {
-                        patch.add((byte) trg.getByte());
-                    }
+                    patch.write(INSERT);
+                    writeLen(patch, len);
+                    byte[] lenBuf = new byte[len];
+                    trg.get(lenBuf);
+                    patch.write(lenBuf, 0, lenBuf.length);
                     break;
                 case DELETE:
                     // delete
                     out(String.format("Delete: %d", len));
-                    patch.add(DELETE);
-                    setLen(patch, len);
-                    src.setIndex(src.getIndex() + len);
+                    patch.write(DELETE);
+                    writeLen(patch, len);
+                    src.position(src.position() + len);
                     break;
                 case REPLACE:
                     // replace
                     out(String.format("Replace: %d", len));
-                    patch.add(REPLACE);
-                    setLen(patch, len);
-                    for (int i = 0; i < len; i++) {
-                        patch.add((byte) trg.getByte());
-                    }
-                    src.setIndex(src.getIndex() + len);
+                    patch.write(REPLACE);
+                    writeLen(patch, len);
+                    lenBuf = new byte[len];
+                    trg.get(lenBuf);
+                    patch.write(lenBuf, 0, lenBuf.length);
+                    src.position(src.position() + len);
                     break;
                 case SUBSTITUTE:
                     // replace
                     out(String.format("Substitute: %d/%d", lens[0], lens[1]));
-                    patch.add(SUBSTITUTE);
-                    setLen(patch, lens[0]);
-                    setLen(patch, lens[1]);
-                    for (int i = 0; i < lens[1]; i++) {
-                        patch.add((byte) trg.getByte());
-                    }
-                    src.setIndex(src.getIndex()+lens[0]);
+                    patch.write(SUBSTITUTE);
+                    writeLen(patch, lens[0]);
+                    writeLen(patch, lens[1]);
+                    byte[] lensBuf = new byte[lens[1]];
+                    trg.get(lensBuf);
+                    patch.write(lensBuf, 0, lensBuf.length);
+                    src.position(src.position() + lens[0]);
                     break;
                 default:
                     break;
@@ -197,32 +203,27 @@ public class Diff {
         // if the files end identically, the offset needs to be written
         if (ofs != 0) {
             out(String.format("Offset: %d", ofs));
-            setLen(patch, ofs);
+            writeLen(patch, ofs);
         }
 
         // check for stuff to insert in target
-        if (trg.getIndex() < trg.length()) {
-            patch.add(INSERT);
-            int len = trg.length() - trg.getIndex();
+        if (trg.position() < trg.capacity()) {
+            patch.write(INSERT);
+            int len = trg.capacity() - trg.position();
             out(String.format("Insert (End): %d", len));
-            setLen(patch, len);
-            for (int i = 0; i < len; i++) {
-                patch.add((byte) trg.getByte());
-            }
-        }
-
-        if (patch.isEmpty()) {
-            return null;
+            writeLen(patch, len);
+            byte[] lenBuf = new byte[len];
+            trg.get(lenBuf);
+            patch.write(lenBuf, 0, lenBuf.length);
         }
 
         out(String.format("Patch length: %d", patch.size()));
 
-        // convert patch list to output byte array
-        byte[] retVal = new byte[patch.size()];
-        for (int i = 0; i < retVal.length; i++) {
-            retVal[i] = patch.get(i);
+        if (patch.size() == 0) {
+            return null;
         }
-        return retVal;
+
+        return patch.toByteArray();
     }
 
     /**
@@ -233,72 +234,72 @@ public class Diff {
      * @throws DiffException
      */
     public static byte[] patchBuffers(final byte[] bsrc, final byte[] bpatch) throws DiffException {
-        Buffer src = new Buffer(bsrc);
-        Buffer patch = new Buffer(bpatch);
+        ByteBuffer src = ByteBuffer.wrap(bsrc).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer patch = ByteBuffer.wrap(bpatch).asReadOnlyBuffer().order(ByteOrder.LITTLE_ENDIAN);
         // calculate src crc
         Adler32 crc = new Adler32();
-        crc.update(src.getData());
+        crc.update(src.array());
         // analyze header
-        if (patch.getDWord() != Diff.HEADER_ID) {
+        if (patch.getInt() != Diff.HEADER_ID) {
             throw new DiffException("No header ID found in patch.");
         }
         int lenSrc = getLen(patch);
-        if (lenSrc != src.length()) {
+        if (lenSrc != src.capacity()) {
             throw new DiffException("Size of source differs from that in patch header");
         }
         int lenTrg = getLen(patch);
-        int crcPatchSrc = patch.getDWord();
-        if (crcPatchSrc != (int)crc.getValue()) {
+        int crcPatchSrc = patch.getInt();
+        if (crcPatchSrc != (int) crc.getValue()) {
             throw new DiffException(String.format("CRC of source (0x%x) differs from that in patch header (0x%x).",
                     crc.getValue(), crcPatchSrc));
         }
-        int crcTrg = patch.getDWord();
-        if (patch.getDWord() != Diff.DATA_ID) {
+        int crcTrg = patch.getInt();
+        if (patch.getInt() != Diff.DATA_ID) {
             throw new DiffException("No data ID found in patch header.");
         }
 
-        Buffer trg = new Buffer(lenTrg);
+        ByteBuffer trg = ByteBuffer.allocate(lenTrg).order(ByteOrder.LITTLE_ENDIAN);
 
         // step through patch buffer
         try {
-            while (patch.getIndex() < patch.length()) {
+            while (patch.position() < patch.capacity()) {
                 int ofs = getLen(patch);
                 out(String.format("Offset: %d", ofs));
                 // copy bytes from source buffer
-                for (int i = 0; i < ofs; i++) {
-                    trg.setByte((byte) src.getByte());
-                }
+                byte[] ofsBuf = new byte[ofs];
+                src.get(ofsBuf);
+                trg.put(ofsBuf);
                 // check for patch buffer empty
-                if (patch.getIndex() == patch.length()) {
+                if (patch.position() == patch.capacity()) {
                     break;
                 }
                 // now there must follow a command followed by a
-                int cmdIdx = patch.getIndex(); // just for exception
-                int cmd = patch.getByte();
+                int cmdIdx = patch.position(); // just for exception
+                int cmd = patch.get() & 0xff;
                 int len = getLen(patch);
                 switch (cmd) {
                     case Diff.DELETE:
                         out(String.format("Delete: %d", len));
-                        src.setIndex(src.getIndex() + len);
+                        src.position(src.position() + len);
                         break;
                     case Diff.REPLACE:
                         out("Replace/");
-                        src.setIndex(src.getIndex()+len);
+                        src.position(src.position() + len);
                         /* falls through */
                     case Diff.INSERT:
                         out(String.format("Insert: %d", len));
-                        for (int r = 0; r < len; r++) {
-                            trg.setByte((byte) patch.getByte());
-                        }
+                        byte[] lenBuf = new byte[len];
+                        patch.get(lenBuf);
+                        trg.put(lenBuf);
                         break;
-                    case Diff.SUBSTITUTE: {
+                    case Diff.SUBSTITUTE:
                         int lenT = getLen(patch);
                         out(String.format("Substitute: %d/%d", len, lenT));
-                        src.setIndex(src.getIndex() + len);
-                        for (int r = 0; r < lenT; r++) {
-                            trg.setByte((byte) patch.getByte());
-                        }
-                        break; }
+                        src.position(src.position() + len);
+                        byte[] lenTBuf = new byte[lenT];
+                        patch.get(lenTBuf);
+                        trg.put(lenTBuf);
+                        break;
                     default:
                         throw new DiffException(String.format("Unknown command %d at patch offset %d", cmd, cmdIdx));
                 }
@@ -308,18 +309,18 @@ public class Diff {
         }
 
         // check length
-        if (trg.getIndex() != lenTrg) {
+        if (trg.position() != lenTrg) {
             throw new DiffException("Size of target differs from that in patch header.");
         }
 
         // compare crc
         crc.reset();
-        crc.update(trg.getData());
-        if (crcTrg != (int)crc.getValue()) {
+        crc.update(trg.array());
+        if (crcTrg != (int) crc.getValue()) {
             throw new DiffException("CRC of target differs from that in patch.");
         }
 
-        return trg.getData();
+        return trg.array();
     }
 
     /**
@@ -329,20 +330,20 @@ public class Diff {
      * @return integer value of length/offset
      * @throws ArrayIndexOutOfBoundsException
      */
-    private static int getLen(final Buffer b) throws ArrayIndexOutOfBoundsException {
+    private static int getLen(final ByteBuffer b) throws ArrayIndexOutOfBoundsException {
         int val = 0;
         int v;
         int shift = 0;
         do {
-            v = b.getByte();
+            v = b.get() & 0xff;
             if ((v & 0x80) == 0) {
                 // no continue bit set
-                val += (v << shift);
+                val |= (v << shift);
                 break;
             }
-            // erase contine marker bit
+            // erase continue marker bit
             v &= 0x7f;
-            val += (v << shift);
+            val |= (v << shift);
             shift += 7;
         } while (true);
         return val;
@@ -354,13 +355,13 @@ public class Diff {
      * @param l Patch list to add length/offset in 7-bit encoding
      * @param value Value to add in 7bit encoding
      */
-    private static void setLen(final List<Byte> l, final int value) {
+    private static void writeLen(final ByteArrayOutputStream l, final int value) {
         int val = value;
         while (val > 0x7f) {
-            l.add((byte) (val & 0x7f | 0x80));
+            l.write(val & 0x7f | 0x80);
             val >>>= 7;
         }
-        l.add((byte) val);
+        l.write(val);
     }
 
     /**
@@ -370,11 +371,11 @@ public class Diff {
      * @return number of bytes inserted
      * @throws ArrayIndexOutOfBoundsException
      */
-    private static int checkInsert(final Buffer src, final Buffer trg) throws ArrayIndexOutOfBoundsException {
-        byte[] bs = src.getData();
-        int is = src.getIndex();
-        byte[] bt = trg.getData();
-        int it = trg.getIndex();
+    private static int checkInsert(final ByteBuffer src, final ByteBuffer trg) throws ArrayIndexOutOfBoundsException {
+        byte[] bs = src.array();
+        int is = src.position();
+        byte[] bt = trg.array();
+        int it = trg.position();
         int len = windowLength;
         if (is + len + resyncLength >= bs.length) {
             len = bs.length - is - resyncLength;
@@ -403,11 +404,11 @@ public class Diff {
      * @return number of bytes deleted
      * @throws ArrayIndexOutOfBoundsException
      */
-    private static int checkDelete(final Buffer src, final Buffer trg) throws ArrayIndexOutOfBoundsException {
-        byte[] bs = src.getData();
-        int is = src.getIndex();
-        byte[] bt = trg.getData();
-        int it = trg.getIndex();
+    private static int checkDelete(final ByteBuffer src, final ByteBuffer trg) throws ArrayIndexOutOfBoundsException {
+        byte[] bs = src.array();
+        int is = src.position();
+        byte[] bt = trg.array();
+        int it = trg.position();
         int len = windowLength;
         if (is + len + resyncLength >= bs.length) {
             len = bs.length - is - resyncLength;
@@ -436,11 +437,11 @@ public class Diff {
      * @return number of bytes replaced
      * @throws ArrayIndexOutOfBoundsException
      */
-    private static int checkReplace(final Buffer src, final Buffer trg) throws ArrayIndexOutOfBoundsException {
-        byte[] bs = src.getData();
-        int is = src.getIndex();
-        byte[] bt = trg.getData();
-        int it = trg.getIndex();
+    private static int checkReplace(final ByteBuffer src, final ByteBuffer trg) throws ArrayIndexOutOfBoundsException {
+        byte[] bs = src.array();
+        int is = src.position();
+        byte[] bt = trg.array();
+        int it = trg.position();
         int len = windowLength;
         if (is + len + resyncLength >= bs.length) {
             len = bs.length - is - resyncLength;
@@ -470,11 +471,11 @@ public class Diff {
      * @throws ArrayIndexOutOfBoundsException
 
      */
-    private static int[] checkSubstitute(final Buffer src, final Buffer trg) throws ArrayIndexOutOfBoundsException {
-        byte[] bs = src.getData();
-        int is = src.getIndex();
-        byte[] bt = trg.getData();
-        int it = trg.getIndex();
+    private static int[] checkSubstitute(final ByteBuffer src, final ByteBuffer trg) throws ArrayIndexOutOfBoundsException {
+        byte[] bs = src.array();
+        int is = src.position();
+        byte[] bt = trg.array();
+        int it = trg.position();
         int len = windowLength;
         if (is + len + resyncLength >= bs.length) {
             len = bs.length - is - resyncLength;
@@ -523,144 +524,24 @@ public class Diff {
     }
 
     /**
-     * Write DWord to difference list
+     * Write int to difference list
      * @param l difference list
-     * @param val DWord value
+     * @param val int value
      */
-    private static void setDWord(final List<Byte> l, final int val) {
-        l.add((byte) val);
-        l.add((byte) (val >> 8));
-        l.add((byte) (val >> 16));
-        l.add((byte) (val >> 24));
+    private static void writeInt(final ByteArrayOutputStream l, final int val) {
+        l.write(val);
+        l.write(val >> 8);
+        l.write(val >> 16);
+        l.write(val >> 24);
     }
 
     private static void out(final String s) {
-        if (verbatim) {
+        if (VERBATIM) {
             System.out.println(s);
         }
     }
 }
 
-
-/**
- * Buffer class that manages reading/writing from/to a byte buffer
- *
- * @author Volker Oth
- */
-class Buffer {
-    /** array of byte which defines the data buffer */
-    private byte[] buffer;
-    /** byte index in buffer */
-    private int index;
-
-    /**
-     * Constructor.
-     * @param size buffer size in bytes
-     */
-    Buffer(final int size) {
-        index = 0;
-        buffer = new byte[size];
-    }
-
-    /**
-     * Constructor.
-     * @param b array of byte to use as buffer
-     */
-    Buffer(final byte[] b) {
-        index = 0;
-        buffer = b;
-    }
-
-    /**
-     * Get size of buffer.
-     * @return size of buffer in bytes
-     */
-    int length() {
-        return buffer.length;
-    }
-
-    /**
-     * Get current byte index.
-     * @return current byte index
-     */
-    int getIndex() {
-        return index;
-    }
-
-    /**
-     * Get data buffer.
-     * @return data buffer
-     */
-    byte[] getData() {
-        return buffer;
-    }
-
-    /**
-     * Set index to new byte position.
-     * @param idx index to new byte position
-     */
-    void setIndex(final int idx) {
-        index = idx;
-    }
-
-    /**
-     * Get byte at current position.
-     * @return byte at current position
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    int getByte() throws ArrayIndexOutOfBoundsException {
-        return buffer[index++] & 0xff;
-    }
-
-    /**
-     * Set byte at current position, increase index by 1.
-     * @param val byte value to write
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    void setByte(final byte val) throws ArrayIndexOutOfBoundsException {
-        buffer[index++] = val;
-    }
-
-    /**
-     * Get word (2 bytes, little endian) at current position.
-     * @return word at current position
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    int getWord() throws ArrayIndexOutOfBoundsException {
-        return getByte() | (getByte() << 8);
-    }
-
-    /**
-     * Set word (2 bytes, little endian) at current position, increase index by 2.
-     * @param val word to write at current position
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    void setWord(final int val) throws ArrayIndexOutOfBoundsException {
-        setByte((byte) val);
-        setByte((byte) (val >> 8));
-    }
-
-    /**
-     * Get double word (4 bytes, little endian) at current position.
-     * @return dword at current position
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    int getDWord() throws ArrayIndexOutOfBoundsException {
-        return getByte() | (getByte() << 8) | (getByte() << 16) | (getByte() << 24);
-    }
-
-    /**
-     * Set double word (4 bytes, little endian) at current position, increase index by 4.
-     * @param val dword to write at current position
-     * @throws ArrayIndexOutOfBoundsException
-     */
-    void setDWord(final int val) throws ArrayIndexOutOfBoundsException {
-        setByte((byte) val);
-        setByte((byte) (val >> 8));
-        setByte((byte) (val >> 16));
-        setByte((byte) (val >> 24));
-    }
-}
 
 /**
  * Generic Exception for Diff.

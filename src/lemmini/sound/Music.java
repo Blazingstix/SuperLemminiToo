@@ -1,13 +1,17 @@
 package lemmini.sound;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.text.Normalizer;
-import java.text.Normalizer;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
 import lemmini.game.ResourceException;
+import lemmini.tools.ToolBox;
 
 /*
  * FILE MODIFIED BY RYAN SAKOWSKI
@@ -43,8 +47,6 @@ public class Music {
         MIDI,
         /** MOD music */
         MOD,
-        /** Vorbis music */
-        VORBIS,
         /** Wave music */
         WAVE
     }
@@ -57,8 +59,6 @@ public class Music {
     private static ModMusic modMusic;
     /** MIDI music object */
     private static MidiMusic midiMusic;
-    /** Vorbis music object */
-    //private static VorbisMusic vorbisMusic;
     /** Wave music object */
     private static WaveMusic waveMusic;
     /** music gain */
@@ -74,7 +74,6 @@ public class Music {
         type = Type.NONE;
         playing = false;
         modMusic = new ModMusic();
-        //vorbisMusic = new VorbisMusic();
         waveMusic = new WaveMusic();
         try {
             midiMusic = new MidiMusic();
@@ -90,28 +89,28 @@ public class Music {
      * @throws ResourceException
      * @throws LemmException
      */
-    public static void load(final String fName) throws ResourceException, LemmException {
+    public static void load(final Path fName) throws ResourceException, LemmException {
         close();
         playing = false;
-        String fName2 = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
-        if (fName2 == null) {
-            throw new ResourceException(fName);
-        }
-        if (fName2.endsWith(".mid")) {
-            if (!midiAvailable) {
-                throw new LemmException("MIDI not supported.");
-            }
-            musicPlayer = midiMusic;
-            type = Type.MIDI;
-        } else if (fName2.endsWith(".xm") || fName2.endsWith(".s3m") || fName2.endsWith(".mod")) {
-            musicPlayer = modMusic;
-            type = Type.MOD;
-        //} else if (fName2.endsWith(".ogg")) {
-        //    musicPlayer = vorbisMusic;
-        //    type = Type.VORBIS;
-        } else {
-            musicPlayer = waveMusic;
-            type = Type.WAVE;
+        Path fName2 = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
+        switch (ToolBox.getExtension(fName2.getFileName().toString().toLowerCase(Locale.ROOT))) {
+            case "mid":
+                if (!midiAvailable) {
+                    throw new LemmException("MIDI not supported.");
+                }
+                musicPlayer = midiMusic;
+                type = Type.MIDI;
+                break;
+            case "mod":
+            case "s3m":
+            case "xm":
+                musicPlayer = modMusic;
+                type = Type.MOD;
+                break;
+            default:
+                musicPlayer = waveMusic;
+                type = Type.WAVE;
+                break;
         }
         musicPlayer.load(fName2, true);
     }
@@ -122,16 +121,16 @@ public class Music {
      * @param specialStyle
      * @return file name of a random track
      */
-    public static String getRandomTrack(final String style, final String specialStyle) {
-        File dir = new File(Core.resourcePath, "music");
-        FileFilter filter = new FileFilter() {
+    public static Path getRandomTrack(final String style, final String specialStyle) {
+        Path dir = Core.resourcePath.resolve("music");
+        DirectoryStream.Filter<Path> filter = new DirectoryStream.Filter<Path>() {
             @Override
-            public boolean accept(final File f) {
-                if (!f.isFile()) {
+            public boolean accept(Path entry) {
+                if (!Files.isRegularFile(entry)) {
                     return false;
                 }
                 for (String ext : Core.MUSIC_EXTENSIONS) {
-                    String lowercaseName = f.getName().toLowerCase(Locale.ROOT);
+                    String lowercaseName = entry.getFileName().toString().toLowerCase(Locale.ROOT);
                     if (lowercaseName.endsWith("." + ext) && !lowercaseName.endsWith("_intro." + ext)) {
                         return true;
                     }
@@ -141,28 +140,42 @@ public class Music {
         };
         
         if (specialStyle != null && !specialStyle.isEmpty()) {
-            File dir2 = new File(dir, "special");
-            File[] files = dir2.listFiles(filter);
-            for (File file : files) {
-                String name = Core.removeExtension(file.getName());
-                if (specialStyle.equalsIgnoreCase(name)) {
-                    return "special/" + file.getName();
+            Path dir2 = dir.resolve("special");
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(dir2, filter)) {
+                for (Path file : files) {
+                    String name = ToolBox.removeExtension(file.getFileName().toString());
+                    if (specialStyle.equalsIgnoreCase(name)) {
+                        return Paths.get("special").resolve(file.getFileName());
+                    }
                 }
+            } catch (IOException ex) {
             }
         }
         
+        List<Path> fileList = new ArrayList<>(128);
         if (style != null && !style.isEmpty()) {
-            File dir2 = new File(dir, style);
-            File[] files = dir2.listFiles(filter);
-            if (files != null && files.length > 0) {
-                double r = Math.random() * files.length;
-                return style + "/" + files[(int) r].getName();
+            Path dir2 = dir.resolve(style);
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(dir2, filter)) {
+                for (Path file : files) {
+                    fileList.add(file);
+                }
+            } catch (IOException ex) {
+            }
+            if (fileList.size() > 0) {
+                double r = Math.random() * fileList.size();
+                return Paths.get(style).resolve(fileList.get((int) r).getFileName());
             }
         }
         
-        File[] files = dir.listFiles(filter);
-        double r = Math.random() * files.length;
-        return files[(int) r].getName();
+        fileList.clear();
+        try (DirectoryStream<Path> files = Files.newDirectoryStream(dir, filter)) {
+            for (Path file : files) {
+                fileList.add(file);
+            }
+        } catch (IOException ex) {
+        }
+        double r = Math.random() * fileList.size();
+        return fileList.get((int) r).getFileName();
     }
 
     /**

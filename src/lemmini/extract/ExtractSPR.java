@@ -2,15 +2,15 @@ package lemmini.extract;
 
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
-import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import javax.imageio.ImageIO;
 
 /*
@@ -40,8 +40,8 @@ public class ExtractSPR {
     /** palette index of transparent color */
     private static final int TRANSPARENT_INDEX = 0;
 
-    /** array of GIF images to store to disk */
-    private GIFImage[] images;
+    /** array of PNG images to store to disk */
+    private PNGImage[] images;
     /** color palette */
     private Palette palette = null;
     /** buffer used to compress the palette (remove double entries) to work around issues on MacOS */
@@ -54,38 +54,38 @@ public class ExtractSPR {
      * @return ColorModel representation of Palette
      * @throws ExtractException
      */
-    Palette loadPalette(final String fname) throws ExtractException {
-        System.out.println(fname);
-        byte[] buffer;
+    Palette loadPalette(final Path fname) throws ExtractException {
+        ByteBuffer buffer;
 
         // read file into buffer
         //int paletteSize;
         try {
-            Path f = Paths.get(fname);
-            if (Files.notExists(f)) {
+            if (!Files.isRegularFile(fname)) {
                 throw new ExtractException(String.format("File %s not found.", fname));
             }
-            buffer = Files.readAllBytes(f);
+            buffer = ByteBuffer.wrap(Files.readAllBytes(fname)).asReadOnlyBuffer();
         } catch (IOException e) {
             throw new ExtractException(String.format("I/O error while reading %s.", fname));
         }
+        
         // check header
-        if (buffer[0] != 0x20 || buffer[1] != 0x4c || buffer[2] != 0x41 || buffer[3] != 0x50 ) {
+        if (buffer.getInt() != 0x204c4150) {
             throw new ExtractException(String.format("File %s is not a Lemmings palette file.", fname));
         }
+        
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
 
-        paletteSize = unsigned(buffer[4]) + unsigned(buffer[5]) * 256;   // number of palette entries
+        paletteSize = buffer.getShort() & 0xffff; // number of palette entries
 
         byte[] r = new byte[paletteSize];
         byte[] g = new byte[paletteSize];
         byte[] b = new byte[paletteSize];
 
-        int ofs = 6; // skip two bytes which contain number of palettes (?)
         for (int idx = 0; idx < paletteSize; idx++) {
-            r[idx] = buffer[ofs++];
-            g[idx] = buffer[ofs++];
-            b[idx] = buffer[ofs++];
-            ofs++;
+            r[idx] = buffer.get();
+            g[idx] = buffer.get();
+            b[idx] = buffer.get();
+            buffer.get();
         }
 
         // search for double entries, create
@@ -108,8 +108,8 @@ public class ExtractSPR {
                 compressedG[compressedIndex] = g[i];
                 compressedB[compressedIndex] = b[i];
                 if (i != TRANSPARENT_INDEX) {       // don't search duplicates of transparent color
-                    // search for duplicates at higher indeces
-                    for (int j = i + 1; j<paletteSize; j++) {
+                    // search for duplicates at higher indices
+                    for (int j = i + 1; j < paletteSize; j++) {
                         if (j == TRANSPARENT_INDEX) { // transparent color can't be a duplicate of another color
                             continue;
                         }
@@ -134,22 +134,13 @@ public class ExtractSPR {
     }
 
     /**
-     * Convert byte in unsigned int
-     * @param b Byte to convert
-     * @return Unsigned value of byte
-     */
-    private static int unsigned(final byte b) {
-        return b & 0xFF;
-    }
-
-    /**
      * Load SPR file. Load palette first!
      * @param fname Name of SPR file
      * @return Array of Images representing all images stored in the SPR file
      * @throws ExtractException
      */
-    GIFImage[] loadSPR(final String fname) throws ExtractException {
-        byte[] buffer;
+    PNGImage[] loadSPR(final Path fname) throws ExtractException {
+        ByteBuffer buffer;
 
         if (palette == null) {
             throw new ExtractException("Load palette first!");
@@ -157,36 +148,37 @@ public class ExtractSPR {
 
         // read file into buffer
         try {
-            Path f = Paths.get(fname);
-            if (Files.notExists(f)) {
+            if (!Files.isRegularFile(fname)) {
                 throw new ExtractException(String.format("File %s not found.", fname));
             }
-            buffer = Files.readAllBytes(f);
+            buffer = ByteBuffer.wrap(Files.readAllBytes(fname)).asReadOnlyBuffer();
         } catch(IOException e) {
             throw new ExtractException(String.format("I/O error while reading %s.", fname));
         }
         // check header
-        if (buffer[0] != 0x53 || buffer[1] != 0x52 || buffer[2] != 0x4c || buffer[3] != 0x45 ) {
+        if (buffer.getInt() != 0x53524c45) {
             throw new ExtractException(String.format("File %s is not a Lemmings sprite file.", fname));
         }
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
         // get number of frames
-        int frames = unsigned(buffer[4]) + unsigned(buffer[5]) * 256;
-        int ofs = unsigned(buffer[6]) + unsigned(buffer[7]) * 256;
+        int frames = buffer.getShort() & 0xffff;
+        int ofs = buffer.getShort() & 0xffff;
+        buffer.position(ofs);
 
-        images = new GIFImage[frames];
+        images = new PNGImage[frames];
         byte b;
         int lineOfs;
 
         for (int frame = 0; frame < frames; frame++) {
             // get header info
-            int xOfs = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256;   // x offset of data in output image
-            int yOfs = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256;   // y offset of data in output image
-            int maxLen = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256; // maximum length of a data line
-            int lines = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256;  // number of data lines
-            int width = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256;  // width of output image
-            int height = unsigned(buffer[ofs++]) + unsigned(buffer[ofs++]) * 256; // height of output image
+            int xOfs = buffer.getShort() & 0xffff;   // x offset of data in output image
+            int yOfs = buffer.getShort() & 0xffff;   // y offset of data in output image
+            int maxLen = buffer.getShort() & 0xffff; // maximum length of a data line
+            int lines = buffer.getShort() & 0xffff;  // number of data lines
+            int width = buffer.getShort() & 0xffff;  // width of output image
+            int height = buffer.getShort() & 0xffff; // height of output image
 
-            byte[] pixels = new byte[width*height];
+            byte[] pixels = new byte[width * height];
 
             for (int i = 0; i < pixels.length; i++) {
                 pixels[i] = TRANSPARENT_INDEX;
@@ -198,16 +190,16 @@ public class ExtractSPR {
 
             for (int line = 0; line < lines; ) {
                 // read line
-                b = buffer[ofs++]; // start character including length (>= 0x80) or line offset (<0x80)
+                b = buffer.get(); // start character including length (>= 0x80) or line offset (<0x80)
                 lineOfs = 0;
                 while (b == 0x7f) {   // special line offset for large sprites
                     lineOfs += 0x7f;
-                    b = buffer[ofs++];
+                    b = buffer.get();
                 }
                 if ((b & 0x80) != 0x80) {
                     // additional line offset
                     lineOfs += (b & 0x7f);
-                    b = buffer[ofs++]; // start character
+                    b = buffer.get(); // start character
                 }
                 // get line length
                 int len = (b & 0xff) - 0x80;
@@ -218,20 +210,21 @@ public class ExtractSPR {
                     try {
                         for (int pixel = 0; pixel < len; pixel++) {
                             // none of the extracted images uses more than 128 colors (indeed much less)
-                            // but some use higher indeces. Instead of mirroring the palette, just and every
-                            // entry with 0x7f.
-                            // The lookup table is needed to get new index in compresse palette
-                            byte pixelVal = (byte) (lookupBuffer[unsigned(buffer[ofs++]) % paletteSize] & 0xff);
+                            // but some use higher indices. Instead of mirroring the palette, just modulo every
+                            // entry with the palette size.
+                            // The lookup table is needed to get new index in compressed palette
+                            byte pixelVal = (byte) (lookupBuffer[(buffer.get() & 0xff) % paletteSize] & 0xff);
                             pixels[y + xOfs + lineOfs + pixel + pxOffset] = pixelVal;
                         }
                     } catch (ArrayIndexOutOfBoundsException ex) {
                         throw new ExtractException(String.format("Index out of bounds in line %d of frame %d of %s (offset: %d).", line, frame, fname, ofs));
                     }
-                    b = buffer[ofs++]; // end character must be 0x80
+                    buffer.mark();
+                    b = buffer.get(); // end character must be 0x80
                     if ((b & 0xff) != 0x80) {
                         // if this is not the end character, the line is continued after an offset
                         pxOffset += (lineOfs + len);
-                        ofs--;
+                        buffer.reset();
                         continue;
                     }
                 }
@@ -240,7 +233,7 @@ public class ExtractSPR {
                 y += width;
             }
             // convert byte array into BufferedImage
-            images[frame] = new GIFImage(width, height, pixels, palette);
+            images[frame] = new PNGImage(width, height, pixels, palette);
         }
 
         return images;
@@ -255,24 +248,24 @@ public class ExtractSPR {
         byte[] tempGreen = {0x00, 0x00};
         byte[] tempBlue = {0x00, (byte) 0xFF};
         palette = new Palette(tempRed, tempGreen, tempBlue);
-        for (GIFImage img : images) {
+        for (PNGImage img : images) {
             img.createMask();
         }
     }
 
     /**
      * Save all images of currently loaded SPR file
-     * @param fname Filename of GIF files to export. "_N.png" will be appended with N being the image number.
-     * @param keepAnims If true, consequently stored imaged with same size will be stored inside one GIF (one beneath the other)
+     * @param fname Filename of PNG files to export. "_N.png" will be appended with N being the image number.
+     * @param keepAnims If true, consequently stored imaged with same size will be stored inside one PNG (one beneath the other)
      * @return Array of all the filenames stored
      * @throws ExtractException
      */
-    String[] saveAll(final String fname, final boolean keepAnims) throws ExtractException {
+    Path[] saveAll(final Path fname, final boolean keepAnims) throws ExtractException {
         int width = images[0].getWidth();
         int height = images[0].getHeight();
         int startIdx = 0;
         int animNum = 0;
-        List<String> files = new ArrayList<>(64);
+        List<Path> files = new ArrayList<>(64);
 
         for (int idx = 1; idx <= images.length; idx++) {
             // search for first image with different size
@@ -287,40 +280,40 @@ public class ExtractSPR {
                 num = 1;
             }
             byte[] pixels = new byte[width * num * height];
-            GIFImage anim = new GIFImage(width, num * height, pixels, palette);
+            PNGImage anim = new PNGImage(width, num * height, pixels, palette);
             for (int n = 0; n < num; n++) {
                 System.arraycopy(images[startIdx + n].getPixels(), 0, pixels, n * height * width, images[startIdx + n].getPixels().length);
             }
 
             startIdx = idx;
             // construct filename
-            String fn = fname + "_" + (animNum++) + ".png";
+            Path fn = fname.resolveSibling(fname.getFileName().toString() + "_" + (animNum++) + ".png");
             // save png
             savePng(anim, fn);
-            files.add(fn.toLowerCase(Locale.ROOT));
+            files.add(fn);
             // remember new size
             if (idx < images.length) {
                 width = images[idx].getWidth();
                 height = images[idx].getHeight();
             }
         }
-        String[] fileArray = new String[files.size()];
+        Path[] fileArray = new Path[files.size()];
         return files.toArray(fileArray);
     }
 
     /**
-     * Save a number of images of currently loaded SPR file into one GIF (one image beneath the other)
+     * Save a number of images of currently loaded SPR file into one PNG (one image beneath the other)
      * @param fname Name of PNG file to create (".png" will NOT be appended)
      * @param startIdx Index of first image to store
      * @param frames Number of frames to store
      * @throws ExtractException
      */
-    void saveAnim(final String fname, final int startIdx, final int frames) throws ExtractException {
+    void saveAnim(final Path fname, final int startIdx, final int frames) throws ExtractException {
         int width = images[startIdx].getWidth();
         int height = images[startIdx].getHeight();
 
         byte[] pixels = new byte[width * frames * height];
-        GIFImage anim = new GIFImage(width, frames * height, pixels, palette);
+        PNGImage anim = new PNGImage(width, frames * height, pixels, palette);
         for (int n = 0; n < frames; n++) {
             System.arraycopy(images[startIdx + n].getPixels(), 0, pixels, n * height * width, images[startIdx + n].getPixels().length);
         }
@@ -334,7 +327,7 @@ public class ExtractSPR {
      * @param fname Name of PNG file to create (".png" will NOT be appended)
      * @throws ExtractException
      */
-    static void savePng(final GIFImage img, final String fname) throws ExtractException {
+    static void savePng(final PNGImage img, final Path fname) throws ExtractException {
         IndexColorModel colorModel = new IndexColorModel(8, img.palette.size,
                 img.palette.getRed(), img.palette.getGreen(), img.palette.getBlue(),
                 TRANSPARENT_INDEX);
@@ -352,9 +345,8 @@ public class ExtractSPR {
                 image.setRGB(x, y, pixel);
             }
         }
-        File file = new File(fname);
-        try {
-            ImageIO.write(image, "png", file);
+        try (OutputStream out = Files.newOutputStream(fname)) {
+            ImageIO.write(image, "png", out);
         } catch(IOException ex) {
             throw new ExtractException(String.format("I/O error while writing file %s.", fname));
         }
@@ -413,9 +405,9 @@ public class ExtractSPR {
     }
 
     /**
-     * Stores GIF Image in RAM.
+     * Stores PNG Image in RAM.
      */
-    class GIFImage {
+    class PNGImage {
         /** width in pixels */
         private int width;
         /** height in pixels */
@@ -432,7 +424,7 @@ public class ExtractSPR {
          * @param buf pixel data
          * @param p color palette
          */
-        GIFImage(final int w, final int h, final byte[] buf, final Palette p) {
+        PNGImage(final int w, final int h, final byte[] buf, final Palette p) {
             width = w;
             height = h;
             pixels = buf;

@@ -2,9 +2,12 @@ package lemmini.game;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javax.swing.JOptionPane;
 import lemmini.tools.ToolBox;
 
@@ -41,7 +44,7 @@ public class ReplayStream {
     static final int END = 5;
     
     static final int CURRENT_FORMAT = 1;
-    static final String CURRENT_REVISION = "0.93a";
+    static final String CURRENT_REVISION = "0.94";
 
     private List<ReplayEvent> events;
     private int replayIndex;
@@ -116,37 +119,37 @@ public class ReplayStream {
      * @param fname file name
      * @return replay information
      */
-    public ReplayLevelInfo load(final String fname) {
+    public ReplayLevelInfo load(final Path fname) throws LemmException {
         try (BufferedReader br = ToolBox.getBufferedReader(fname)) {
             List<ReplayEvent> ev = new ArrayList<>(256);
             String line = br.readLine();
             if (!line.equals("#REPLAY NEW")) {
-                return null;
+                throw new LemmException("First line of replay does not equal \"#REPLAY NEW\".");
             }
             line = br.readLine();
             if (line.startsWith("#FORMAT ")) {
                 format = Integer.parseInt(line.substring(8).trim());
                 if (format > CURRENT_FORMAT) {
-                    return null;
+                    throw new LemmException(String.format("Unsupported replay format: %d", format));
                 }
             } else {
-                return null;
+                throw new LemmException("Replay file does not specify a format.");
             }
             
             line = br.readLine();
             if (line.startsWith("#REVISION ")) {
                 revision = line.substring(10).trim();
             } else {
-                return null;
+                throw new LemmException("Replay file does not specify a revision.");
             }
             line = br.readLine();
             if (line.startsWith("#Players ")) {
                 players = Integer.parseInt(line.substring(9).trim());
                 if (players != 1) {
-                    return null;
+                    throw new LemmException("Replay file does not contain exactly one player.");
                 }
             } else {
-                return null;
+                throw new LemmException("Replay file of replay does not specify a player count.");
             }
             // read level info
             line = br.readLine();
@@ -154,12 +157,10 @@ public class ReplayStream {
             for (int j = 0; j < e.length; j++) {
                 e[j] = e[j].trim();
             }
-            if (e[0].charAt(0) != '#') {
-                return null;
+            if (e.length < 3 || e[0].charAt(0) != '#') {
+                throw new LemmException("Replay file of replay does not specify a level.");
             }
-            if (!Normalizer.isNormalized(e[0], Normalizer.Form.NFKC)) {
-                e[0] = Normalizer.normalize(e[0], Normalizer.Form.NFKC);
-            }
+            e[0] = Normalizer.normalize(e[0], Normalizer.Form.NFKC);
             ReplayLevelInfo rli = new ReplayLevelInfo();
             rli.setLevelPack(e[0].substring(1));
             rli.setRating(Integer.parseInt(e[1]));
@@ -170,25 +171,40 @@ public class ReplayStream {
                 for (int i = 0; i < e.length; i++) {
                     e[i] = e[i].trim();
                 }
+                if (e.length < 2) {
+                    throw new LemmException("Not enough values in replay event.");
+                }
 
                 switch (Integer.parseInt(e[1])) { /* type */
                     case ASSIGN_SKILL:
+                        if (e.length < 4) {
+                            throw new LemmException("Not enough values in replay event.");
+                        }
                         ev.add(new ReplayAssignSkillEvent(Integer.parseInt(e[0]),
                                 Lemming.Type.valueOf(e[2]),
                                 Integer.parseInt(e[3])));
                         break;
                     case MOVE_POS:
+                        if (e.length < 5) {
+                            throw new LemmException("Not enough values in replay event.");
+                        }
                         ev.add(new ReplayMovePosEvent(Integer.parseInt(e[0]),
                                 Integer.parseInt(e[2]),
                                 Integer.parseInt(e[3]),
                                 Integer.parseInt(e[4])));
                         break;
                     case SELECT_SKILL:
+                        if (e.length < 4) {
+                            throw new LemmException("Not enough values in replay event.");
+                        }
                         ev.add(new ReplaySelectSkillEvent(Integer.parseInt(e[0]),
                                 Lemming.Type.valueOf(e[2]),
                                 Integer.parseInt(e[3])));
                         break;
                     case SET_RELEASE_RATE:
+                        if (e.length < 3) {
+                            throw new LemmException("Not enough values in replay event.");
+                        }
                         ev.add(new ReplayReleaseRateEvent(Integer.parseInt(e[0]),
                                 Integer.parseInt(e[2])));
                         break;
@@ -199,7 +215,7 @@ public class ReplayStream {
                         ev.add(new ReplayEvent(Integer.parseInt(e[0]), END));
                         break;
                     default:
-                        return null;
+                        throw new LemmException(String.format("Unsupported event found: %s", e[1]));
                 }
             }
             events = ev;
@@ -212,7 +228,7 @@ public class ReplayStream {
             }
             return rli;
         } catch (IOException | NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            return null;
+            throw new LemmException("Error reading replay file.");
         }
     }
 
@@ -221,17 +237,14 @@ public class ReplayStream {
      * @param fname file name
      * @return true if save OK, false otherwise
      */
-    public boolean save(final String fname) {
-        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fname), StandardCharsets.UTF_8))) {
+    public boolean save(final Path fname) {
+        try (Writer w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
             w.write("#REPLAY NEW\r\n");
             w.write("#FORMAT " + CURRENT_FORMAT + "\r\n");
             w.write("#REVISION " + CURRENT_REVISION + "\r\n");
             w.write("#Players 1\r\n");
             LevelPack lp = GameController.getCurLevelPack();
-            String name = lp.getName();
-            if (!Normalizer.isNormalized(name, Normalizer.Form.NFKC)) {
-                name = Normalizer.normalize(name, Normalizer.Form.NFKC);
-            }
+            String name = Normalizer.normalize(lp.getName(), Normalizer.Form.NFKC);
             w.write(String.format("#%s, %d, %d\r\n", name, GameController.getCurRating(), GameController.getCurLevelNumber()));
             for (ReplayEvent r : events) {
                 w.write(r + "\r\n"); // will use toString of the correct child object
@@ -345,7 +358,7 @@ class ReplayEvent {
      */
     @Override
     public String toString() {
-        return String.format("%d, %d", frameCtr, type);
+        return String.format(Locale.ROOT, "%d, %d", frameCtr, type);
     }
 }
 
@@ -376,7 +389,7 @@ class ReplayAssignSkillEvent extends ReplayEvent {
      */
     @Override
     public String toString() {
-        return String.format("%s, %s, %d", super.toString(), skill.name(), lemming);
+        return String.format(Locale.ROOT, "%s, %s, %d", super.toString(), skill.name(), lemming);
     }
 }
 
@@ -405,7 +418,7 @@ class ReplaySelectSkillEvent extends ReplayEvent {
      */
     @Override
     public String toString() {
-        return String.format("%s, %s, %d", super.toString(), skill.name(), player);
+        return String.format(Locale.ROOT, "%s, %s, %d", super.toString(), skill.name(), player);
     }
 }
 
@@ -438,7 +451,7 @@ class ReplayMovePosEvent extends ReplayEvent {
      */
     @Override
     public String toString() {
-        return String.format("%s, %d, %d, %d", super.toString(), xPos, yPos, player);
+        return String.format(Locale.ROOT, "%s, %d, %d, %d", super.toString(), xPos, yPos, player);
     }
 }
 
@@ -464,6 +477,6 @@ class ReplayReleaseRateEvent extends ReplayEvent {
      */
     @Override
     public String toString() {
-        return String.format("%s, %d", super.toString(), releaseRate);
+        return String.format(Locale.ROOT, "%s, %d", super.toString(), releaseRate);
     }
 }

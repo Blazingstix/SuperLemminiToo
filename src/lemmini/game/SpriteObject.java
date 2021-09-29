@@ -1,6 +1,7 @@
 package lemmini.game;
 
 import lemmini.gameutil.Sprite;
+import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.Image;
 
 /*
@@ -30,28 +31,38 @@ public class SpriteObject extends Sprite {
 
     /** Type of level object */
     public static enum Type {
-        /** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay *//** no influence on gameplay */
-        PASSIVE,
+        /** no influence on gameplay */
+        PASSIVE (false),
         /** Makes a lemming turn left. */
-        TURN_LEFT,
+        TURN_LEFT (true),
         /** Makes a lemming turn right. */
-        TURN_RIGHT,
+        TURN_RIGHT (true),
         /** right arrows - no digging to the left */
-        NO_BASH_LEFT,
+        NO_BASH_LEFT (false),
         /** left arrows - no digging to the right */
-        NO_BASH_RIGHT,
+        NO_BASH_RIGHT (false),
         /** trap triggering drowning animation */
-        TRAP_DROWN,
+        TRAP_DROWN (true),
         /** trap triggering a replacement with special death animation */
-        TRAP_REPLACE,
+        TRAP_REPLACE (true),
         /** trap triggering default death animation */
-        TRAP_DIE,
+        TRAP_DIE (true),
         /** level exit (active part!) */
-        EXIT,
+        EXIT (true),
         /** steel */
-        STEEL,
+        STEEL (false),
         /** level entrance */
-        ENTRANCE
+        ENTRANCE (false);
+        
+        private final boolean triggeredByFoot;
+        
+        private Type(boolean triggeredByFoot) {
+            this.triggeredByFoot = triggeredByFoot;
+        }
+        
+        public boolean isTriggeredByFoot() {
+            return triggeredByFoot;
+        }
     }
 
     /** x position in pixels */
@@ -138,7 +149,9 @@ public class SpriteObject extends Sprite {
         mask = new int[maskWidth * maskHeight];
         maskOffsetX = 0;
         maskOffsetY = 0;
-        imgMask.createGraphicsContext().grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+        GraphicsContext g = imgMask.createGraphicsContext();
+        g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+        g.dispose();
     }
     
     /**
@@ -150,7 +163,9 @@ public class SpriteObject extends Sprite {
             maskWidth = imgMask.getWidth();
             maskHeight = imgMask.getHeight();
             mask = new int[maskWidth * maskHeight];
-            imgMask.createGraphicsContext().grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+            GraphicsContext g = imgMask.createGraphicsContext();
+            g.grabPixels(imgMask, 0, 0, maskWidth, maskHeight, mask, 0, maskWidth);
+            g.dispose();
         }
         maskOffsetX = xOffset;
         maskOffsetY = yOffset;

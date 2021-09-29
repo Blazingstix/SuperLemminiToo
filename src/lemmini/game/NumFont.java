@@ -1,5 +1,7 @@
 package lemmini.game;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import lemmini.graphics.GraphicsContext;
@@ -46,20 +48,14 @@ public class NumFont {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        String fn = Core.findResource("gfx/misc/numfont.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/numfont.png");
-        }
+        Path fn = Core.findResource(Paths.get("gfx/misc/numfont.png"), Core.IMAGE_EXTENSIONS);
         numImg = new Image[15];
         Image sourceImg = Core.loadTranslucentImage(fn);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
         Image[] numImgTemp = ToolBox.getAnimation(sourceImg, 10);
         System.arraycopy(numImgTemp, 0, numImg, 0, 10);
-        fn = Core.findResource("gfx/misc/numfont2.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/numfont2.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/numfont2.png"), Core.IMAGE_EXTENSIONS);
         sourceImg = Core.loadTranslucentImage(fn);
         numImgTemp = ToolBox.getAnimation(sourceImg, 5);
         System.arraycopy(numImgTemp, 0, numImg, 10, 5);
@@ -81,11 +77,13 @@ public class NumFont {
         g.drawImage(numImg[14], width, 0);
         numImgMap.put(Integer.MAX_VALUE, numImgTemp2);
         numImgTemp2 = ToolBox.createTranslucentImage(width * 3, height);
+        g.dispose();
         g = numImgTemp2.createGraphicsContext();
         g.drawImage(numImg[10], 0, 0);
         g.drawImage(numImg[13], width, 0);
         g.drawImage(numImg[14], width * 2, 0);
         numImgMap.put(Integer.MIN_VALUE, numImgTemp2);
+        g.dispose();
     }
 
     /**

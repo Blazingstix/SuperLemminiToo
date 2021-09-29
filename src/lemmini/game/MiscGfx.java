@@ -1,5 +1,7 @@
 package lemmini.game;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import lemmini.graphics.Image;
@@ -65,57 +67,36 @@ public class MiscGfx {
     public static void init(int mmWidth) throws ResourceException {
         List<Image> images = new ArrayList<>(16);
         /* 0: MINIMAP_LEFT */
-        String fn = Core.findResource("gfx/misc/minimap_left.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/minimap_left.png");
-        }
+        Path fn = Core.findResource(Paths.get("gfx/misc/minimap_left.png"), Core.IMAGE_EXTENSIONS);
         Image img = Core.loadTranslucentImage(fn);
         images.add(img);
         /* 1: MINIMAP_CENTER */
-        fn = Core.findResource("gfx/misc/minimap_center.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/minimap_center.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/minimap_center.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadTranslucentImage(fn);
         images.add(img);
         /* 2: MINIMAP_RIGHT */
-        fn = Core.findResource("gfx/misc/minimap_right.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/minimap_right.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/minimap_right.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadTranslucentImage(fn);
         images.add(img);
         /* 3: LEMMINI */
         img = Core.loadTranslucentImageJar("lemmini.png");
         images.add(img);
         /* 4: TILE_GREEN */
-        fn = Core.findResource("gfx/misc/background_level.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/background_level.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/background_level.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadOpaqueImage(fn);
         images.add(img);
         /* 5: TILE_BROWN */
-        fn = Core.findResource("gfx/misc/background_main.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/background_main.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/background_main.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadOpaqueImage(fn);
         images.add(img);
         /* 6: REPLAY_1 */
-        fn = Core.findResource("gfx/misc/replay.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/replay.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/replay.png"), Core.IMAGE_EXTENSIONS);
         Image[] anim = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 2);
         images.add(anim[0]);
         /* 7: REPLAY_2 */
         images.add(anim[1]);
         /* 8: SELECT */
-        fn = Core.findResource("gfx/misc/select.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/select.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/select.png"), Core.IMAGE_EXTENSIONS);
         img = Core.loadTranslucentImage(fn);
         images.add(img);
 

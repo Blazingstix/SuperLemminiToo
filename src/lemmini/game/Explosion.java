@@ -1,6 +1,8 @@
 package lemmini.game;
 
 import java.awt.Color;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.Image;
 
@@ -69,10 +71,7 @@ public class Explosion {
      * @throws ResourceException
      */
     static void init() throws ResourceException {
-        String fn = Core.findResource("gfx/misc/explode.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/explode.png");
-        }
+        Path fn = Core.findResource(Paths.get("gfx/misc/explode.png"), Core.IMAGE_EXTENSIONS);
         expImg = Core.loadTranslucentImage(fn);
     }
 

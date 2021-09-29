@@ -1,7 +1,10 @@
 package lemmini.game;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import lemmini.Lemmini;
 import lemmini.graphics.Image;
@@ -34,6 +37,8 @@ import lemmini.tools.ToolBox;
  * @author Volker Oth
  */
 public class Lemming {
+    
+    public static final int HEIGHT = 20;
     
     /** name of the configuration file */
     private static final String LEMM_INI_STR = "gfx/lemming/lemming.ini";
@@ -208,7 +213,7 @@ public class Lemming {
     /** Lemming has died */
     private boolean hasDied;
     /** Lemming has left the level */
-    private boolean hasLeft;
+    private boolean hasExited;
     /** counter used to manage the explosion */
     private int explodeCtr;
     /** counter used to display the select image in replay mode */
@@ -241,7 +246,7 @@ public class Lemming {
         canClimb = false; // new lemming can't climb
         canChangeSkill = false; // a faller can not change the skill to e.g. builder
         hasDied = false;  // not yet
-        hasLeft = false;  // not yet
+        hasExited = false;  // not yet
         flapper = false;
         drowner = false;
         homer = false;
@@ -271,19 +276,18 @@ public class Lemming {
         int free;
         Type oldType = type;
         Type newType = type;
-        int oldX = x;
         boolean explode = false;
         // first check explode state
         if (explodeNumCtr != 0) {
             if (++explodeCtr >= MAX_EXPLODE_CTR[explodeNumCtr - 1]) {
                 explodeCtr -= MAX_EXPLODE_CTR[explodeNumCtr - 1];
                 explodeNumCtr--;
-                if (explodeNumCtr==0) {
+                if (explodeNumCtr == 0) {
                     explode = true;
                 }
             }
         }
-        if (selectCtr>0) {
+        if (selectCtr > 0) {
             selectCtr--;
         }
         // lemming state machine
@@ -658,6 +662,8 @@ public class Lemming {
                     if (idx >= lemRes.frames * TIME_SCALE) {
                         idx = 0;
                     }
+                    int oldX = x;
+                    int oldY = y;
                     switch (idx) {
                         case 0 * TIME_SCALE:
                             y += 2;
@@ -698,6 +704,11 @@ public class Lemming {
                                 break;
                             }
                             if (!canMine(false, true)) {
+                                if (!GameController.getLevel().getClassicSteel()) {
+                                    // needed to ensure that miners don't get stuck
+                                    x = oldX;
+                                    y = oldY;
+                                }
                                 flipDir();
                                 newType = Type.WALKER;
                             }
@@ -773,6 +784,8 @@ public class Lemming {
                     // check for conversion to faller
                     free = freeBelow(FALLER_STEP);
                     if (free > 0) {
+                        // conversion to faller or walker -> erase blocker mask
+                        eraseBlockerMask();
                         if (free == FALL_DISTANCE_FORCE_FALL) {
                             y += FALLER_STEP;
                         } else {
@@ -784,8 +797,6 @@ public class Lemming {
                         } else {
                             newType = Type.WALKER;
                         }
-                        // conversion to faller or walker -> erase blocker mask
-                        eraseBlockerMask();
                     } else {
                         counter = 0;
                     }
@@ -1056,8 +1067,8 @@ public class Lemming {
                             newType = Type.EXPLODER;
                             counter = 0;
                         } else {
-                            hasLeft = true;
-                            GameController.increaseLeft();
+                            hasExited = true;
+                            GameController.increaseExited();
                         }
                         break;
                     case FLOATER_START:
@@ -1613,9 +1624,9 @@ public class Lemming {
     public static void loadLemmings() throws ResourceException {
         explodeFont = new ExplodeFont();
         // read lemmings definition file
-        String fn = Core.findResource(LEMM_INI_STR);
+        Path fn = Core.findResource(Paths.get(LEMM_INI_STR));
         Props p = new Props();
-        if (fn == null || !p.load(fn)) {
+        if (!p.load(fn)) {
             throw new ResourceException(LEMM_INI_STR);
         }
         lemmings = new LemmingResource[NUM_RESOURCES];
@@ -1628,16 +1639,14 @@ public class Lemming {
             Type type = lemmTypes[i];
             boolean bidirectional = type.bidirectional;
             if (type.frames > 0) {
-                fn = Core.findResource("gfx/lemming/lemm_" + type.name().toLowerCase() + ".png", Core.IMAGE_EXTENSIONS);
-                if (fn == null) {
-                    throw new ResourceException("gfx/lemming/lemm_" + type.name().toLowerCase() + ".png");
-                }
+                fn = Core.findResource(
+                        Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
+                        Core.IMAGE_EXTENSIONS);
                 Image sourceImg = Core.loadTranslucentImage(fn);
                 if (bidirectional) {
-                    fn = Core.findResource("gfx/lemming/lemm_" + type.name().toLowerCase() + "_left.png", Core.IMAGE_EXTENSIONS);
-                    if (fn == null) {
-                        throw new ResourceException("gfx/lemming/lemm_" + type.name().toLowerCase() + "_left.png");
-                    }
+                    fn = Core.findResource(
+                            Paths.get("gfx/lemming", "lemm_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
+                            Core.IMAGE_EXTENSIONS);
                     Image sourceImgLeft = Core.loadTranslucentImage(fn);
                     lemmings[i] = new LemmingResource(sourceImg, sourceImgLeft, type.frames);
                 } else {
@@ -1650,18 +1659,16 @@ public class Lemming {
             // read mask
             if (type.maskFrames > 0) {
                 // mask_Y: frames, directions, step
-                fn = Core.findResource("gfx/lemming/mask_" + type.name().toLowerCase() + ".png", Core.IMAGE_EXTENSIONS);
-                if (fn == null) {
-                    throw new ResourceException("gfx/lemming/mask_" + type.name().toLowerCase() + ".png");
-                }
+                fn = Core.findResource(
+                        Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + ".png"),
+                        Core.IMAGE_EXTENSIONS);
                 Image sourceImg = Core.loadBitmaskImage(fn);
                 Mask mask = new Mask(sourceImg, type.maskFrames);
                 lemmings[i].setMask(Direction.RIGHT, mask);
                 if (bidirectional) {
-                    fn = Core.findResource("gfx/lemming/mask_" + type.name().toLowerCase() + "_left.png", Core.IMAGE_EXTENSIONS);
-                    if (fn == null) {
-                        throw new ResourceException("gfx/lemming/mask_" + type.name().toLowerCase() + "_left.png");
-                    }
+                    fn = Core.findResource(
+                            Paths.get("gfx/lemming", "mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png"),
+                            Core.IMAGE_EXTENSIONS);
                     Image sourceImgLeft = Core.loadBitmaskImage(fn);
                     Mask maskLeft = new Mask(sourceImgLeft, type.maskFrames);
                     lemmings[i].setMask(Direction.LEFT, maskLeft);
@@ -1974,11 +1981,11 @@ public class Lemming {
     }
 
     /**
-     * Get: Lemming has left the level.
-     * @return true if Lemming has left the level, false otherwise
+     * Get: Lemming has exited the level.
+     * @return true if Lemming has exited the level, false otherwise
      */
-    public boolean hasLeft() {
-        return hasLeft;
+    public boolean hasExited() {
+        return hasExited;
     }
 
     /**
@@ -2149,7 +2156,7 @@ class LemmingResource {
 class ExplodeFont {
 
     /** array of images for each counter value */
-    private Image[] img;
+    private final Image[] img;
 
     /**
      * Constructor.
@@ -2157,10 +2164,7 @@ class ExplodeFont {
      * @throws ResourceException
      */
     ExplodeFont() throws ResourceException {
-        String fn = Core.findResource("gfx/lemming/countdown.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/lemming/countdown.png");
-        }
+        Path fn = Core.findResource(Paths.get("gfx/lemming/countdown.png"), Core.IMAGE_EXTENSIONS);
         Image sourceImg = Core.loadTranslucentImage(fn);
         img = ToolBox.getAnimation(sourceImg, 5);
     }

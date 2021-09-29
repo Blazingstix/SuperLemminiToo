@@ -3,6 +3,8 @@ package lemmini.tools;
 import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
 
 /*
@@ -144,7 +146,7 @@ public class Props {
         if (s == null) {
             return def;
         }
-        return parseInt(s.trim());
+        return ToolBox.parseInt(s.trim());
     }
 
     /**
@@ -163,7 +165,7 @@ public class Props {
         int[] ret;
         ret = new int[members.length];
         for (int i = 0; i < members.length; i++) {
-            ret[i] = parseInt(members[i].trim());
+            ret[i] = ToolBox.parseInt(members[i].trim());
         }
 
         return ret;
@@ -246,8 +248,8 @@ public class Props {
      * @param fname File name of property file
      * @return True if OK, false if exception occurred
      */
-    public boolean save(final String fname) {
-        try (Writer w = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(fname), StandardCharsets.UTF_8))) {
+    public boolean save(final Path fname) {
+        try (Writer w = Files.newBufferedWriter(fname, StandardCharsets.UTF_8)) {
             hash.store(w, header);
             return true;
         } catch (FileNotFoundException e) {
@@ -259,10 +261,10 @@ public class Props {
 
     /**
      * Load property file
-     * @param file File handle of property file
+     * @param fname Name of property file
      * @return True if OK, false if exception occurred
      */
-    public boolean load(final String fname) {
+    public boolean load(final Path fname) {
         try (Reader r = ToolBox.getBufferedReader(fname)) {
             hash.load(r);
             return true;
@@ -290,76 +292,16 @@ public class Props {
     }
 
     /**
-     * Parse decimal, hex, binary or octal number
-     * @param s String that contains one number
-     * @return Integer value of string
+     * Load property file
+     * @param r Reader for property file
+     * @return True if OK, false if exception occurred
      */
-    public static int parseInt(final String s) {
-        switch (s) {
-            case "Infinity":
-                return Integer.MAX_VALUE;
-            case "-Infinity":
-                return Integer.MIN_VALUE;
-            default:
-                break;
+    public boolean load(final Reader r) {
+        try {
+            hash.load(r);
+            return true;
+        } catch (IOException e) {
+            return false;
         }
-        
-        int index = 0;
-        boolean hasSign = isSign(s.charAt(index));
-        if (hasSign) {
-            index++;
-        }
-        
-        if (s.charAt(index) == '0') {
-            index++;
-            if (s.length() <= index) {
-                return 0;
-            }
-            if (s.charAt(0) == '-') {
-                throw new NumberFormatException(String.format("Illegal leading minus sign on unsigned string %s.", s));
-            }
-            int radix;
-            switch (s.charAt(index)) {
-                case 'X':
-                case 'x':
-                    // hex
-                    radix = 16;
-                    index++;
-                    break;
-                case 'B':
-                case 'b':
-                    // binary
-                    radix = 2;
-                    index++;
-                    break;
-                default:
-                    // octal
-                    radix = 8;
-                    break;
-            }
-            
-            if (isSign(s.charAt(index))) {
-                throw new NumberFormatException("Sign character is not permitted after the radix prefix.");
-            }
-            
-            long retval = Long.parseLong((hasSign ? s.substring(0, 1) : "") + s.substring(index), radix);
-            if ((retval & 0xFFFF_FFFF_0000_0000L) == 0) {
-                return (int) retval;
-            } else {
-                throw new NumberFormatException(String.format("String value %s exceeds range of unsigned int.", s));
-            }
-        } else {
-            // decimal
-            return Integer.parseInt(s);
-        }
-    }
-    
-    /**
-     * Checks whether the given character is a sign.
-     * @param c Character to check
-     * @return True if c is a ASCII plus or minus sign, false otherwise
-     */
-    private static boolean isSign(char c) {
-        return c == '+' || c == '-';
     }
 }

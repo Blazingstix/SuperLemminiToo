@@ -1,5 +1,7 @@
 package lemmini.game;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.Map;
@@ -66,9 +68,9 @@ public class LemmFont {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        String fn = Core.findResource(FONT_INI_STR);
+        Path fn = Core.findResource(Paths.get(FONT_INI_STR));
         Props p = new Props();
-        if (fn == null || !p.load(fn)) {
+        if (!p.load(fn)) {
             throw new ResourceException(FONT_INI_STR);
         }
         
@@ -88,19 +90,17 @@ public class LemmFont {
         }
         
         for (int i = 0; true; i++) {
-            String fileName = p.get("subset_" + i + "_fileName", "");
+            String fileNameStr = p.get("subset_" + i + "_fileName", "");
+            Path fileName = Paths.get(fileNameStr);
             int numChars = p.getInt("subset_" + i + "_numChars", 0);
             
-            if (fileName.isEmpty() | numChars <= 0) {
+            if (fileNameStr.isEmpty() | numChars <= 0) {
                 break;
             }
             
-            fn = Core.findResource("gfx/font/" + fileName, Core.IMAGE_EXTENSIONS);
-            if (fn == null) {
-                throw new ResourceException("gfx/font/" + fileName);
-            }
+            fn = Core.findResource(Paths.get("gfx/font").resolve(fileName), Core.IMAGE_EXTENSIONS);
             
-            String name = Core.removeExtension(fileName);
+            String name = ToolBox.removeExtension(fileNameStr);
             
             Image sourceImg = Core.loadTranslucentImage(fn);
             Image[] glyphImg = ToolBox.getAnimation(sourceImg, numChars, sourceImg.getWidth());
@@ -139,9 +139,7 @@ public class LemmFont {
      * @param color Color
      */
     public static void strImage(final GraphicsContext g, String s, int x, final int y, final Color color) {
-        if (!Normalizer.isNormalized(s, Normalizer.Form.NFC)) {
-            s = Normalizer.normalize(s, Normalizer.Form.NFC);
-        }
+        s = Normalizer.normalize(s, Normalizer.Form.NFC);
         
         for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
             c = s.codePointAt(i);
@@ -184,7 +182,9 @@ public class LemmFont {
      */
     public static Image strImage(final String s, final Color color) {
         Image image = ToolBox.createTranslucentImage(getCharCount(s) * width, height);
-        strImage(image.createGraphicsContext(), s, 0, 0, color);
+        GraphicsContext g = image.createGraphicsContext();
+        strImage(g, s, 0, 0, color);
+        g.dispose();
         return image;
     }
 

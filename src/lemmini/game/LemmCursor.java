@@ -1,6 +1,8 @@
 package lemmini.game;
 
 import java.awt.Cursor;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import lemmini.graphics.Image;
 import lemmini.tools.ToolBox;
 
@@ -127,15 +129,9 @@ public class LemmCursor  {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        String fn = Core.findResource("gfx/misc/cursor.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/cursor.png");
-        }
+        Path fn = Core.findResource(Paths.get("gfx/misc/cursor.png"), Core.IMAGE_EXTENSIONS);
         cursorImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 6);
-        fn = Core.findResource("gfx/misc/box.png", Core.IMAGE_EXTENSIONS);
-        if (fn == null) {
-            throw new ResourceException("gfx/misc/box.png");
-        }
+        fn = Core.findResource(Paths.get("gfx/misc/box.png"), Core.IMAGE_EXTENSIONS);
         boxImg = ToolBox.getAnimation(Core.loadTranslucentImage(fn), 6);
         cursor = new Cursor[6];
         int w = getImage(CursorType.NORMAL).getWidth() / 2;

@@ -1,5 +1,7 @@
 package lemmini.game;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -112,7 +114,7 @@ public class Icons {
     /** buffered image that contains the whole icon bar in its current state */
     private static Image iconImg;
     /** graphics object used to draw on iconImg */
-    private static GraphicsContext iconGfx;
+    private static GraphicsContext iconGfx = null;
 
 
     /**
@@ -120,15 +122,16 @@ public class Icons {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
+        if (iconGfx != null) {
+            iconGfx.dispose();
+        }
         iconImg = ToolBox.createTranslucentImage(WIDTH * (1 + LAST_DRAWN), HEIGHT);
         iconGfx = iconImg.createGraphicsContext();
         Type[] iconTypes = Type.values();
         icons = new Sprite[iconTypes.length];
         for (int i = 0; i <= LAST_DRAWN; i++) {
-            String fn = Core.findResource("gfx/icons/icon_" + iconTypes[i].name().toLowerCase() + ".png", Core.IMAGE_EXTENSIONS);
-            if (fn == null) {
-                throw new ResourceException("gfx/icons/icon_" + iconTypes[i].name().toLowerCase() + ".png");
-            }
+            Path fn = Core.findResource(Paths.get(
+                    "gfx", "icons", "icon_" + iconTypes[i].name().toLowerCase() + ".png"), Core.IMAGE_EXTENSIONS);
             Image sourceImg = Core.loadTranslucentImage(fn);
             icons[i] = new Sprite(sourceImg, 2);
             iconGfx.drawImage(icons[i].getImage(), WIDTH * i, 0);

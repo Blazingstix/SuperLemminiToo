@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -39,9 +37,9 @@ public class Player {
     /** property class to store player settings persistently */
     private Props props;
     /** name of the INI file used for persistence */
-    private String iniFileStr;
+    private Path iniFilePath;
     /** used to store level progress */
-    private Map<String, BigInteger> lvlGroup;
+    private Map<String, LevelGroup> lvlGroups;
     /** cheat mode enabled? */
     private boolean cheat;
     /** player's name */
@@ -53,27 +51,44 @@ public class Player {
      */
     public Player(final String n) {
         name = n;
-        lvlGroup = new HashMap<>();
+        lvlGroups = new HashMap<>();
         // read main ini file
         props = new Props();
         // create players directory if it doesn't exist
-        Path dest = Paths.get(Core.resourcePath, "players");
+        Path dest = Core.resourcePath.resolve("players");
         try {
             Files.createDirectories(dest);
         } catch (IOException ex) {
         }
-        iniFileStr = Core.resourcePath + "players/" + name + ".ini";
+        iniFilePath = Core.resourcePath.resolve("players").resolve(name + ".ini");
 
-        if (props.load(iniFileStr)) { // might exist or not - if not, it's created
+        if (props.load(iniFilePath)) { // might exist or not - if not, it's created
             // file exists, now extract entries
             for (int idx = 0; true; idx++) {
+                // first string is the level group key identifier
+                // second string is a BigInteger used as bitfield to store available levels
                 String[] s = props.getArray("group" + idx, null);
                 if (s == null || s.length != 2 || s[0] == null) {
                     break;
                 }
-                // first string is the level group key identifier
-                // second string is a BigInteger used as bitfield to store available levels
-                lvlGroup.put(s[0], new BigInteger(s[1]));
+                
+                BigInteger unlockedLevels = new BigInteger(s[1]);
+                Map<Integer, LevelRecord> levelRecords = new HashMap<>();
+                for (int j = 0; j < unlockedLevels.bitLength(); j++) {
+                    if (j == 0 || unlockedLevels.testBit(j)) {
+                        boolean completed = props.getBoolean("group" + idx + "_level" + j + "_completed", false);
+                        if (completed) {
+                            int lemmingsSaved = props.getInt("group" + idx + "_level" + j + "_lemmingsSaved", -1);
+                            int skillsUsed = props.getInt("group" + idx + "_level" + j + "_skillsUsed", -1);
+                            int timeElapsed = props.getInt("group" + idx + "_level" + j + "_timeElapsed", -1);
+                            int score = props.getInt("group" + idx + "_level" + j + "_score", -1);
+                            levelRecords.put(j, new LevelRecord(completed, lemmingsSaved, skillsUsed, timeElapsed, score));
+                        } else {
+                            levelRecords.put(j, LevelRecord.BLANK_LEVEL_RECORD);
+                        }
+                    }
+                }
+                lvlGroups.put(s[0], new LevelGroup(levelRecords));
             }
         }
 
@@ -92,14 +107,26 @@ public class Player {
      * Store player's progress.
      */
     public void store() {
-        Set<String> k = lvlGroup.keySet();
+        Set<String> groupKeys = lvlGroups.keySet();
         int idx = 0;
-        for (String s : k) {
-            BigInteger bf = lvlGroup.get(s);
-            String sout = s + ", " + bf.toString();
-            props.set("group" + (idx++), sout);
+        for (String s : groupKeys) {
+            LevelGroup lg = lvlGroups.get(s);
+            String sout = s + ", " + lg.getBitField();
+            props.set("group" + idx, sout);
+            Set<Integer> availableLevels = lg.levelRecords.keySet();
+            for (Integer lvlNum : availableLevels) {
+                LevelRecord lr = lg.levelRecords.get(lvlNum);
+                if (lr.isCompleted()) {
+                    props.setBoolean("group" + idx + "_level" + lvlNum + "_completed", true);
+                    props.setInt("group" + idx + "_level" + lvlNum + "_lemmingsSaved", lr.getLemmingsSaved());
+                    props.setInt("group" + idx + "_level" + lvlNum + "_skillsUsed", lr.getSkillsUsed());
+                    props.setInt("group" + idx + "_level" + lvlNum + "_timeElapsed", lr.getTimeElapsed());
+                    props.setInt("group" + idx + "_level" + lvlNum + "_score", lr.getScore());
+                }
+            }
+            idx++;
         }
-        props.save(iniFileStr);
+        props.save(iniFilePath);
     }
 
     /**
@@ -107,22 +134,21 @@ public class Player {
      * @param pack level pack
      * @param rating rating
      * @param num level number
-     * @return updated bitfield
      */
-    public BigInteger setAvailable(final String pack, final String rating, final int num) {
-        // get current bitfield
+    public void setAvailable(final String pack, final String rating, final int num) {
         String id = LevelPack.getID(pack, rating);
-        if (!Normalizer.isNormalized(id, Normalizer.Form.NFKC)) {
-            id = Normalizer.normalize(id, Normalizer.Form.NFKC);
+        LevelGroup lg = lvlGroups.get(id);
+        if (lg == null) {
+            // first level is always available
+            Map<Integer, LevelRecord> records = new HashMap<>();
+            records.put(0, LevelRecord.BLANK_LEVEL_RECORD);
+            lg = new LevelGroup(records);
+            lvlGroups.put(id, lg);
         }
-        BigInteger bf = lvlGroup.get(id);
-        if (bf == null) {
-            bf = BigInteger.ONE; // first level is always available
+        if (!lg.levelRecords.containsKey(num)) {
+            // add level record to level group
+            lg.levelRecords.put(num, LevelRecord.BLANK_LEVEL_RECORD);
         }
-        bf = bf.setBit(num); // set bit in bitfield (just overwrite existing bit)
-        // store new value
-        lvlGroup.put(id, bf);
-        return bf;
     }
 
     /**
@@ -136,51 +162,47 @@ public class Player {
         if (isCheat()) {
             return true;
         }
-        // get current bitfield
         String id = LevelPack.getID(pack, rating);
-        if (!Normalizer.isNormalized(id, Normalizer.Form.NFKC)) {
-            id = Normalizer.normalize(id, Normalizer.Form.NFKC);
+        LevelGroup lg = lvlGroups.get(id);
+        if (lg == null) {
+            return num == 0; // first level is always available
         }
-        BigInteger bf = lvlGroup.get(id);
-        if (bf == null) {
-            bf = BigInteger.ONE; // first level is always available
-        }
-        return (bf.testBit(num));
+        return (lg.levelRecords.containsKey(num));
     }
-
-    /**
-     * Check if player is allowed to play a level.
-     * @param bf bitfield containing the approval information for all levels of this pack/rating
-     * @param num number of level
-     * @return true if allowed, false if not
-     */
-    public boolean isAvailable(final BigInteger bf, final int num) {
-        if (isCheat()) {
-            return true;
+    
+    public void setLevelRecord(final String pack, final String rating, final int num, final LevelRecord record) {
+        String id = LevelPack.getID(pack, rating);
+        LevelGroup lg = lvlGroups.get(id);
+        if (lg == null) {
+            // first level is always available
+            Map<Integer, LevelRecord> records = new HashMap<>();
+            records.put(0, LevelRecord.BLANK_LEVEL_RECORD);
+            lg = new LevelGroup(records);
+            lvlGroups.put(id, lg);
         }
-        return (bf.testBit(num));
+        LevelRecord oldRecord = lg.levelRecords.get(num);
+        if (oldRecord != null && record.isCompleted()) {
+            if (oldRecord.isCompleted()) {
+                lg.levelRecords.put(num, new LevelRecord(
+                        true,
+                        StrictMath.max(oldRecord.getLemmingsSaved(), record.getLemmingsSaved()),
+                        StrictMath.min(oldRecord.getSkillsUsed(), record.getSkillsUsed()),
+                        StrictMath.min(oldRecord.getTimeElapsed(), record.getTimeElapsed()),
+                        StrictMath.max(oldRecord.getScore(), record.getScore())));
+            } else {
+                lg.levelRecords.put(num, record);
+            }
+        }
     }
-
-    /**
-     * Get bitfield containing the approval information for all levels of this pack/rating.
-     * @param pack level pack
-     * @param rating rating
-     * @return bitfield containing the approval information for all levels of this pack/rating
-     */
-    public BigInteger getBitField(final LevelPack pack, final String rating) {
-        if (pack.getAllLevelsUnlocked() || isCheat()) {
-            return new BigInteger("18446744073709551615"); // 0xffffffffffffffff (8 bytes with all bits set)
+    
+    public LevelRecord getLevelRecord(final String pack, final String rating, final int num) {
+        String id = LevelPack.getID(pack, rating);
+        LevelGroup lg = lvlGroups.get(id);
+        if (lg == null || !lg.levelRecords.containsKey(num)) {
+            return LevelRecord.BLANK_LEVEL_RECORD;
+        } else {
+            return lg.levelRecords.get(num);
         }
-
-        String id = LevelPack.getID(pack.getName(), rating);
-        if (!Normalizer.isNormalized(id, Normalizer.Form.NFKC)) {
-            id = Normalizer.normalize(id, Normalizer.Form.NFKC);
-        }
-        BigInteger bf = lvlGroup.get(id);
-        if (bf == null) {
-            return BigInteger.ONE;
-        }
-        return bf;
     }
 
     /**
@@ -197,5 +219,23 @@ public class Player {
      */
     public boolean isCheat() {
         return cheat;
+    }
+    
+    private class LevelGroup {
+
+        private final Map<Integer, LevelRecord> levelRecords;
+        
+        private LevelGroup(Map<Integer, LevelRecord> levelRecords) {
+            this.levelRecords = levelRecords;
+        }
+        
+        private BigInteger getBitField() {
+            Set<Integer> availableLevels = levelRecords.keySet();
+            BigInteger bf = BigInteger.ZERO;
+            for (Integer lvlNum : availableLevels) {
+                bf = bf.setBit(lvlNum);
+            }
+            return bf;
+        }
     }
 }

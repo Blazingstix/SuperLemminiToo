@@ -1,9 +1,9 @@
 package lemmini.sound;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import javax.sound.midi.*;
 import lemmini.game.Core;
 import lemmini.game.LemmException;
@@ -71,7 +71,7 @@ public class MidiMusic implements MusicPlayer {
     }
     
     @Override
-    public void load(final String fn, final boolean loop) throws ResourceException, LemmException {
+    public void load(final Path fn, final boolean loop) throws ResourceException, LemmException {
 	close();
         try {
             synthesizer = MidiSystem.getSynthesizer();
@@ -79,7 +79,10 @@ public class MidiMusic implements MusicPlayer {
             receiver = synthesizer.getReceiver();
             transmitter.setReceiver(receiver);
             sequencer.setLoopCount(Sequencer.LOOP_CONTINUOUSLY);
-            Sequence mySeq = MidiSystem.getSequence(new File(fn));
+            Sequence mySeq;
+            try (InputStream in = new BufferedInputStream(Files.newInputStream(fn))) {
+                mySeq = MidiSystem.getSequence(in);
+            }
             Soundbank soundbank = getSoundbank(fn);
             if (sequencer != null) {
                 sequencer.setSequence(mySeq);
@@ -110,7 +113,7 @@ public class MidiMusic implements MusicPlayer {
         } catch (InvalidMidiDataException ex) {
             throw new LemmException(fn + " (Invalid MIDI data)");
         } catch (FileNotFoundException ex) {
-            throw new ResourceException(fn);
+            throw new ResourceException(fn.toString());
         } catch (IOException ex) {
             throw new LemmException(fn + " (IO exception)");
         } catch (MidiUnavailableException ex) {
@@ -237,17 +240,18 @@ public class MidiMusic implements MusicPlayer {
         return new long[]{loopStart, loopEnd};
     }
     
-    private static Soundbank getSoundbank(String fName) {
+    private static Soundbank getSoundbank(Path fName) {
         try {
-            String fn = Core.findResource(fName, Core.SOUNDBANK_EXTENSIONS);
+            Path fn = Core.findResource(fName, Core.SOUNDBANK_EXTENSIONS);
             if (fn == null) {
                 return null;
             }
-            Soundbank sb = MidiSystem.getSoundbank(new File(fn));
+            Soundbank sb;
+            try (InputStream in = new BufferedInputStream(Files.newInputStream(fn))) {
+                sb = MidiSystem.getSoundbank(in);
+            }
             return sb;
-        } catch (InvalidMidiDataException ex) {
-            return null;
-        } catch (IOException ex) {
+        } catch (InvalidMidiDataException | IOException | ResourceException ex) {
             return null;
         }
     }

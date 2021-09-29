@@ -114,7 +114,7 @@ public class TextDialog {
      */
     public void setBackground(final Image image) {
         int x = (width - image.getWidth()) / 2;
-        int y = (height-image.getHeight()) / 2;
+        int y = (height - image.getHeight()) / 2;
         gBack.setBackground(Color.BLACK);
         gBack.clearRect(0, 0, width, height);
         gBack.drawImage(image, x, y);

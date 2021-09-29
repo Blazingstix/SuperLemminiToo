@@ -228,19 +228,24 @@ public class Sprite {
         }
     }
     
-    public void flipSprite() {
+    public void flipSprite(boolean horizontal, boolean vertical) {
+        if (!horizontal && !vertical) {
+            return;
+        }
         GraphicsOperation go = ToolBox.createGraphicsOperation();
-        go.setScale(1, -1);
-        go.translate(0, -height);
+        go.setScale(horizontal ? -1 : 1, vertical ? -1 : 1);
+        go.translate(horizontal ? -width : 0, vertical ? -height : 0);
         for (int frame = 0; frame < frames.length; frame++) {
             Image imgSpr = ToolBox.createTranslucentImage(width, height);
             go.execute(frames[frame], imgSpr);
             frames[frame] = imgSpr;
-        }
-        for (int frame = 0; frame < frames.length / 2; frame++) {
-            int[] buffer = origColors[frame];
-            origColors[frame] = origColors[frames.length - 1 - frame];
-            origColors[frames.length - 1 - frame] = buffer;
+            
+            int[] buffer = origColors[frame].clone();
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) {
+                    origColors[frame][y * width + x] = buffer[(vertical ? (height - y - 1) : y) * width + (horizontal ? (width - x - 1) : x)];
+                }
+            }
         }
     }
 
