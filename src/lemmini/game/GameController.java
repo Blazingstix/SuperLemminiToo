@@ -622,8 +622,8 @@ public class GameController {
         } catch (ResourceException ex) {
             Core.resourceError(ex.getMessage());
         } catch (LemmException ex) {
-            JOptionPane.showMessageDialog(null, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
+            JOptionPane.showMessageDialog(null, "Unable to load music resource:\n" + ex.getMessage(), "Error Loading Music", JOptionPane.ERROR_MESSAGE);
+            //System.exit(1);
         }
         
         sound.setGain(soundGain);
