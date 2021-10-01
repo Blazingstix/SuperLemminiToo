@@ -169,8 +169,10 @@ public class Lemming {
     private static final int STEPS_WARNING = 9;
     /** Lemmini runs at 33.33fps instead of 16.67fps */
     private static final int TIME_SCALE = 2;
+    /** maximum seconds in bomber countdown */
+    private static final int MAX_BOMB_TIMER = 5;
     /** explosion counter is decreased every 31.2 frames */
-    private static final int[] MAX_EXPLODE_CTR = {31, 31, 32, 31, 31};
+    private static final int[] MAX_EXPLODE_CTR = {31, 31, 32, 31, 31}; //allows for a maximum of 5 seconds.
     private static final int EXPLODER_LIFE = 102;
     private static final int DEF_TEMPLATE_COLOR = 0xffff00ff;
     
@@ -1713,125 +1715,108 @@ public class Lemming {
     
     /**
      * Set new skill/type of this Lemming.
-     * @param skill new skill/type
+     * @param newSkill new skill/type
      * @param playSound
      * @return true if a change was possible, false otherwise
      */
-    public boolean setSkill(final Type skill, boolean playSound) {
-        int canSet = -1;
-        
-        if (skill == type || hasDied) {
-            canSet = 0;
+    public boolean setSkill(final Type newSkill, boolean playSound) {
+        if (newSkill == type || hasDied) {
+        	return playSetSkillSound(false, playSound);
         }
         
         // check types which can't even get an additional skill anymore
-        if (canSet == -1) {
-            switch (type) {
-                case DROWNER:
-                case HOMER:
-                case FRIER:
-                case FLAPPER:
-                    if (skill != Type.NUKE) {
-                        canSet = 0;
-                    }
-                    break;
-                case SPLATTER:
-                case EXPLODER:
-                    if (skill == Type.NUKE) {
-                        nuke = true;
-                    }
-                    canSet = 0;
-                    break;
-                default:
-                    break;
-            }
+        switch (type) {
+            case DROWNER:
+            case HOMER:
+            case FRIER:
+            case FLAPPER:
+                if (newSkill != Type.NUKE) {
+                	return playSetSkillSound(false, playSound);
+                }
+            case SPLATTER:
+            case EXPLODER:
+                if (newSkill == Type.NUKE) {
+                    nuke = true;
+                }
+                return playSetSkillSound(false, playSound);
+            default:
+                break;
         }
         
         // check additional skills
-        if (canSet == -1) {
-            switch (skill) {
-                case CLIMBER:
-                    if (canClimb || type == Type.BLOCKER) {
-                        canSet = 0;
-                    } else {
-                        canClimb = true;
-                        canSet = 1;
-                    }
-                    break;
-                case FLOATER:
-                    if (canFloat || type == Type.BLOCKER) {
-                        canSet = 0;
-                    } else {
-                        canFloat = true;
-                        canSet = 1;
-                    }
-                    break;
-                case NUKE: // special case:  nuke request
-                    if (nuke) {
-                        canSet = 0;
-                        break;
-                    }
-                    nuke = true;
-                    if (explodeNumCtr == 0) {
-                        explodeNumCtr = 5;
-                        explodeCtr = 0;
-                        canSet = 1;
-                    } else {
-                        canSet = 0;
-                    }
-                    break;
-                case FLAPPER:
-                    changeType(type, getExploderType());
-                    canSet = 1;
-                    break;
-                default:
-                    break;
-            }
+        switch (newSkill) {
+            case CLIMBER:
+                if (canClimb || type == Type.BLOCKER) {
+                	return playSetSkillSound(false, playSound);
+                } else {
+                    canClimb = true;
+                    return playSetSkillSound(true, playSound);
+                }
+            case FLOATER:
+                if (canFloat || type == Type.BLOCKER) {
+                	return playSetSkillSound(false, playSound);
+                } else {
+                    canFloat = true;
+                    return playSetSkillSound(true, playSound);
+                }
+            case NUKE: // special case:  nuke request
+                if (nuke) {
+                	return playSetSkillSound(false, playSound);
+                }
+                nuke = true;
+                if (explodeNumCtr == 0) {
+                    explodeNumCtr = MAX_BOMB_TIMER;
+                    explodeCtr = 0;
+                    return playSetSkillSound(true, playSound);
+                } else {
+                	return playSetSkillSound(false, playSound);
+                }
+            case FLAPPER:
+                changeType(type, getExploderType());
+                return playSetSkillSound(true, playSound);
+            default:
+                break;
         }
         
         // check main skills
-        if (canSet == -1 && canChangeSkill) {
-            switch (skill) {
+        if (canChangeSkill) {
+            switch (newSkill) {
                 case DIGGER:
                     if (canDig(playSound)) {
-                        changeType(type, skill);
+                        changeType(type, newSkill);
                         counter = 0;
-                        canSet = 1;
+                        return playSetSkillSound(true, playSound);
                     } else {
                         playSound = false;
-                        canSet = 0;
+                        return playSetSkillSound(false, playSound);
                     }
-                    break;
                 case MINER:
                     if (canMine(true, playSound)) {
                         y += 2;
-                        changeType(type, skill);
+                        changeType(type, newSkill);
                         counter = 0;
-                        canSet = 1;
+                        return playSetSkillSound(true, playSound);
                     } else {
                         playSound = false;
-                        canSet = 0;
+                        return playSetSkillSound(false, playSound);
                     }
-                    break;
                 case BASHER:
                     if (canBashSteel(playSound)) {
-                        changeType(type, skill);
+                        changeType(type, newSkill);
                         counter = 0;
-                        canSet = 1;
+                        return playSetSkillSound(true, playSound);
                     } else {
                         playSound = false;
-                        canSet = 0;
+                        return playSetSkillSound(false, playSound);
                     }
-                    break;
                 case BUILDER:
                     if (y < GameController.getLevel().getTopBoundary() + 2) {
-                        canSet = 0;
+                        return playSetSkillSound(false, playSound);
                     } else {
-                        changeType(type, skill);
+                        changeType(type, newSkill);
                         counter = 0;
-                        canSet = 1;
+                        return playSetSkillSound(true, playSound);
                     }
-                    break;
                 case BLOCKER:
                     LemmingResource lem = getResource(Type.BLOCKER);
                     Mask m = lem.getMask(Direction.LEFT);
@@ -1839,33 +1824,40 @@ public class Lemming {
                     int maskY = y - lem.maskY;
                     for (int i = 0; i < m.getNumFrames(); i++) {
                         if (m.checkType(maskX, maskY, i, Stencil.MSK_BLOCKER | Stencil.MSK_EXIT)) {
-                            canSet = 0; // overlaps exit or existing blocker
+                            return playSetSkillSound(false, playSound); // overlaps exit or existing blocker
                         }
                     }
-                    if (canSet != 0) {
-                        changeType(type, skill);
-                        counter = 0;
-                        // set blocker mask
-                        m.setBlockerMask(maskX, maskY);
-                        canSet = 1;
-                    }
-                    break;
+                    //didn't overlap, so let's change the type
+                    changeType(type, newSkill);
+                    counter = 0;
+                    // set blocker mask
+                    m.setBlockerMask(maskX, maskY);
+                    return playSetSkillSound(true, playSound);
                 default:
                     break;
             }
         }
         
-        if (canSet == 1) {
+        return playSetSkillSound(false, playSound);
+    }
+    
+    /**
+     * Play either the ASSIGN_SKILL sfx, or the INVALID sfx.
+     * @param canSet is this a valid skill assign?
+     * @param playSound is a sound effect supposed to be played?
+     * @return true if a change was possible, false otherwise
+     */
+    private boolean playSetSkillSound(boolean validAssign, boolean playSound) {
+        if (validAssign) {
             if (playSound) {
                 GameController.sound.play(Sound.Effect.ASSIGN_SKILL, getPan());
             }
-            return true;
         } else {
             if (playSound) {
                 GameController.sound.play(Sound.Effect.INVALID, getPan());
             }
-            return false;
         }
+        return validAssign;
     }
     
     /**
