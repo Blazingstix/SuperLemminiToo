@@ -70,6 +70,7 @@ public class OptionsDialog extends JDialog {
         jCheckBoxNoPercentages = new javax.swing.JCheckBox();
         jCheckBoxReplayScroll = new javax.swing.JCheckBox();
         jCheckBoxUnpauseOnAssignment = new javax.swing.JCheckBox();
+        jCheckBoxTimedBombers = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -195,6 +196,9 @@ public class OptionsDialog extends JDialog {
         jCheckBoxUnpauseOnAssignment.setSelected(GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
         jCheckBoxUnpauseOnAssignment.setText("Unpause After Assigning Skill");
 
+        jCheckBoxTimedBombers.setSelected(GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
+        jCheckBoxTimedBombers.setText("Enable 5 second timed bombers");
+
         javax.swing.GroupLayout jPanelMiscLayout = new javax.swing.GroupLayout(jPanelMisc);
         jPanelMisc.setLayout(jPanelMiscLayout);
         jPanelMiscLayout.setHorizontalGroup(
@@ -209,7 +213,9 @@ public class OptionsDialog extends JDialog {
                     .addComponent(jCheckBoxNoPercentages)
                     .addComponent(jCheckBoxReplayScroll)
                     .addComponent(jCheckBoxPauseStopsFastForward)
-                    .addComponent(jCheckBoxUnpauseOnAssignment))
+                    .addComponent(jCheckBoxUnpauseOnAssignment)
+                	.addComponent(jCheckBoxTimedBombers)
+                	)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanelMiscLayout.setVerticalGroup(
@@ -231,6 +237,8 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jCheckBoxReplayScroll)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxUnpauseOnAssignment)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxTimedBombers)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -349,6 +357,8 @@ public class OptionsDialog extends JDialog {
         Core.programProps.setBoolean("replayScroll", GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, jCheckBoxUnpauseOnAssignment.isSelected());
         Core.programProps.setBoolean("unpauseOnAssignment", GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
+        GameController.setOption(GameController.Option.TIMED_BOMBERS, jCheckBoxTimedBombers.isSelected());
+        Core.programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -366,6 +376,7 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxReplayScroll;
     private javax.swing.JCheckBox jCheckBoxSwap;
     private javax.swing.JCheckBox jCheckBoxUnpauseOnAssignment;
+    private javax.swing.JCheckBox jCheckBoxTimedBombers;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;

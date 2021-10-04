@@ -872,7 +872,7 @@ public class Lemming {
                 }
                 break;
             default:
-                // all cases not explicitly checked above should at least explode
+                // all cases not explicitly checked above should at least explode (inlucdes HOMER)
                 if (explode) {
                     newType = getExploderType();
                     break;
@@ -1215,7 +1215,7 @@ public class Lemming {
             case FLAPPER_BLOCKER:
                 // don't erase blocker mask!
                 return Type.FLAPPER_BLOCKER;
-            default:
+            default: //FALLER, FLOATER, FLOATER_START, DROWNER, FRIER, SHRUGGER
                 return Type.EXPLODER;
         }
     }
@@ -1772,8 +1772,18 @@ public class Lemming {
                 	return playSetSkillSound(false, playSound);
                 }
             case FLAPPER:
-                changeType(type, getExploderType());
-                return playSetSkillSound(true, playSound);
+                if (GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS)) {
+	            	if (explodeNumCtr == 0) {
+	                    explodeNumCtr = MAX_BOMB_TIMER;
+	                    explodeCtr = 0;
+	                    return playSetSkillSound(true, playSound);
+	                } else {
+	                	return playSetSkillSound(false, playSound);
+	                }
+                } else {
+	            	changeType(type, getExploderType());
+	                return playSetSkillSound(true, playSound);
+                }
             default:
                 break;
         }

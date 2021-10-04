@@ -151,6 +151,7 @@ public class Core {
         GameController.setOption(GameController.Option.NO_PERCENTAGES, programProps.getBoolean("noPercentages", false));
         GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
+        GameController.setOption(GameController.Option.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
         boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
         if (rev.equalsIgnoreCase("zip")) {
             try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {

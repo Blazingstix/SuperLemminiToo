@@ -88,7 +88,8 @@ public class GameController {
         PAUSE_STOPS_FAST_FORWARD,
         NO_PERCENTAGES,
         REPLAY_SCROLL,
-        UNPAUSE_ON_ASSIGNMENT
+        UNPAUSE_ON_ASSIGNMENT,
+        TIMED_BOMBERS
     }
     
     public static enum LevelFormat {
