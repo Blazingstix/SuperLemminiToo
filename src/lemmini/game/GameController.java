@@ -79,7 +79,7 @@ public class GameController {
         MUSIC_ON,
         /** flag: play sounds */
         SOUND_ON,
-        /** flag: use advanced mouse selection methods */
+        /** flag: use advanced mouse selection methods (i.e. holding left/right)*/
         ADVANCED_SELECT,
         /** flag: use classic mouse cursor behavior */
         CLASSIC_CURSOR,
@@ -89,7 +89,10 @@ public class GameController {
         NO_PERCENTAGES,
         REPLAY_SCROLL,
         UNPAUSE_ON_ASSIGNMENT,
-        TIMED_BOMBERS
+        TIMED_BOMBERS,
+        UNLOCK_ALL_LEVELS,
+        DISABLE_SCROLL_WHEEL,
+        DISABLE_FRAME_STEPPING
     }
     
     public static enum LevelFormat {
@@ -1261,7 +1264,9 @@ public class GameController {
             lemmSkillRequest = lemm;
         }
         stopReplayMode();
-        advanceFrame();
+        if (!isOptionEnabled(Option.DISABLE_FRAME_STEPPING)) {
+        	advanceFrame();
+        }
     }
     
     /**
@@ -1428,7 +1433,7 @@ public class GameController {
      * @param type icon type
      */
     public static synchronized void handleIconButton(final Icons.Type type) {
-        Lemming.Type lemmSkillOld = lemmSkill;
+        //Lemming.Type lemmSkillOld = lemmSkill;
         if (testIcon(type)) {
             switch (type) {
                 case PLUS:
@@ -1696,13 +1701,13 @@ public class GameController {
         int numLemmings = level.getNumLemmings();
         String lemmingWord = (numLemmings == 1) ? "Lemming" : "Lemmings";
         if (isOptionEnabled(Option.NO_PERCENTAGES) || numLemmings > 100) {
-            Core.setTitle(String.format("SuperLemmini - %s - Save %d of %d %s",
+            Core.setTitle(String.format("SuperLemminiToo - %s - Save %d of %d %s",
                     level.getLevelName().trim(),
                     level.getNumToRescue(),
                     numLemmings,
                     lemmingWord));
         } else {
-            Core.setTitle(String.format("SuperLemmini - %s - Save %d%% of %d %s",
+            Core.setTitle(String.format("SuperLemminiToo - %s - Save %d%% of %d %s",
                     level.getLevelName().trim(),
                     level.getNumToRescue() * 100 / numLemmings,
                     numLemmings,

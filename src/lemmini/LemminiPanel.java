@@ -247,6 +247,10 @@ public class LemminiPanel extends JPanel implements Runnable {
         int y = Core.unscale(evt.getY());
         mouseDx = 0;
         mouseDy = 0;
+        //TODO: rewrite the mouse button selecting to allow changing what all the mouse buttons do
+        //for instance, right now, up to 5 mouse buttons are supported:
+        //BUTTON1 (left-click) is the main button
+        //BUTTON2 (right-click) 
         boolean swapButtons = GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS);
         int buttonPressed = evt.getButton();
         int modifiers = evt.getModifiersEx();
@@ -314,7 +318,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         case MENU:
                             GameController.setTransition(GameController.TransitionState.TO_INTRO);
                             Fader.setState(Fader.State.OUT);
-                            Core.setTitle("SuperLemmini");
+                            Core.setTitle("SuperLemminiToo");
                             break;
                         default:
                             break;
@@ -338,7 +342,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         case MENU:
                             GameController.setTransition(GameController.TransitionState.TO_INTRO);
                             Fader.setState(Fader.State.OUT);
-                            Core.setTitle("SuperLemmini");
+                            Core.setTitle("SuperLemminiToo");
                             break;
                         case REPLAY:
                             GameController.requestRestartLevel(true, true);
@@ -389,7 +393,9 @@ public class LemminiPanel extends JPanel implements Runnable {
                             GameController.requestSkill(l);
                         } else if (y < LemminiFrame.LEVEL_HEIGHT) {
                             GameController.stopReplayMode();
-                            GameController.advanceFrame();
+                            if (!GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING)) {
+                            	GameController.advanceFrame();
+                            }
                         }
                     }
                     // check minimap mouse move
@@ -565,8 +571,8 @@ public class LemminiPanel extends JPanel implements Runnable {
     }//GEN-LAST:event_formMouseMoved
     
     private void formMouseWheelMoved(java.awt.event.MouseWheelEvent evt) {//GEN-FIRST:event_formMouseWheelMoved
-        if (GameController.getGameState() == GameController.State.LEVEL) {
-            int wheelRotation = evt.getWheelRotation();
+        if (GameController.getGameState() == GameController.State.LEVEL && !GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL)) {
+        	int wheelRotation = evt.getWheelRotation();
             if (wheelRotation > 0) {
                 for (int i = 0; i < wheelRotation; i++) {
                     GameController.nextSkill();
@@ -1212,7 +1218,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 }
                 GameController.setTransition(GameController.TransitionState.TO_INTRO);
                 Fader.setState(Fader.State.OUT);
-                Core.setTitle("SuperLemmini");
+                Core.setTitle("SuperLemminiToo");
             }
             Core.player = new Player(player);
         }

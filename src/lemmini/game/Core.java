@@ -108,6 +108,7 @@ public class Core {
     
     /**
      * Initialize some core elements.
+     * Loads settings from ini file.
      * @param createPatches
      * @return 
      * @throws LemmException
@@ -129,7 +130,7 @@ public class Core {
             }
         }
         
-        bilinear = Core.programProps.getBoolean("bilinear", true);
+        bilinear = programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
         resourcePath = Paths.get(resourcePathStr);
         resourceTree = new CaseInsensitiveFileTree(resourcePath);
@@ -138,11 +139,8 @@ public class Core {
         String rev = programProps.get("revision", "zip-invalid");
         GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
         GameController.setOption(GameController.Option.SOUND_ON, programProps.getBoolean("sound", true));
-        double gain;
-        gain = programProps.getDouble("musicGain", 1.0);
-        GameController.setMusicGain(gain);
-        gain = programProps.getDouble("soundGain", 1.0);
-        GameController.setSoundGain(gain);
+        GameController.setMusicGain(programProps.getDouble("musicGain", 1.0));
+        GameController.setSoundGain(programProps.getDouble("soundGain", 1.0));
         GameController.setOption(GameController.Option.ADVANCED_SELECT, programProps.getBoolean("advancedSelect", true));
         GameController.setOption(GameController.Option.CLASSIC_CURSOR, programProps.getBoolean("classicalCursor", false));
         GameController.setOption(GameController.Option.SWAP_BUTTONS, programProps.getBoolean("swapButtons", false));
@@ -152,6 +150,10 @@ public class Core {
         GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
         GameController.setOption(GameController.Option.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
+        GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
+        GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
+        GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
+
         boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
         if (rev.equalsIgnoreCase("zip")) {
             try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {
@@ -257,6 +259,32 @@ public class Core {
         player = new Player(defaultPlayer);
         
         return true;
+    }
+    
+    /***
+     * Writes all applicable settings to the settings ini file
+     */
+    public static void saveSettings() {
+        //sound settings
+    	programProps.setBoolean("music", GameController.isOptionEnabled(GameController.Option.MUSIC_ON));
+        programProps.setBoolean("sound", GameController.isOptionEnabled(GameController.Option.SOUND_ON));
+        programProps.set("mixerName", GameController.sound.getMixers()[GameController.sound.getMixerIdx()]);
+        //graphic settings
+        programProps.setBoolean("bilinear", Core.isBilinear());
+        //misc settings
+        programProps.setBoolean("advancedSelect", GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT));
+        programProps.setBoolean("classicalCursor", GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR));
+        programProps.setBoolean("swapButtons", GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS));
+        programProps.setBoolean("fasterFastForward", GameController.isOptionEnabled(GameController.Option.FASTER_FAST_FORWARD));
+        programProps.setBoolean("pauseStopsFastForward", GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD));
+        programProps.setBoolean("noPercentages", GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
+        programProps.setBoolean("replayScroll", GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
+        programProps.setBoolean("unpauseOnAssignment", GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
+        programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
+        programProps.setBoolean("unlockAllLevels", GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
+        programProps.setBoolean("disableScrollWheel", GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
+        programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
+
     }
     
     public static String appendBeforeExtension(String fname, String suffix) {

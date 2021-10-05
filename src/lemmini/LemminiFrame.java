@@ -52,7 +52,7 @@ public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
     public static final String REVISION = "1.00";
-    public static final String REV_DATE = "Jan 2021";
+    public static final String REV_DATE = "Oct 2021";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -154,7 +154,7 @@ public class LemminiFrame extends JFrame {
         jMenuItemOptions = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
-        setTitle("SuperLemmini");
+        setTitle("SuperLemminiToo");
         setIconImage(Toolkit.getDefaultToolkit().getImage(LemminiFrame.class.getClassLoader().getResource("icon_32.png")));
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentMoved(java.awt.event.ComponentEvent evt) {
@@ -361,7 +361,7 @@ public class LemminiFrame extends JFrame {
                             GameController.setSuperLemming(!GameController.isSuperLemming());
                         }
                         break;
-                    case KeyEvent.VK_C:
+                    case KeyEvent.VK_C: //C toggles Cheat Mode, if the debug mode has been entered.
                         if (Core.player.isCheat()) {
                             GameController.setCheat(!GameController.isCheat());
                             if (GameController.isCheat()) {
@@ -372,7 +372,7 @@ public class LemminiFrame extends JFrame {
                         }
                         break;
                     case KeyEvent.VK_F11:
-                    case KeyEvent.VK_P:
+                    case KeyEvent.VK_P: //F11 or P toggles Pause
                         boolean isPaused = GameController.isPaused();
                         if (GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)
                                 && !isPaused && GameController.isFastForward()) {
@@ -383,7 +383,7 @@ public class LemminiFrame extends JFrame {
                         GameController.pressIcon(Icons.Type.PAUSE);
                         break;
                     case KeyEvent.VK_F:
-                    case KeyEvent.VK_ENTER:
+                    case KeyEvent.VK_ENTER: //F or ENTER toggles Fast-Forward
                         GameController.setFastForward(!GameController.isFastForward());
                         GameController.pressIcon(Icons.Type.FFWD);
                         break;
@@ -392,7 +392,7 @@ public class LemminiFrame extends JFrame {
                             GameController.setTimed(!GameController.isTimed());
                         }
                         break;
-                    case KeyEvent.VK_R:
+                    case KeyEvent.VK_R: //CTRL-R restarts the level.
                         if (lemminiPanelMain.isControlPressed()) {
                             GameController.requestRestartLevel(true, false);
                         }
@@ -761,7 +761,7 @@ public class LemminiFrame extends JFrame {
          * Check JVM version
          */
         if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8)) {
-            JOptionPane.showMessageDialog(null, "SuperLemmini requires JVM 1.8 or later.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "SuperLemminiToo requires JVM 1.8 or later.", "Error", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
         

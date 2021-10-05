@@ -71,6 +71,9 @@ public class OptionsDialog extends JDialog {
         jCheckBoxReplayScroll = new javax.swing.JCheckBox();
         jCheckBoxUnpauseOnAssignment = new javax.swing.JCheckBox();
         jCheckBoxTimedBombers = new javax.swing.JCheckBox();
+        jCheckBoxUnlockAllLevels = new javax.swing.JCheckBox();
+        jCheckBoxDisableScrollWheel = new javax.swing.JCheckBox();
+        jCheckBoxDisableFrameStepping = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -173,18 +176,21 @@ public class OptionsDialog extends JDialog {
 
         jCheckBoxAdvanced.setSelected(GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT));
         jCheckBoxAdvanced.setText("Advanced Select");
+        jCheckBoxAdvanced.setToolTipText("Hold directional keys to select only Lemmings going in that same direction. Hold Up to select only Walkers.");
 
         jCheckBoxClassicCursor.setSelected(GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR));
         jCheckBoxClassicCursor.setText("Classic Cursor");
+        jCheckBoxClassicCursor.setToolTipText("The Standard Cursor centers around the selected lemming. The Classic Cursor follows the mouse.");
 
         jCheckBoxSwap.setSelected(GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS));
         jCheckBoxSwap.setText("Swap Middle/Right Mouse Buttons");
+        jCheckBoxSwap.setToolTipText("When disabled: Middle button drags the viewport, Right button only selects Walkers.");
 
         jCheckBoxFaster.setSelected(GameController.isOptionEnabled(GameController.Option.FASTER_FAST_FORWARD));
-        jCheckBoxFaster.setText("Increase Fast-Forward Speed");
+        jCheckBoxFaster.setText("Double Fast-Forward Speed");
+        jCheckBoxFaster.setToolTipText("Standard Fast-Forward is 3x faster than normal. Doubled Fast-Forward is 6x faster than normal.");
 
-        jCheckBoxPauseStopsFastForward.setSelected(GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)
-        );
+        jCheckBoxPauseStopsFastForward.setSelected(GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD));
         jCheckBoxPauseStopsFastForward.setText("Stop Fast-Forward When Pausing");
 
         jCheckBoxNoPercentages.setSelected(GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
@@ -199,6 +205,18 @@ public class OptionsDialog extends JDialog {
         jCheckBoxTimedBombers.setSelected(GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
         jCheckBoxTimedBombers.setText("Enable 5 second timed bombers");
 
+        jCheckBoxUnlockAllLevels.setSelected(GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
+        jCheckBoxUnlockAllLevels.setText("Unlock all levels");
+        jCheckBoxUnlockAllLevels.setToolTipText("All access to all levels, without having to complete previous ones.");
+
+        jCheckBoxDisableScrollWheel.setSelected(GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
+        jCheckBoxDisableScrollWheel.setText("Disable Scroll Wheel");
+        jCheckBoxDisableScrollWheel.setToolTipText("Prevent the scroll wheel from changing the selected skill.");
+
+        jCheckBoxDisableFrameStepping.setSelected(GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
+        jCheckBoxDisableFrameStepping.setText("Disable Frame Stepping");
+        jCheckBoxDisableFrameStepping.setToolTipText("Disable advancing the game by single frames when paused.");
+        
         javax.swing.GroupLayout jPanelMiscLayout = new javax.swing.GroupLayout(jPanelMisc);
         jPanelMisc.setLayout(jPanelMiscLayout);
         jPanelMiscLayout.setHorizontalGroup(
@@ -215,6 +233,9 @@ public class OptionsDialog extends JDialog {
                     .addComponent(jCheckBoxPauseStopsFastForward)
                     .addComponent(jCheckBoxUnpauseOnAssignment)
                 	.addComponent(jCheckBoxTimedBombers)
+                	.addComponent(jCheckBoxUnlockAllLevels)
+                	.addComponent(jCheckBoxDisableScrollWheel)
+                	.addComponent(jCheckBoxDisableFrameStepping)
                 	)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -239,6 +260,12 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jCheckBoxUnpauseOnAssignment)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxTimedBombers)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxUnlockAllLevels)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxDisableScrollWheel)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxDisableFrameStepping)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -320,9 +347,9 @@ public class OptionsDialog extends JDialog {
     }//GEN-LAST:event_jButtonApplyActionPerformed
     
     private void applyChanges() {
-        // apply sound settings
+    	// set all game settings based on GUI options first
+    	// apply sound settings
         GameController.setOption(GameController.Option.MUSIC_ON, jCheckBoxEnableMusic.isSelected());
-        Core.programProps.setBoolean("music", GameController.isOptionEnabled(GameController.Option.MUSIC_ON));
         if (GameController.getLevel() != null) {
             if (GameController.isOptionEnabled(GameController.Option.MUSIC_ON)
                     && GameController.getGameState() == GameController.State.LEVEL) {
@@ -333,32 +360,26 @@ public class OptionsDialog extends JDialog {
         }
         GameController.setMusicGain(jSliderMusicVolume.getValue() / 100.0);
         GameController.setOption(GameController.Option.SOUND_ON, jCheckBoxEnableSound.isSelected());
-        Core.programProps.setBoolean("sound", GameController.isOptionEnabled(GameController.Option.SOUND_ON));
         GameController.setSoundGain(jSliderSoundVolume.getValue() / 100.0);
         GameController.sound.setMixerIdx(jComboBoxMixer.getSelectedIndex());
-        Core.programProps.set("mixerName", GameController.sound.getMixers()[GameController.sound.getMixerIdx()]);
         // apply graphics settings
         Core.setBilinear(jCheckBoxBilinear.isSelected());
-        Core.programProps.setBoolean("bilinear", Core.isBilinear());
         // apply miscellaneous settings
         GameController.setOption(GameController.Option.ADVANCED_SELECT, jCheckBoxAdvanced.isSelected());
-        Core.programProps.setBoolean("advancedSelect", GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT));
         GameController.setOption(GameController.Option.CLASSIC_CURSOR, jCheckBoxClassicCursor.isSelected());
-        Core.programProps.setBoolean("classicalCursor", GameController.isOptionEnabled(GameController.Option.CLASSIC_CURSOR));
         GameController.setOption(GameController.Option.SWAP_BUTTONS, jCheckBoxSwap.isSelected());
-        Core.programProps.setBoolean("swapButtons", GameController.isOptionEnabled(GameController.Option.SWAP_BUTTONS));
         GameController.setOption(GameController.Option.FASTER_FAST_FORWARD, jCheckBoxFaster.isSelected());
-        Core.programProps.setBoolean("fasterFastForward", GameController.isOptionEnabled(GameController.Option.FASTER_FAST_FORWARD));
         GameController.setOption(GameController.Option.PAUSE_STOPS_FAST_FORWARD, jCheckBoxPauseStopsFastForward.isSelected());
-        Core.programProps.setBoolean("pauseStopsFastForward", GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD));
         GameController.setOption(GameController.Option.NO_PERCENTAGES, jCheckBoxNoPercentages.isSelected());
-        Core.programProps.setBoolean("noPercentages", GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
         GameController.setOption(GameController.Option.REPLAY_SCROLL, jCheckBoxReplayScroll.isSelected());
-        Core.programProps.setBoolean("replayScroll", GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, jCheckBoxUnpauseOnAssignment.isSelected());
-        Core.programProps.setBoolean("unpauseOnAssignment", GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
         GameController.setOption(GameController.Option.TIMED_BOMBERS, jCheckBoxTimedBombers.isSelected());
-        Core.programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
+        GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, jCheckBoxUnlockAllLevels.isSelected());
+        GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, jCheckBoxDisableScrollWheel.isSelected());
+        GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, jCheckBoxDisableFrameStepping.isSelected());
+        
+        //then commit all those settings to disk
+        Core.saveSettings();
     }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -377,6 +398,9 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxSwap;
     private javax.swing.JCheckBox jCheckBoxUnpauseOnAssignment;
     private javax.swing.JCheckBox jCheckBoxTimedBombers;
+    private javax.swing.JCheckBox jCheckBoxUnlockAllLevels;
+    private javax.swing.JCheckBox jCheckBoxDisableScrollWheel;
+    private javax.swing.JCheckBox jCheckBoxDisableFrameStepping;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;

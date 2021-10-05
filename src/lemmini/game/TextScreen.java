@@ -103,7 +103,7 @@ public class TextScreen {
     private static final int ROT_ANIM_LENGTH = 21;
     /** scroll text */
     private static final String SCROLL_TEXT =
-        "SuperLemmini - a game engine for Lemmings(tm) in Java. "
+        "SuperLemminiToo - a game engine for Lemmings(tm) in Java. "
         + "Coded by Ryan Sakowski 2013-2020. "
         + "Original Lemmini by Volker Oth 2005-2017. "
         + "Original website: www.lemmini.de. "
