@@ -614,8 +614,8 @@ public class GameController {
         lemmSkillOld = lemmSkill;
         nukeOld = false;
         
+        String music = level.getMusic();
         try {
-            String music = level.getMusic();
             if (music == null) {
                 music = levelPacks.get(curLevelPack).getInfo(curRating, curLevelNumber).getMusic();
             }
@@ -626,8 +626,29 @@ public class GameController {
         } catch (ResourceException ex) {
             Core.resourceError(ex.getMessage());
         } catch (LemmException ex) {
-            JOptionPane.showMessageDialog(null, "Unable to load music resource:\n" + ex.getMessage(), "Error Loading Music", JOptionPane.ERROR_MESSAGE);
-            //System.exit(1);
+        	if (music==null) {
+            	music="";
+            }
+        	//TODO: fix known problem of ogg files not playing properly. 
+        	//get the "real" file, from the requested resource:
+        	Resource res = Core.findResource("music/" + music, true, Core.MUSIC_EXTENSIONS);
+        	String ext = FilenameUtils.getExtension(res.getFileName()).toLowerCase(Locale.ROOT);
+            //only show the error if it's not an .ogg file
+        	if(!ext.equals("ogg")) {
+            	JOptionPane.showMessageDialog(null, "Unable to load music resource:\n" + ex.getMessage() + "\n\nAttempting midi fallback.", "Error Loading Music", JOptionPane.ERROR_MESSAGE);
+            }
+
+            //TODO: Clean this up
+            //Ugh, this feels incredibly hacky... 
+            //but this is our fallback (and we must error catch here too, in case disaster strikes)
+            try {
+                music = Music.getRandomTrack(level.getStyleName(), level.getSpecialStyleName());
+                Music.load("music/" + music);
+            } catch (ResourceException ex2) {
+                Core.resourceError(ex2.getMessage());
+            } catch (LemmException ex2) {
+                JOptionPane.showMessageDialog(null, "Unable to load music resource:\n" + ex2.getMessage() + "\n\nNo music will play for this level.", "Error Loading Music", JOptionPane.ERROR_MESSAGE);
+            }
         }
         
         sound.setGain(soundGain);
