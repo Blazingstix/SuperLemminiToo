@@ -57,10 +57,12 @@ public class Level {
     public static final Color BLANK_COLOR = new Color(0, 0, 0, 0);
     
     /** list of default styles */
-    private static final List<String> STYLES = Arrays.asList("dirt", "fire", "marble", "pillar", "crystal",
+    @SuppressWarnings("unused")
+	private static final List<String> STYLES = Arrays.asList("dirt", "fire", "marble", "pillar", "crystal",
         "brick", "rock", "snow", "bubble", "xmas");
     /** list of default special styles */
-    private static final List<String> SPECIAL_STYLES = Arrays.asList("awesome", "menace", "beastii", "beasti",
+    @SuppressWarnings("unused")
+	private static final List<String> SPECIAL_STYLES = Arrays.asList("awesome", "menace", "beastii", "beasti",
         "covox", "prima", "apple");
     private static final int DEFAULT_TOP_BOUNDARY = 8;
     private static final int DEFAULT_BOTTOM_BOUNDARY = 20;

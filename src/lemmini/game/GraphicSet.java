@@ -104,7 +104,8 @@ public class GraphicSet {
     public static final int[] DEFAULT_PARTICLE_COLORS = {0xff00ff00, 0xff0000ff, 0xffffffff, 0xffffffff, 0xffff0000};
     
     /** list of default styles */
-    private static final List<String> DEFAULT_STYLES = Arrays.asList("dirt", "fire", "marble", "pillar", "crystal",
+    @SuppressWarnings("unused")
+	private static final List<String> DEFAULT_STYLES = Arrays.asList("dirt", "fire", "marble", "pillar", "crystal",
         "brick", "rock", "snow", "bubble", "xmas");
     private static final int DEFAULT_ANIMATION_SPEED = 2;
     private static final int[] SPECIAL_STYLE_OBJECT_ORDER = {0, 1, 7};

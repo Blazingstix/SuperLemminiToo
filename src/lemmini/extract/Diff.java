@@ -1,5 +1,6 @@
 package lemmini.extract;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -89,7 +90,13 @@ public class Diff {
         crcTrg.update(trg.array());
         targetCRC = (int) crcTrg.getValue();
         if (crcTrg.getValue() == crcSrc.getValue()) {
-            return null;
+        	try {
+				patch.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+        	return null;
         }
         
         // write header
@@ -548,6 +555,11 @@ public class Diff {
 class DiffException extends Exception {
     
     /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	/**
      * Constructor.
      */
     public DiffException() {

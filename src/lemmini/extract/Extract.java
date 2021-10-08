@@ -747,12 +747,13 @@ public class Extract implements Runnable {
      * @param destination full destination file name including path
      * @throws IOException
      */
+    /*
     private static void copyFile(final URL source, final Path destination) throws IOException {
         try (InputStream fSrc = new BufferedInputStream(source.openStream())) {
             Files.copy(fSrc, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
-    
+    */
     /**
      * Copy a file.
      * @param source full source file name including path

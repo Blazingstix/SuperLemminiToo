@@ -1,7 +1,7 @@
 package lemmini.game;
 
-import java.awt.Image;
-import java.awt.MediaTracker;
+//import java.awt.Image;
+//import java.awt.MediaTracker;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -464,7 +464,7 @@ public class Core {
      * @return given image if operation was successful; null otherwise
      * @throws ResourceException
      */
-    private static Image addToTracker(final MediaTracker tracker, Image image) throws ResourceException {
+/*    private static Image addToTracker(final MediaTracker tracker, Image image) throws ResourceException {
         if (image != null) {
             tracker.addImage(image, 0);
             try {
@@ -478,7 +478,7 @@ public class Core {
         }
         return image;
     }
-    
+    */
     /**
      * Loads an image from the given resource.
      * @param res resource

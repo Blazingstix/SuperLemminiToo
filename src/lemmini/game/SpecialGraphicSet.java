@@ -28,7 +28,8 @@ import lemmini.tools.Props;
 public class SpecialGraphicSet {
     
     /** list of default special styles */
-    private static final List<String> DEFAULT_SPECIAL_STYLES = Arrays.asList("awesome", "menace", "beastii", "beasti",
+    @SuppressWarnings("unused")
+	private static final List<String> DEFAULT_SPECIAL_STYLES = Arrays.asList("awesome", "menace", "beastii", "beasti",
         "covox", "prima", "apple");
     
     private final String name;
