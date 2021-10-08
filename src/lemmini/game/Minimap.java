@@ -28,7 +28,7 @@ import lemmini.tools.ToolBox;
  * Handles the minimap.
  * @author Volker Oth
  */
-public class MiniMap {
+public class Minimap {
     
     /** color of Lemmings in minimap */
     private static final Color LEMM_COLOR = Color.RED;
