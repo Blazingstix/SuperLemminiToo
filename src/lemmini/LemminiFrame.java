@@ -152,6 +152,7 @@ public class LemminiFrame extends JFrame {
         jMenuItemEnterLevelCode = new javax.swing.JMenuItem();
         jMenuOptions = new javax.swing.JMenu();
         jMenuItemOptions = new javax.swing.JMenuItem();
+        jMenuItemAbout = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("SuperLemminiToo");
@@ -266,7 +267,18 @@ public class LemminiFrame extends JFrame {
                 jMenuItemOptionsActionPerformed(evt);
             }
         });
+        
+        jMenuItemAbout.setText("About...");
+        jMenuItemAbout.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                //jMenuItemOptionsActionPerformed(evt);
+            	JOptionPane.showMessageDialog(thisFrame, "Java version: " + System.getProperty("java.version").toString());
+            }
+        });
+        
+        
         jMenuOptions.add(jMenuItemOptions);
+        jMenuOptions.add(jMenuItemAbout);
 
         jMenuBarMain.add(jMenuOptions);
 
@@ -863,6 +875,7 @@ public class LemminiFrame extends JFrame {
     private javax.swing.JMenuItem jMenuItemLoadReplay;
     private javax.swing.JMenuItem jMenuItemManagePlayers;
     private javax.swing.JMenuItem jMenuItemOptions;
+    private javax.swing.JMenuItem jMenuItemAbout;
     private javax.swing.JMenuItem jMenuItemPlayLevel;
     private javax.swing.JMenuItem jMenuItemRestartLevel;
     private javax.swing.JMenu jMenuLevel;
