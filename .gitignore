@@ -3,6 +3,7 @@
 
 #Eclipse bin folder
 bin/
+release/
 
 # Log file
 *.log
