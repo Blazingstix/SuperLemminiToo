@@ -4,6 +4,7 @@
 #Eclipse bin folder
 bin/
 release/
+releaseHistory/
 
 # Log file
 *.log
@@ -15,7 +16,7 @@ release/
 .mtj.tmp/
 
 # Package Files #
-*.jar
+#*.jar
 *.war
 *.nar
 *.ear
