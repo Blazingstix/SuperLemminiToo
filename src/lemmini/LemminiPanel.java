@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import lemmini.game.*;
+import lemmini.game.LemmFont.Color;
+import lemmini.game.MiscGfx.Index;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.GraphicsBuffer;
 import lemmini.graphics.GraphicsContext;
@@ -694,7 +696,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         }
                         // clear parts of the screen for menu etc.
                         offGfx.setClip(0, LemminiFrame.LEVEL_HEIGHT, width, height - LemminiFrame.LEVEL_HEIGHT);
-                        offGfx.setBackground(Color.BLACK);
+                        offGfx.setBackground(java.awt.Color.BLACK);
                         offGfx.clearRect(0, SCORE_Y, width, height - SCORE_Y);
                         // draw counter, icons, small level pic
                         // draw menu
@@ -793,17 +795,69 @@ public class LemminiPanel extends JPanel implements Runnable {
                                 max = String.format("%02d%%", maxPer);
                             }
                             boolean showMax = false;
-                            int xOffsetPlus = 4;
                             String status;
                             if (showMax) {
-                                status = String.format("%-15s OUT %-4d IN %-4s/%-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, max, GameController.getTimeString());
-                                xOffsetPlus = -20;
+                                status = String.format("%-11s OUT %-4d IN %-4s/%-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, max, GameController.getTimeString());
                             } else {
                                 status = String.format("%-15s OUT %-4d IN %-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, GameController.getTimeString());
                             }
+                            /*
                             //TODO: draw each element as separate graphics.
                             LemmFont.strImage(outStrGfx, status);
-                            offGfx.drawImage(outStrImg, menuOffsetX + xOffsetPlus, LemminiFrame.LEVEL_HEIGHT + 8);
+                            //outStrImg = outStrBuffer.getImage();
+                            offGfx.drawImage(outStrImg, menuOffsetX + 4, LemminiFrame.LEVEL_HEIGHT + 8);
+  							*/                          
+                            int yOffset = LemminiFrame.LEVEL_HEIGHT + 8;
+                            //draw each element individually
+                            LemmImage lemmName = LemmFont.strImage(String.format("%-15s", lemmingName));
+                            offGfx.drawImage(lemmName, menuOffsetX+4, yOffset);
+                            lemmName = null;
+
+                            /*
+                            //draw the heading item we want to replace with graphics
+                            LemmImage lemmOutTitle = LemmFont.strImage("OUT");
+                            offGfx.drawImage(lemmOutTitle, menuOffsetX+292, yOffset);
+                            LemmImage lemmInTitle = LemmFont.strImage("IN");
+                            offGfx.drawImage(lemmInTitle, menuOffsetX+454, yOffset);
+                            LemmImage lemmTimeTitle = LemmFont.strImage("TIME");
+                            offGfx.drawImage(lemmTimeTitle, menuOffsetX+598, yOffset);
+                            lemmOutTitle = null;
+                            lemmInTitle = null;
+                            lemmTimeTitle = null;
+                            */
+                            
+                            //draw the status icons
+                            LemmImage lemmOutIcon = MiscGfx.getImage(Index.STATUS_OUT);
+                            offGfx.drawImage(lemmOutIcon, menuOffsetX+292+23, yOffset);
+                            LemmImage lemmInIcon = MiscGfx.getImage(Index.STATUS_IN);
+                            offGfx.drawImage(lemmInIcon, menuOffsetX+454+7, yOffset);
+                            LemmImage lemmTimeIcon = MiscGfx.getImage(Index.STATUS_TIME);
+                            offGfx.drawImage(lemmTimeIcon, menuOffsetX+598+46, yOffset);
+                            lemmOutIcon = null;
+                            lemmInIcon = null;
+                            lemmTimeIcon = null;
+                            
+                            
+                            //draw the values that go with those headings.
+                            LemmImage lemmOut = LemmFont.strImage(String.format("%-4d", GameController.getNumLemmings()));
+                            offGfx.drawImage(lemmOut, menuOffsetX+292+72, yOffset);
+                            LemmImage lemmIn;
+                            if(GameController.getNumToRescue() > GameController.getNumExited()) {
+                                 lemmIn = LemmFont.strImage(String.format("%-4s", in), LemmFont.Color.RED);
+                            } else {
+                                lemmIn = LemmFont.strImage(String.format("%-4s", in));
+                            }
+                            offGfx.drawImage(lemmIn, menuOffsetX+454+54, yOffset);
+                            LemmImage lemmTime = LemmFont.strImage(String.format("%s", GameController.getTimeString()));
+                            offGfx.drawImage(lemmTime, menuOffsetX+598+90, yOffset);
+                            lemmOut = null;
+                            lemmIn = null;
+                            lemmTime = null;
+                            
+                            //dispose all the images we created.
+                            //not sure if this actually does anything... it feels like we're creating a lot of waste for 
+                            //the garbage collector to deal with...
+                            
                         }
                         // replay icon
                         LemmImage replayImage = GameController.getReplayImage();
@@ -840,7 +894,7 @@ public class LemminiPanel extends JPanel implements Runnable {
             
             // fader
             Fader.apply(offGfx);
-
+            
             repaint();
         }
     }

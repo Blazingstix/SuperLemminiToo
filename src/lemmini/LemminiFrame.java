@@ -53,8 +53,8 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "1.10";
-    public static final String REV_DATE = "17 Oct 2021";
+    public static final String REVISION = "1.20";
+    public static final String REV_DATE = "BETA";
     
     private static final long serialVersionUID = 0x01L;
     
