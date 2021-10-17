@@ -1,5 +1,6 @@
 package lemmini.game;
 
+import java.awt.Point;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -9,6 +10,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import javax.swing.JOptionPane;
+
 import lemmini.LemminiFrame;
 import lemmini.extract.ExtractDAT;
 import lemmini.extract.ExtractLevel;
@@ -92,7 +94,8 @@ public class GameController {
         TIMED_BOMBERS,
         UNLOCK_ALL_LEVELS,
         DISABLE_SCROLL_WHEEL,
-        DISABLE_FRAME_STEPPING
+        DISABLE_FRAME_STEPPING,
+        VISUAL_SFX
     }
     
     public static enum LevelFormat {
@@ -174,7 +177,7 @@ public class GameController {
     private static int entranceOpenCtr;
     private static int startSoundCtr;
     private static boolean startSoundPlayed;
-    private static final Set<Integer> entranceSounds = new LinkedHashSet<>();
+    private static final Set<SpriteObject> entranceSprites = new HashSet<>();
     /** frame counter for handling time */
     private static int secondCtr;
     /** frame counter used to handle release of new Lemmings */
@@ -202,6 +205,8 @@ public class GameController {
     private static final List<Explosion> explosions = new LinkedList<>();
     /** list of all Lemmings under the mouse cursor */
     private static final Queue<Lemming> lemmsUnderCursor = Collections.asLifoQueue(new ArrayDeque<Lemming>(128));
+    /** list of all active Visual SFX */
+    private static final List<Vsfx> vsfxs = new LinkedList<>();
     /** array of available level packs */
     private static List<LevelPack> levelPacks;
     private static Set<ExternalLevelEntry> externalLevelList;
@@ -584,11 +589,11 @@ public class GameController {
         releaseCtr = 0;
         lemmSkill = null;
         
-        entranceSounds.clear();
+        entranceSprites.clear();
         for (int i = 0; i < level.getNumEntrances(); i++) {
             SpriteObject spr = level.getSprObject(level.getEntrance(i).id);
             if (spr != null) {
-                entranceSounds.add(spr.getSound());
+                entranceSprites.add(spr);
             }
         }
         
@@ -629,11 +634,11 @@ public class GameController {
         	if (music==null) {
             	music="";
             }
-        	//TODO: fix known problem of ogg files not playing properly. 
         	//get the "real" file, from the requested resource:
         	Resource res = Core.findResource("music/" + music, true, Core.MUSIC_EXTENSIONS);
         	String ext = FilenameUtils.getExtension(res.getFileName()).toLowerCase(Locale.ROOT);
             //only show the error if it's not an .ogg file
+        	// .ogg files not playing properly is the result of missing dependencies.
         	if(!ext.equals("ogg")) {
             	JOptionPane.showMessageDialog(null, "Unable to load music resource:\n" + ex.getMessage() + "\n\nAttempting midi fallback.", "Error Loading Music", JOptionPane.ERROR_MESSAGE);
             }
@@ -1203,7 +1208,14 @@ public class GameController {
         
         if (!startSoundPlayed) {
             if (++startSoundCtr == MAX_START_SOUND_CTR) {
-                sound.play(Sound.Effect.START);
+                //show the Let's Go graphic several times
+                for( SpriteObject spr : entranceSprites) {
+                	//display the graphic right below the opening sprite.
+                	int y = spr.getY() + spr.getHeight() + (Vsfx.IMG_HEIGHT/2);
+                	sound.playVisualSFXSilent(Sound.Effect.START, spr.midX(), y);
+                }
+                //play the actual sfx only once
+            	sound.play(Sound.Effect.START);
                 startSoundPlayed = true;
             }
         }
@@ -1217,7 +1229,10 @@ public class GameController {
                     }
                 }
                 level.openBackgroundEntrances();
-                entranceSounds.stream().forEach(sound::play);
+                //this is the *creak* sound of the doors opening.
+                //for now let's not play the "creak" sound as the entrance doors open.
+                //entranceSprites.stream().forEach(sound::playVisualSFX);
+                entranceSprites.stream().forEach(sound::play);
             } else if (entranceOpenCtr == MAX_ENTRANCE_OPEN_CTR + 30) {
                 //System.out.println("opened");
                 entranceOpened = true;
@@ -1243,6 +1258,7 @@ public class GameController {
             }
         }
         
+        //animate or remove Lemmings
         for (Iterator<Lemming> it = lemmings.iterator(); it.hasNext(); ) {
             Lemming l = it.next();
             l.animate();
@@ -1251,6 +1267,7 @@ public class GameController {
             }
         }
         
+        //animate or remove Explosions
         for (Iterator<Explosion> it = explosions.iterator(); it.hasNext(); ) {
             Explosion e = it.next();
             if (e.isFinished()) {
@@ -1259,6 +1276,16 @@ public class GameController {
                 e.update();
             }
         }
+
+        //animate or remove visual sfx
+        for (Iterator<Vsfx> it = vsfxs.iterator(); it.hasNext(); ) {
+        	Vsfx l = it.next();
+            l.animate();
+            if (l.hasFinished()) {
+                it.remove();
+            }
+        }
+        
         
         // animate level objects
         for (int n = 0; n < level.getNumSprObjects(); n++) {
@@ -1759,9 +1786,22 @@ public class GameController {
         explosions.add(new Explosion(x, y));
     }
     
+    public static synchronized void drawVisualSfx(final GraphicsContext g) {
+    	//draw the visual sfx
+    	vsfxs.stream().forEachOrdered(v -> {
+    		int vx = v.screenX();
+    		int vy = v.screenY();
+    		if (vx + v.width() > xPos && vx < xPos + Core.getDrawWidth()
+            && vy + v.height() > yPos && vy < yPos + LemminiFrame.LEVEL_HEIGHT) {
+		        g.drawImage(v.getImage(), vx - xPos, vy - yPos);
+		    }
+    	});
+    }
+    
     public static synchronized void drawLemmings(final GraphicsContext g) {
         lemmings.stream().forEachOrdered(l -> {
-            int lx = l.screenX();
+            //draw lemming.
+        	int lx = l.screenX();
             int ly = l.screenY();
             int mx = l.midX();
             if (lx + l.width() > xPos && lx < xPos + Core.getDrawWidth()
@@ -1769,6 +1809,7 @@ public class GameController {
                 g.drawImage(l.getImage(), lx - xPos, ly - yPos);
             }
             
+            //draws any countdown graphics if necessary
             LemmImage cd = l.getCountdown();
             if (cd != null) {
                 int x = mx - xPos - cd.getWidth() / 2;
@@ -1779,6 +1820,7 @@ public class GameController {
                 }
             }
             
+            //draws any selection indicators in replays
             LemmImage sel = l.getSelectImg();
             if (sel != null) {
                 int x = mx - xPos - sel.getWidth() / 2;
@@ -2334,6 +2376,18 @@ public class GameController {
     
     public static synchronized void addLemming(Lemming l) {
         lemmings.add(l);
+    }
+    
+    /**
+     * Get list of all Visual SFX in this level.
+     * @return list of all Visual SFX in this level
+     */
+    public static List<Vsfx> getVsfx() {
+    	return Collections.unmodifiableList(vsfxs);
+    }
+    
+    public static synchronized void addVsfx(Vsfx v) {
+    	vsfxs.add(v);
     }
     
     /**

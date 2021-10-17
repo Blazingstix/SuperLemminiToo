@@ -266,6 +266,14 @@ public class SpriteObject extends Sprite {
     }
     
     /**
+     * Gets the x visual mid-point of the object
+     * @return
+     */
+    public int midX() {
+    	return x + (width/2);
+    }
+    
+    /**
      * Set y position.
      * @param yi y position in pixels
      */
@@ -279,6 +287,14 @@ public class SpriteObject extends Sprite {
      */
     public int getY() {
         return y;
+    }
+
+    /**
+     * Gets the x visual mid-point of the object
+     * @return
+     */
+    public int midY() {
+    	return y + (height/2);
     }
     
     public int getMaskOffsetX() {

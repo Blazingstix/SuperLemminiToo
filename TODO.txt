@@ -1,0 +1,10 @@
+This is a list of all the things I want to accomplish in this fork.
+
+* update graphics for some icons to be more pleasant
+	* animated icons
+	* change the size of icons, so they match the preview bar, and move the skill count _into_ the icons.
+* hide scroll-lock icon on levels with no vertical area
+* add Windows 95 / Amiga (Lemmings 2?) view selector
+* add Windows 95 blue graphic
+* add Windows 95 font
+* add disclaimer at startup, saying this is a fan-recreation and in no way affiliated with the original or current owners of Lemmings.

@@ -32,6 +32,8 @@ import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import keyrepeatfix.RepeatingReleasedEventsFixer;
+import lemmini.extract.Extract;
+import lemmini.extract.ExtractException;
 import lemmini.game.*;
 import lemmini.gameutil.Fader;
 import lemmini.graphics.LemmImage;
@@ -51,8 +53,8 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "1.01/Java8";
-    public static final String REV_DATE = "Oct 2021";
+    public static final String REVISION = "1.10";
+    public static final String REV_DATE = "17 Oct 2021";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -69,7 +71,8 @@ public class LemminiFrame extends JFrame {
      */
     public LemminiFrame() {
         try {
-            boolean successful = Core.init(createPatches); // initialize Core object
+        	String currentFolderStr = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
+            boolean successful = Core.init(createPatches, currentFolderStr); // initialize Core object
             if (!successful) {
                 System.exit(0);
             }
@@ -143,6 +146,7 @@ public class LemminiFrame extends JFrame {
         jMenuBarMain = new javax.swing.JMenuBar();
         jMenuFile = new javax.swing.JMenu();
         jMenuItemExit = new javax.swing.JMenuItem();
+        jMenuItemFileExtract = new javax.swing.JMenuItem();
         jMenuPlayers = new javax.swing.JMenu();
         jMenuItemManagePlayers = new javax.swing.JMenuItem();
         jMenuLevel = new javax.swing.JMenu();
@@ -208,6 +212,15 @@ public class LemminiFrame extends JFrame {
         });
         jMenuFile.add(jMenuItemExit);
 
+        jMenuItemFileExtract.setText("Extract ...");
+        jMenuItemFileExtract.setVisible(false);
+        jMenuItemFileExtract.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+            	jMenuItemFileExtractActionPerformed(evt);
+            }
+        });
+        jMenuFile.add(jMenuItemFileExtract);
+        
         jMenuBarMain.add(jMenuFile);
 
         jMenuPlayers.setText("Players");
@@ -224,7 +237,7 @@ public class LemminiFrame extends JFrame {
 
         jMenuLevel.setText("Level");
 
-        jMenuItemPlayLevel.setText("Play Level...");
+        jMenuItemPlayLevel.setText("Select Level...");
         jMenuItemPlayLevel.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemPlayLevelActionPerformed(evt);
@@ -271,8 +284,11 @@ public class LemminiFrame extends JFrame {
         jMenuItemAbout.setText("About...");
         jMenuItemAbout.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                //jMenuItemOptionsActionPerformed(evt);
-            	JOptionPane.showMessageDialog(thisFrame, "Java version: " + System.getProperty("java.version").toString());
+            	String msg = "";
+            	msg += "Java version: " + System.getProperty("java.version").toString();
+            	// msg += "\n";
+            	// msg += "Current Folder:" + getClass().getProtectionDomain().getCodeSource().getLocation();
+            	JOptionPane.showMessageDialog(thisFrame, msg);
             }
         });
         
@@ -341,8 +357,10 @@ public class LemminiFrame extends JFrame {
                     case KeyEvent.VK_F10:
                         GameController.handleIconButton(Icons.Type.DIG);
                         break;
-                    case KeyEvent.VK_D:
-                        if (GameController.isCheat()) {
+                    case KeyEvent.VK_D: //CTRL-SHIFT-D is to enter Debug mode. just D (while in Debug mode) is Draw mode
+                    	if (lemminiPanelMain.isControlPressed() && lemminiPanelMain.isShiftPressed() && lemminiPanelMain.isAltPressed()) {
+                            GameController.setCheat(!GameController.isCheat());
+                        } else if (!lemminiPanelMain.isControlPressed() && !lemminiPanelMain.isShiftPressed() && !lemminiPanelMain.isAltPressed() && GameController.isCheat()) {
                             lemminiPanelMain.setDebugDraw(!lemminiPanelMain.getDebugDraw());
                         }
                         break;
@@ -405,7 +423,7 @@ public class LemminiFrame extends JFrame {
                         }
                         break;
                     case KeyEvent.VK_R: //CTRL-R restarts the level.
-                        if (lemminiPanelMain.isControlPressed()) {
+                        if (lemminiPanelMain.isControlPressed() && !lemminiPanelMain.isShiftPressed()) {
                             GameController.requestRestartLevel(true, false);
                         }
                         break;
@@ -461,10 +479,15 @@ public class LemminiFrame extends JFrame {
                     case KeyEvent.VK_CONTROL:
                         lemminiPanelMain.setControlPressed(true);
                         break;
+                    case KeyEvent.VK_ALT:
+                    	lemminiPanelMain.setAltPressed(true);
+                        break;
                     case KeyEvent.VK_SPACE:
                         if (GameController.isCheat()) {
                             Lemming l = new Lemming(lemminiPanelMain.getCursorX(), lemminiPanelMain.getCursorY(), Lemming.Direction.RIGHT);
                             GameController.addLemming(l);
+                            Vsfx v = new Vsfx(lemminiPanelMain.getCursorX(), lemminiPanelMain.getCursorY(), Vsfx.Vsfx_Index.YIPPEE);
+                            GameController.addVsfx(v);
                         }
                         break;
                     case KeyEvent.VK_PLUS:
@@ -618,6 +641,9 @@ public class LemminiFrame extends JFrame {
                 case KeyEvent.VK_CONTROL:
                     lemminiPanelMain.setControlPressed(false);
                     break;
+                case KeyEvent.VK_ALT:
+                    lemminiPanelMain.setAltPressed(false);
+                    break;
                 case KeyEvent.VK_PLUS:
                 case KeyEvent.VK_ADD:
                 case KeyEvent.VK_EQUALS:
@@ -704,6 +730,15 @@ public class LemminiFrame extends JFrame {
         exit();
     }//GEN-LAST:event_jMenuItemExitActionPerformed
     
+    private void jMenuItemFileExtractActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemExitActionPerformed
+    	try {
+			Extract.extract(Core.resourcePath, Core.resourceTree, Paths.get("reference"), Paths.get("patch"), true, false);
+		} catch (ExtractException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+    }//GEN-LAST:event_jMenuItemExitActionPerformed
+
     private void jMenuItemManagePlayersActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemManagePlayersActionPerformed
         lemminiPanelMain.handlePlayers();
     }//GEN-LAST:event_jMenuItemManagePlayersActionPerformed
@@ -872,6 +907,7 @@ public class LemminiFrame extends JFrame {
     private javax.swing.JMenu jMenuFile;
     private javax.swing.JMenuItem jMenuItemEnterLevelCode;
     private javax.swing.JMenuItem jMenuItemExit;
+    private javax.swing.JMenuItem jMenuItemFileExtract;
     private javax.swing.JMenuItem jMenuItemLoadReplay;
     private javax.swing.JMenuItem jMenuItemManagePlayers;
     private javax.swing.JMenuItem jMenuItemOptions;

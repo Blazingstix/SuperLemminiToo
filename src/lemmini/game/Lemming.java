@@ -761,7 +761,7 @@ public class Lemming {
                         m.paintStep(screenMaskX(), screenMaskY(), 0);
                     } else if (idx == 10 * TIME_SCALE) {
                         if (counter >= STEPS_WARNING) {
-                            GameController.sound.play(Sound.Effect.STEP_WARNING, getPan());
+                        	playVisualSFX(Sound.Effect.STEP_WARNING);
                         }
                     }
                     turnedByBlocker();
@@ -803,7 +803,7 @@ public class Lemming {
                 } else {
                     int idx = frameIdx + 1;
                     if (idx == 5 * TIME_SCALE && !nuke) { 
-                        GameController.sound.play(Sound.Effect.OHNO, getPan());
+                    	playVisualSFX(Sound.Effect.OHNO);
                     }
                     break;
                 }
@@ -812,7 +812,7 @@ public class Lemming {
                 {
                     int idx = frameIdx + 1;
                     if (idx == 5 * TIME_SCALE && !nuke) { 
-                        GameController.sound.play(Sound.Effect.OHNO, getPan());
+                    	playVisualSFX(Sound.Effect.OHNO);
                     }
                     free = freeBelow(FALLER_STEP);
                     y += StrictMath.min(FALLER_STEP, free); // max: FALLER_STEP
@@ -847,7 +847,7 @@ public class Lemming {
                     }
                     int idx = frameIdx + 1;
                     if (idx == 3 * TIME_SCALE) {
-                        GameController.sound.play(Sound.Effect.DIE, getPan());
+                    	playVisualSFX(Sound.Effect.DIE);
                     }
                     break;
                 }
@@ -856,7 +856,7 @@ public class Lemming {
                 if (counter == 1 * TIME_SCALE) {
                     Stencil stencil = GameController.getStencil();
                     Mask m = lemRes.getMask(Direction.RIGHT);
-                    GameController.sound.play(Sound.Effect.EXPLODE, getPan());
+                	playVisualSFX(Sound.Effect.EXPLODE);
                     if (!GameController.getLevel().getClassicSteel()) {
                         m.eraseMask(screenMaskX(), StrictMath.max(screenMaskY(), -8), 0,
                                 Stencil.MSK_BRICK | Stencil.MSK_ONE_WAY, Stencil.MSK_STEEL);
@@ -902,7 +902,7 @@ public class Lemming {
                                     // erase blocker mask
                                     eraseBlockerMask();
                                 }
-                                GameController.sound.play(spr.getSound(), getPan());
+                                GameController.sound.playVisualSFX(spr);
                                 drowner = true;
                                 newType = Type.DROWNER;
                             }
@@ -922,7 +922,7 @@ public class Lemming {
                                     // erase blocker mask
                                     eraseBlockerMask();
                                 }
-                                GameController.sound.play(spr.getSound(), getPan());
+                                GameController.sound.playVisualSFX(spr);
                                 newType = Type.FRIER;
                             }
                         }
@@ -941,7 +941,7 @@ public class Lemming {
                                     // erase blocker mask
                                     eraseBlockerMask();
                                 }
-                                GameController.sound.play(spr.getSound(), getPan());
+                                GameController.sound.playVisualSFX(spr);
                                 hasDied = true;
                             }
                         }
@@ -974,7 +974,7 @@ public class Lemming {
                                         // erase blocker mask
                                         eraseBlockerMask();
                                     }
-                                    GameController.sound.play(spr.getSound(), getPan());
+                                    GameController.sound.playVisualSFX(spr);
                                     homer = true;
                                     newType = Type.HOMER;
                                 }
@@ -1020,7 +1020,7 @@ public class Lemming {
                         newType = Type.EXPLODER;
                         break;
                     case DROWNER:
-                        GameController.sound.play(Sound.Effect.DROWN, getPan());
+                    	playVisualSFX(Sound.Effect.DROWN);
                         /* falls through */
                     case FRIER:
                         if (flapper) {
@@ -1104,6 +1104,15 @@ public class Lemming {
     }
     
     /**
+     * Plays the specified sound effect at the lemming's current location.<br/>
+     * If VisualSFX are enabled, a text-graphic is shown at the lemming's location, too.
+     * @param e The Sound Effect to play
+     */
+    public void playVisualSFX(Sound.Effect e) {
+    	GameController.sound.playVisualSFX(e, midX(), midY());
+    }
+    
+    /**
      * Check if a Lemming is to be turned by a blocker.
      * @return true if Lemming is to be turned, false otherwise
      */
@@ -1124,7 +1133,8 @@ public class Lemming {
         if (BooleanUtils.toBoolean(s & Stencil.MSK_TURN_LEFT) && dir == Direction.RIGHT) {
             int id = objectFoot();
             if (id >= 0) {
-                GameController.sound.play(GameController.getLevel().getSprObject(id).getSound(), getPan());
+            	SpriteObject spr = GameController.getLevel().getSprObject(id);
+                GameController.sound.playVisualSFX(spr);
             }
             dir = Direction.LEFT;
             return true;
@@ -1132,7 +1142,8 @@ public class Lemming {
         if (BooleanUtils.toBoolean(s & Stencil.MSK_TURN_RIGHT) && dir == Direction.LEFT) {
             int id = objectFoot();
             if (id >= 0) {
-                GameController.sound.play(GameController.getLevel().getSprObject(id).getSound(), getPan());
+            	SpriteObject spr = GameController.getLevel().getSprObject(id);
+                GameController.sound.playVisualSFX(spr);
             }
             dir = Direction.RIGHT;
             return true;
@@ -1158,7 +1169,7 @@ public class Lemming {
                 case SPLATTER:
                     counter = 0;
                     explodeNumCtr = 0;
-                    GameController.sound.play(Sound.Effect.SPLAT, getPan());
+                	playVisualSFX(Sound.Effect.SPLAT);
                     break;
                 case FLAPPER:
                 case FLAPPER_BLOCKER:
@@ -1305,14 +1316,14 @@ public class Lemming {
                 boolean hitSteel = BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL);
                 if (hitOneWayLeft || hitOneWayRight || hitSteel) {
                     if (playSound) {
-                        SpriteObject obj = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
-                        if (obj != null
-                                && ((hitOneWayLeft && obj.getType() == SpriteObject.Type.ONE_WAY_LEFT)
-                                        || (hitOneWayRight && obj.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
-                                        || (hitSteel && obj.getType() == SpriteObject.Type.STEEL))) {
-                            GameController.sound.play(obj.getSound(), getPan());
+                        SpriteObject spr = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
+                        if (spr != null
+                                && ((hitOneWayLeft && spr.getType() == SpriteObject.Type.ONE_WAY_LEFT)
+                                        || (hitOneWayRight && spr.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
+                                        || (hitSteel && spr.getType() == SpriteObject.Type.STEEL))) {
+                            GameController.sound.playVisualSFX(spr);
                         } else {
-                            GameController.sound.play(Sound.Effect.STEEL, getPan());
+                        	playVisualSFX(Sound.Effect.STEEL);
                         }
                     }
                     return false;
@@ -1335,11 +1346,11 @@ public class Lemming {
                 int sval = GameController.getStencil().getMask(xm, ym);
                 if (BooleanUtils.toBoolean(sval & Stencil.MSK_BRICK) && BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL)) {
                     if (playSound) {
-                        SpriteObject obj = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xm, ym));
-                        if (obj != null && obj.getType() == SpriteObject.Type.STEEL) {
-                            GameController.sound.play(obj.getSound(), getPan());
+                        SpriteObject spr = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xm, ym));
+                        if (spr != null && spr.getType() == SpriteObject.Type.STEEL) {
+                            GameController.sound.playVisualSFX(spr);
                         } else {
-                            GameController.sound.play(Sound.Effect.STEEL, getPan());
+                        	playVisualSFX(Sound.Effect.STEEL);
                         }
                     }
                     return false;
@@ -1357,7 +1368,7 @@ public class Lemming {
         if (x < GameController.getLevel().getLeftBoundary()
                 || x >= GameController.getWidth() + GameController.getLevel().getRightBoundary()) {
             if (!start && playSound) {
-                GameController.sound.play(Sound.Effect.STEEL, getPan());
+            	playVisualSFX(Sound.Effect.STEEL);
             }
             return false;
         }
@@ -1381,14 +1392,14 @@ public class Lemming {
                 boolean hitSteel = BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL);
                 if (hitOneWayLeft || hitOneWayRight || hitSteel) {
                     if (playSound) {
-                        SpriteObject obj = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
-                        if (obj != null
-                                && ((hitOneWayLeft && obj.getType() == SpriteObject.Type.ONE_WAY_LEFT)
-                                        || (hitOneWayRight && obj.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
-                                        || (hitSteel && obj.getType() == SpriteObject.Type.STEEL))) {
-                            GameController.sound.play(obj.getSound(), getPan());
+                        SpriteObject spr = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
+                        if (spr != null
+                                && ((hitOneWayLeft && spr.getType() == SpriteObject.Type.ONE_WAY_LEFT)
+                                        || (hitOneWayRight && spr.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
+                                        || (hitSteel && spr.getType() == SpriteObject.Type.STEEL))) {
+                            GameController.sound.playVisualSFX(spr);
                         } else {
-                            GameController.sound.play(Sound.Effect.STEEL, getPan());
+                        	playVisualSFX(Sound.Effect.STEEL);
                         }
                     }
                     return false;
@@ -1407,14 +1418,14 @@ public class Lemming {
                 boolean hitSteel = BooleanUtils.toBoolean(sval & Stencil.MSK_STEEL);
                 if (hitOneWayLeft || hitOneWayRight || hitSteel) {
                     if (playSound) {
-                        SpriteObject obj = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
-                        if (obj != null
-                                && ((hitOneWayLeft && obj.getType() == SpriteObject.Type.ONE_WAY_LEFT)
-                                        || (hitOneWayRight && obj.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
-                                        || (hitSteel && obj.getType() == SpriteObject.Type.STEEL))) {
-                            GameController.sound.play(obj.getSound(), getPan());
+                        SpriteObject spr = GameController.getLevel().getSprObject(GameController.getStencil().getMaskObjectID(xb, yb));
+                        if (spr != null
+                                && ((hitOneWayLeft && spr.getType() == SpriteObject.Type.ONE_WAY_LEFT)
+                                        || (hitOneWayRight && spr.getType() == SpriteObject.Type.ONE_WAY_RIGHT)
+                                        || (hitSteel && spr.getType() == SpriteObject.Type.STEEL))) {
+                            GameController.sound.playVisualSFX(spr);
                         } else {
-                            GameController.sound.play(Sound.Effect.STEEL, getPan());
+                        	playVisualSFX(Sound.Effect.STEEL);
                         }
                     }
                     return false;
@@ -1535,7 +1546,7 @@ public class Lemming {
     private boolean crossedLowerBorder() {
         if (y >= GameController.getHeight() + GameController.getLevel().getBottomBoundary()) {
             hasDied = true;
-            GameController.sound.play(Sound.Effect.DIE, getPan());
+        	playVisualSFX(Sound.Effect.DIE);
             return true;
         }
         return false;
@@ -2035,9 +2046,7 @@ public class Lemming {
     }
     
     public double getPan() {
-        double panFactor = Core.getDrawWidth();
-        double retPan = (x - (GameController.getXPos() + Core.getDrawWidth() / 2.0)) / panFactor;
-        return retPan;
+    	return lemmini.sound.Sound.getPan(x);
     }
 }
 

@@ -1,5 +1,6 @@
 package lemmini.sound;
 
+import java.awt.Point;
 import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -10,6 +11,8 @@ import lemmini.game.Core;
 import lemmini.game.GameController;
 import lemmini.game.Resource;
 import lemmini.game.ResourceException;
+import lemmini.game.SpriteObject;
+import lemmini.game.Vsfx;
 import lemmini.tools.Props;
 import lemmini.tools.ToolBox;
 import org.apache.commons.lang3.StringUtils;
@@ -433,6 +436,87 @@ public class Sound {
      */
     public void play(final Effect e) {
         play(effects.get(e), 0.0);
+    }
+
+    /**
+     * Play the sound of the given SpriteObject
+     * @param spr
+     */
+    public void play(final SpriteObject spr) {
+    	//System.out.println(spr.getY());
+    	play(spr.getSound(), getPan(spr.midX()));
+    }
+    
+    /**
+     * Displays the VisualSFX (if it exists, and the setting is turned on)
+     * @param idx
+     * @param x
+     * @param y
+     */
+    public void playVisualSFXSilent(final int idx, final int x, final int y) {
+    	if (GameController.isOptionEnabled(GameController.Option.VISUAL_SFX) && idx >= 0 && idx < Vsfx.VSFX_COUNT) {
+	    	Vsfx v = new Vsfx(x, y, idx);
+	        GameController.addVsfx(v);
+    	}
+    }
+    
+    /**
+     * Displays the VisualSFX (if it exists, and the setting is turned on)
+     * @param e
+     * @param x
+     * @param y
+     */
+    public void playVisualSFXSilent(final Effect e, final int x, final int y) {
+    	playVisualSFXSilent(effects.get(e), x, y);
+    }
+    
+    /**
+     * Play a given sound, and show the VisualSFX (if it exists)
+     * @param idx index of the sound to be played
+     * @param x x-coordinate to display the VFX
+     * @param y y-coordinate to display the VFX
+     */
+    public void playVisualSFX(final int idx, final int x, final int y) {
+    	//first play the sound effect
+    	play(idx, getPan(x));
+    	//then add the visual SFX to the display list (if that option is enabled)
+    	playVisualSFXSilent(idx, x, y);
+    }
+    
+    /**
+     * Play a given sound, and show the VisualSFX (if it exists)
+     * @param idx index of the sound to be played
+     * @param x x-coordinate to display the VFX
+     * @param y y-coordinate to display the VFX
+     */
+    public void playVisualSFX(final int idx, final Point xy) {
+    	playVisualSFX(idx, (int)xy.getX(), (int)xy.getY());
+    }
+
+    public void playVisualSFX(final SpriteObject spr) {
+    	//System.out.println(spr.getY());
+    	playVisualSFX(spr.getSound(), spr.midX(), spr.midY());
+    }
+    
+    /**
+     * Play a given sound, and show the VisualSFX (if it exists)
+     * @param e
+     * @param x x-coordinate to display the VFX
+     * @param y y-coordinate to display the VFX
+     */
+    public void playVisualSFX(final Effect e, int x, int y) {
+    	playVisualSFX(effects.get(e), x, y);
+    }
+    
+    /**
+     * Get the distance off-screen left or right to play the sound effect. (Audio panning)
+     * @param x
+     * @return
+     */
+    public static double getPan(final int x) {
+        double panFactor = Core.getDrawWidth();
+        double retPan = (x - (GameController.getXPos() + Core.getDrawWidth() / 2.0)) / panFactor;
+        return retPan;
     }
     
     /**

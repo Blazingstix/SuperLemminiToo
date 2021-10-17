@@ -57,8 +57,10 @@ public class MiscGfx {
         SELECT
     }
     
+
     /** list of images */
     private static final List<LemmImage> images = new ArrayList<>(16);
+    private static final List<LemmImage> vsfx_images = new ArrayList<>(30);
     private static LemmImage minimap;
     private static int minimapWidth;
     
@@ -85,7 +87,7 @@ public class MiscGfx {
         res = Core.findResource("gfx/misc/minimap_arrows.png", true, Core.IMAGE_EXTENSIONS);
         List<LemmImage> anim = ToolBox.getAnimation(Core.loadLemmImage(res), 4);
         images.addAll(anim);
-        /* 7: LEMMINI */
+        /* 7: LEMMINI title graphic */
         img = Core.loadLemmImageJar("lemmini.png");
         images.add(img);
         /* 8: TILE_GREEN */
@@ -104,6 +106,11 @@ public class MiscGfx {
         res = Core.findResource("gfx/misc/select.png", true, Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
+
+        /*add visual sfx images */
+        res = Core.findResource("gfx/misc/vsfxbig.png", true, Core.IMAGE_EXTENSIONS);
+        anim = ToolBox.getAnimation(Core.loadLemmImage(res), Vsfx.VSFX_COUNT);
+        vsfx_images.addAll(anim);
         
         /* Assemble minimap */
         minimapWidth = -1;
@@ -117,6 +124,24 @@ public class MiscGfx {
      */
     public static LemmImage getImage(Index idx) {
         return images.get(idx.ordinal());
+    }
+
+    /**
+     * Get Visual SFX image.
+     * @param idx Vsfx.Vsfx_Index
+     * @return image of given index
+     */
+    public static LemmImage getVsfxImage(Vsfx.Vsfx_Index idx) {
+        return vsfx_images.get(idx.ordinal());
+    }
+
+    /**
+     * Get Visual SFX image. 
+     * @param idx
+     * @return
+     */
+    public static LemmImage getVsfxImage(int idx) {
+    	return vsfx_images.get(idx);
     }
     
     public static LemmImage getMinimapImage() {

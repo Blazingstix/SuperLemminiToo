@@ -265,12 +265,12 @@ public class TextDialog {
      */
     public void addTextButton(final String t, final String ts, final String group,
             final int x0, final int y0, final TextScreen.Button type,
-            final LemmFont.Color col, final LemmFont.Color cols) {
+            final LemmFont.Color textCol, final LemmFont.Color selectedCol) {
         int x = x0 * LemmFont.getWidth();
         int y = y0 * (LemmFont.getHeight() + 4);
         TextButton b = new TextButton(x, y, type);
-        b.setText(t, col);
-        b.setTextSelected(ts, cols);
+        b.setText(t, textCol);
+        b.setTextSelected(ts, selectedCol);
         synchronized (buttons) {
             addButtonGroup(group);
             buttons.get(group).add(b);

@@ -91,6 +91,9 @@ public class LemminiPanel extends JPanel implements Runnable {
     private boolean shiftPressed;
     /** flag: control key is pressed */
     private boolean controlPressed;
+    /** flag: alt key is pressed */
+    private boolean altPressed;
+    //TODO: create a combined modifier flag: SHIFT, CONTROL, ALT to more easily detect when *only* one modifier is pressed. 
     /** flag: left key is pressed */
     private boolean leftPressed;
     /** flag: right key is pressed */
@@ -739,6 +742,9 @@ public class LemminiPanel extends JPanel implements Runnable {
                         // draw explosions
                         GameController.drawExplosions(offGfx, width, LemminiFrame.LEVEL_HEIGHT, xOfsTemp, yOfsTemp);
                         offGfx.setClip(0, 0, width, height);
+                        //draw Visual SFX
+                        GameController.drawVisualSfx(offGfx);
+                        
                         
                         // draw info string
                         LemmImage outStrImg = outStrBuffer.getImage();
@@ -775,16 +781,29 @@ public class LemminiPanel extends JPanel implements Runnable {
                                 lemmingName = StringUtils.EMPTY;
                             }
                             String in;
+                            String max;
                             if (GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES)
                                     || GameController.getNumLemmingsMax() > 100) {
                                 in = Integer.toString(GameController.getNumExited());
+                                max = Integer.toString(GameController.getNumToRescue());
                             } else {
                                 int saved = GameController.getNumExited() * 100 / GameController.getNumLemmingsMax();
                                 in = String.format("%02d%%", saved);
+                                int maxPer = GameController.getNumToRescue() * 100 / GameController.getNumLemmingsMax();
+                                max = String.format("%02d%%", maxPer);
                             }
-                            String status = String.format("%-15s OUT %-4d IN %-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, GameController.getTimeString());
+                            boolean showMax = false;
+                            int xOffsetPlus = 4;
+                            String status;
+                            if (showMax) {
+                                status = String.format("%-15s OUT %-4d IN %-4s/%-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, max, GameController.getTimeString());
+                                xOffsetPlus = -20;
+                            } else {
+                                status = String.format("%-15s OUT %-4d IN %-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, GameController.getTimeString());
+                            }
+                            //TODO: draw each element as separate graphics.
                             LemmFont.strImage(outStrGfx, status);
-                            offGfx.drawImage(outStrImg, menuOffsetX + 4, LemminiFrame.LEVEL_HEIGHT + 8);
+                            offGfx.drawImage(outStrImg, menuOffsetX + xOffsetPlus, LemminiFrame.LEVEL_HEIGHT + 8);
                         }
                         // replay icon
                         LemmImage replayImage = GameController.getReplayImage();
@@ -884,18 +903,30 @@ public class LemminiPanel extends JPanel implements Runnable {
                     } else if (mouseHasEntered) {
                         if (xMouseScreen >= getWidth() - Core.scale(AUTOSCROLL_RANGE)) {
                             xOfsTemp += getStepSize();
+                            int beforeXPos = GameController.getXPos();
                             GameController.setXPos(xOfsTemp);
+                            int afterXPos = GameController.getXPos();
+                            xMouse += (afterXPos - beforeXPos);
                         } else if (xMouseScreen < Core.scale(AUTOSCROLL_RANGE)) {
                             xOfsTemp -= getStepSize();
+                            int beforeXPos = GameController.getXPos();
                             GameController.setXPos(xOfsTemp);
+                            int afterXPos = GameController.getXPos();
+                            xMouse -= (beforeXPos - afterXPos);
                         }
                         if (!GameController.isVerticalLock()) {
                             if (yMouseScreen >= getHeight() - Core.scale(AUTOSCROLL_RANGE)) {
                                 yOfsTemp += getStepSize();
+                                int beforeYPos = GameController.getYPos();
                                 GameController.setYPos(yOfsTemp);
+                                int afterYPos = GameController.getYPos();
+                                yMouse += (afterYPos - beforeYPos);
                             } else if (yMouseScreen < Core.scale(AUTOSCROLL_RANGE)) {
                                 yOfsTemp -= getStepSize();
+                                int beforeYPos = GameController.getYPos();
                                 GameController.setYPos(yOfsTemp);
+                                int afterYPos = GameController.getYPos();
+                                yMouse -= (beforeYPos - afterYPos);
                             }
                         }
                     }
@@ -1351,6 +1382,22 @@ public class LemminiPanel extends JPanel implements Runnable {
         controlPressed = p;
     }
     
+    /**
+     * Get flag: Alt key is pressed?
+     * @return true if control key is pressed, false otherwise
+     */
+    boolean isAltPressed() {
+        return altPressed;
+    }
+    
+    /**
+     * Set flag: Alt key is pressed.
+     * @param p true: control key is pressed, false otherwise
+     */
+    void setAltPressed(final boolean p) {
+        altPressed = p;
+    }
+
     /**
      * Get flag: Left key is pressed?
      * @return true if left key is pressed, false otherwise

@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
@@ -66,6 +67,7 @@ public class Core {
     public static final String[] SOUND_EXTENSIONS = {"wav", "aiff", "aifc", "au", "snd"};
     /** file name of patching configuration */
     public static final String PATCH_INI_NAME = "patch.ini";
+    /** file name of main data resource set */
     public static final String ROOT_ZIP_NAME = "root.lzp";
     /** path of external level cache */
     public static final String EXTERNAL_LEVEL_CACHE_PATH = "levels/$external/";
@@ -85,7 +87,13 @@ public class Core {
     public static Props programProps;
     /** path of (extracted) resources */
     public static Path resourcePath;
+    /** path of currently run SuperLemminiToo instance */
+    public static Path gamePath;
+    /** path of the game data, within the SuperLemminiToo folder */
+    public static Path gameDataPath;
+    /** list of all the game resources in an lzp file. */
     public static CaseInsensitiveFileTree resourceTree;
+    public static CaseInsensitiveFileTree gameDataTree;
     public static List<ZipFile> zipFiles;
     /** current player */
     public static Player player;
@@ -110,11 +118,23 @@ public class Core {
      * Initialize some core elements.
      * Loads settings from ini file.
      * @param createPatches
-     * @return 
+     * @return true if loading was successful
      * @throws LemmException
      * @throws IOException
      */
-    public static boolean init(final boolean createPatches) throws LemmException, IOException  {
+    public static boolean init(final boolean createPatches, String workingFolder) throws LemmException, IOException  {
+    	String tmp;// = java.net.URLDecoder.decode(workingFolder, "UTF-8");
+    	tmp = new java.io.File(workingFolder).getPath();
+    	gamePath = Paths.get(tmp);
+    	//if it's within the .jar file, we want the folder one up from that. 
+    	if (gamePath.toString().endsWith(".jar")) {
+            gameDataPath = Paths.get(gamePath.getParent().toString(), "data");
+    	} else {
+            gameDataPath = Paths.get(gamePath.toString(), "data");
+    	}
+    		
+        gameDataTree = new CaseInsensitiveFileTree(gameDataPath); 
+
         // get ini path
         programPropsFilePath = Paths.get(SystemUtils.USER_HOME);
         programPropsFilePath = programPropsFilePath.resolve(PROGRAM_PROPS_FILE_NAME);
@@ -132,9 +152,11 @@ public class Core {
         
         bilinear = programProps.getBoolean("bilinear", true);
         String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
+        //resourcePath is the source of your game resources
         resourcePath = Paths.get(resourcePathStr);
         resourceTree = new CaseInsensitiveFileTree(resourcePath);
         
+        //SourcePath is the source of your original WinLemm installation
         Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
         String rev = programProps.get("revision", "zip-invalid");
         GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
@@ -153,23 +175,35 @@ public class Core {
         GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
         GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
         GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
+        GameController.setOption(GameController.Option.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
 
-        boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
-        if (rev.equalsIgnoreCase("zip")) {
-            try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {
-                ZipEntry entry = zip.getEntry("revision.ini");
-                try (Reader r = ToolBox.getBufferedReader(zip.getInputStream(entry))) {
-                    Props p = new Props();
-                    if (p.load(r)) {
-                        rev = p.get("revision", StringUtils.EMPTY);
-                    }
-                }
-            } catch (IOException ex) {
-            }
+        // check for the existance of root.lzp.
+        // if it's not there, then we must exit.
+        List<Path> tmpDataFile = gameDataTree.getAllPaths(ROOT_ZIP_NAME);
+        if(tmpDataFile.isEmpty() ) {
+        	Path rootPath = Paths.get(gameDataPath.toString(), ROOT_ZIP_NAME);
+        	throw new LemmException(String.format("Could not find main game data file.\nPlease enusure this file exists and is accessible by this user:\n\n" + rootPath.toString(), (Object[])null));
         }
+        
+        // rev corresponds to the version number of the extracted resource files.
+        // the revision is now contained within the root.lzp data zip, in a file called revision.ini
+        // this is indicated by a revision of zip in the settings file.
+        // if that setting doesn't exist, zip-invalid is the default value. 
+        // if the rev is empty or equals zip-invalid, or doesn't == zip, then we'll probably have to re-extract the resource files.
+        boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
+        // if rev is "zip" then the actual revision in inside root.lzp->revision.ini 
+        if (rev.equalsIgnoreCase("zip")) {
+        	rev = getRevisionFromRootLzp();
+        }
+      
+        //TODO: never try to extract resources... that should be moved to it's own program.
+        //the goal of this program should be to have resources already included in the distributable.
+        //maybe WilLem's hand-crafted remastered level pack for orig and ohno
         if (resourcePathStr.isEmpty() || !rev.equalsIgnoreCase(RES_REVISION) || createPatches) {
-            // extract resources
-            try {
+        	throw new LemmException(String.format("Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), null));
+        	// extract resources
+            /*
+        	try {
                 Extract.extract(sourcePath, resourceTree, Paths.get("reference"), Paths.get("patch"), createPatches, maybeDeleteOldFiles);
                 resourceTree = Extract.getResourceTree();
                 resourcePath = resourceTree.getRoot();
@@ -184,14 +218,61 @@ public class Core {
                 CaseInsensitiveFileTree resTree = Extract.getResourceTree();
                 CaseInsensitiveFileTree srcTree = Extract.getSourceTree();
                 if (resTree != null) {
-                    programProps.set("resourcePath", resTree.getRoot().toString());
+                	//TODO
+                	//for now, we're going to comment this out... don't want to overwrite important stuff
+                	//programProps.set("resourcePath", resTree.getRoot().toString());
                 }
                 if (srcTree != null) {
-                    programProps.set("sourcePath", srcTree.getRoot().toString());
+                    //TODO
+                	//for now, we're going to comment this out... don't want to overwrite important stuff
+                	//programProps.set("sourcePath", srcTree.getRoot().toString());
                 }
                 programProps.save(programPropsFilePath);
             }
+            */
         }
+
+        populateResourceSet();
+        
+        // create temp folder
+        resourceTree.createDirectories(TEMP_PATH);
+        
+        // create folder for external level cache
+        resourceTree.createDirectories(EXTERNAL_LEVEL_CACHE_PATH);
+        
+        
+        loadZipFiles();
+       
+        System.gc(); // force garbage collection here before the game starts
+        
+        loadPlayerSettings();
+        
+        return true;
+    }
+    
+    /**
+     * Reads root.lzp->revision.ini and returns the value for the "revision" entry.
+     * @return Returns the revision value, or "" if nothing if found.
+     */
+    private static String getRevisionFromRootLzp() {
+        try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {
+            ZipEntry entry = zip.getEntry("revision.ini");
+            try (Reader r = ToolBox.getBufferedReader(zip.getInputStream(entry))) {
+                Props p = new Props();
+                if (p.load(r)) {
+                    return p.get("revision", StringUtils.EMPTY);
+                }
+            }
+        } catch (IOException ex) {
+        }
+        return StringUtils.EMPTY;
+    }
+    
+    /**
+     * Reads in the contents of patch.ini into the HashSet resourceSet
+     */
+    private static void populateResourceSet() {
+        //NOTE: getting a list of all file data in the patch.ini file...? why??
         resourceSet = new HashSet<>(2048);
         Props patchINI = new Props();
         if (patchINI.load(ToolBox.findFile(PATCH_INI_NAME))) {
@@ -220,25 +301,33 @@ public class Core {
                 }
             }
         }
-        // create temp folder
-        resourceTree.createDirectories(TEMP_PATH);
-        
-        // create folder for external level cache
-        resourceTree.createDirectories(EXTERNAL_LEVEL_CACHE_PATH);
-        
+    }
+    
+    /**
+     * Loads a list of all lzp zip files into the zipFiles ArrayList 
+     * @throws ZipException
+     * @throws IOException
+     */
+    private static void loadZipFiles() throws ZipException, IOException {
         // scan for and open zip files in resource folder, being sure to open root.lzp last
+        //TODO: load all these lzp files from a user-specified folder. (or even the user's home folder, maybe?)
+        //and save the root.lzp for the Lemmings data folder itself.
         zipFiles = new ArrayList<>(16);
         for (Path file : resourceTree.getAllPathsRegex("[^/]+\\.lzp")) {
             if (!file.getFileName().toString().toLowerCase(Locale.ROOT).equals(ROOT_ZIP_NAME)) {
                 zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
             }
         }
-        for (Path file : resourceTree.getAllPaths(ROOT_ZIP_NAME)) {
+        //load the main root.lzp from the game data folder.
+        for (Path file : gameDataTree.getAllPaths(ROOT_ZIP_NAME)) {
             zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
         }
-        
-        System.gc(); // force garbage collection here before the game starts
-        
+    }
+    
+    /***
+     *  Reads all player settings from the players.ini file
+     */
+    private static void loadPlayerSettings() {
         // read player names
         playerProps = new Props();
         playerProps.load(PLAYER_PROPS_FILE_NAME);
@@ -257,8 +346,6 @@ public class Core {
             playerProps.set("player_0", "default");
         }
         player = new Player(defaultPlayer);
-        
-        return true;
     }
     
     /***
@@ -284,6 +371,7 @@ public class Core {
         programProps.setBoolean("unlockAllLevels", GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
         programProps.setBoolean("disableScrollWheel", GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
         programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
+        programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
 
     }
     
@@ -448,7 +536,7 @@ public class Core {
                     + "Please restart to extract all resources.", rsrc);
             JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
             // invalidate resources
-            programProps.set("revision", "zip-invalid");
+            //programProps.set("revision", "zip-invalid"); //NOTE: we don't want to do that now that we're bundling the root.lzp with the executable.
             programProps.save(programPropsFilePath);
         } else {
             String out = String.format("The resource %s is missing.%n", rsrc);

@@ -78,6 +78,7 @@ public class OptionsDialog extends JDialog {
         jCheckBoxUnlockAllLevels = new javax.swing.JCheckBox();
         jCheckBoxDisableScrollWheel = new javax.swing.JCheckBox();
         jCheckBoxDisableFrameStepping = new javax.swing.JCheckBox();
+        jCheckBoxVisualSfx = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -113,6 +114,9 @@ public class OptionsDialog extends JDialog {
 
         jLabelMixer.setText("SFX Mixer");
 
+        jCheckBoxVisualSfx.setSelected(GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
+        jCheckBoxVisualSfx.setText("Visual SFX");
+        
         jComboBoxMixer.setSelectedIndex(GameController.sound.getMixerIdx());
 
         javax.swing.GroupLayout jPanelSoundLayout = new javax.swing.GroupLayout(jPanelSound);
@@ -129,7 +133,9 @@ public class OptionsDialog extends JDialog {
                     .addComponent(jLabelSoundVolume)
                     .addComponent(jSliderSoundVolume, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabelMixer)
-                    .addComponent(jComboBoxMixer, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jComboBoxMixer, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jCheckBoxVisualSfx)
+                    )
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanelSoundLayout.setVerticalGroup(
@@ -151,7 +157,9 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jLabelMixer)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jComboBoxMixer, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(37, Short.MAX_VALUE))
+                .addContainerGap(37, Short.MAX_VALUE)
+                .addComponent(jCheckBoxVisualSfx)
+                )
         );
 
         jPanelGraphics.setBorder(javax.swing.BorderFactory.createTitledBorder(null, "Graphics", javax.swing.border.TitledBorder.CENTER, javax.swing.border.TitledBorder.DEFAULT_POSITION));
@@ -391,6 +399,7 @@ public class OptionsDialog extends JDialog {
         GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, jCheckBoxUnlockAllLevels.isSelected());
         GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, jCheckBoxDisableScrollWheel.isSelected());
         GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, jCheckBoxDisableFrameStepping.isSelected());
+        GameController.setOption(GameController.Option.VISUAL_SFX, jCheckBoxVisualSfx.isSelected());
         
         //then commit all those settings to disk
         Core.saveSettings();
@@ -415,6 +424,7 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxUnlockAllLevels;
     private javax.swing.JCheckBox jCheckBoxDisableScrollWheel;
     private javax.swing.JCheckBox jCheckBoxDisableFrameStepping;
+    private javax.swing.JCheckBox jCheckBoxVisualSfx;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;
