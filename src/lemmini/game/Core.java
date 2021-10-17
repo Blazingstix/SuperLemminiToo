@@ -182,7 +182,7 @@ public class Core {
         List<Path> tmpDataFile = gameDataTree.getAllPaths(ROOT_ZIP_NAME);
         if(tmpDataFile.isEmpty() ) {
         	Path rootPath = Paths.get(gameDataPath.toString(), ROOT_ZIP_NAME);
-        	throw new LemmException(String.format("Could not find main game data file.\nPlease enusure this file exists and is accessible by this user:\n\n" + rootPath.toString(), (Object[])null));
+        	throw new LemmException("Could not find main game data file.\nPlease enusure this file exists and is accessible by this user:\n\n" + rootPath.toString());
         }
         
         // rev corresponds to the version number of the extracted resource files.
