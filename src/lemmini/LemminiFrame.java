@@ -22,6 +22,7 @@ import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -54,7 +55,7 @@ public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
     public static final String REVISION = "1.20";
-    public static final String REV_DATE = "BETA";
+    public static final String REV_DATE = "20 OCT 2021";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -71,8 +72,10 @@ public class LemminiFrame extends JFrame {
      */
     public LemminiFrame() {
         try {
-        	String currentFolderStr = getClass().getProtectionDomain().getCodeSource().getLocation().getFile();
-            boolean successful = Core.init(createPatches, currentFolderStr); // initialize Core object
+        	//found at: https://stackoverflow.com/questions/2837263/how-do-i-get-the-directory-that-the-currently-executing-jar-file-is-in
+        	String currentFolderStr = URLDecoder.decode(getClass().getProtectionDomain().getCodeSource().getLocation().getFile(), "UTF-8");
+        	
+        	boolean successful = Core.init(createPatches, currentFolderStr); // initialize Core object
             if (!successful) {
                 System.exit(0);
             }

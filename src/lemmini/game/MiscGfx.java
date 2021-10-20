@@ -59,7 +59,9 @@ public class MiscGfx {
         STATUS_OUT,
         /** status icon 2: lemmings in */
         STATUS_IN,
-        /** status icon 3: time left */
+        /** status icon 3: lemmings needed */
+        STATUS_NEEDED,
+        /** status icon 4: time limit */
         STATUS_TIME
     }
     
@@ -112,9 +114,9 @@ public class MiscGfx {
         res = Core.findResource("gfx/misc/select.png", true, Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
-        /* 13: STATUS_OUT, 14: STATUS_IN, 15: STATUS_TIME */
+        /* 13: STATUS_OUT, 14: STATUS_IN, 15: STATUS_NEEDED, 16: STATUS_TIME */
         res = Core.findResource("gfx/misc/status-icons.png", true, Core.IMAGE_EXTENSIONS);
-        anim = ToolBox.getAnimation(Core.loadLemmImage(res), 3);
+        anim = ToolBox.getAnimation(Core.loadLemmImage(res), 4);
         images.addAll(anim);
 
         /*add visual sfx images */

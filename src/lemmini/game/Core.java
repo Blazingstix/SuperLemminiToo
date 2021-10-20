@@ -171,11 +171,13 @@ public class Core {
         GameController.setOption(GameController.Option.NO_PERCENTAGES, programProps.getBoolean("noPercentages", false));
         GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
+        // new settings added by SuperLemminiToo
         GameController.setOption(GameController.Option.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
         GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
         GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
         GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
         GameController.setOption(GameController.Option.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
+        GameController.setOption(GameController.Option.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
 
         // check for the existance of root.lzp.
         // if it's not there, then we must exit.
@@ -367,11 +369,13 @@ public class Core {
         programProps.setBoolean("noPercentages", GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
         programProps.setBoolean("replayScroll", GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
         programProps.setBoolean("unpauseOnAssignment", GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
+        // new settings added by SuperLemminiToo
         programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
         programProps.setBoolean("unlockAllLevels", GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
         programProps.setBoolean("disableScrollWheel", GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
         programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
         programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
+        programProps.setBoolean("enhancedStatus", GameController.isOptionEnabled(GameController.Option.ENHANCED_STATUS));
 
     }
     

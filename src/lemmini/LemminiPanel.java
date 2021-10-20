@@ -783,81 +783,131 @@ public class LemminiPanel extends JPanel implements Runnable {
                                 lemmingName = StringUtils.EMPTY;
                             }
                             String in;
-                            String max;
+                            String rescue;
                             if (GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES)
                                     || GameController.getNumLemmingsMax() > 100) {
                                 in = Integer.toString(GameController.getNumExited());
-                                max = Integer.toString(GameController.getNumToRescue());
+                                rescue = Integer.toString(GameController.getNumToRescue());
                             } else {
                                 int saved = GameController.getNumExited() * 100 / GameController.getNumLemmingsMax();
                                 in = String.format("%02d%%", saved);
-                                int maxPer = GameController.getNumToRescue() * 100 / GameController.getNumLemmingsMax();
-                                max = String.format("%02d%%", maxPer);
+                                int rescuePer = GameController.getNumToRescue() * 100 / GameController.getNumLemmingsMax();
+                                rescue = String.format("%02d%%", rescuePer);
                             }
                             boolean showMax = false;
                             String status;
                             if (showMax) {
-                                status = String.format("%-11s OUT %-4d IN %-4s/%-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, max, GameController.getTimeString());
+                                status = String.format("%-11s OUT %-4d IN %-4s/%-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, rescue, GameController.getTimeString());
                             } else {
                                 status = String.format("%-15s OUT %-4d IN %-4s TIME %s", lemmingName, GameController.getNumLemmings(), in, GameController.getTimeString());
                             }
-                            /*
-                            //TODO: draw each element as separate graphics.
-                            LemmFont.strImage(outStrGfx, status);
-                            //outStrImg = outStrBuffer.getImage();
-                            offGfx.drawImage(outStrImg, menuOffsetX + 4, LemminiFrame.LEVEL_HEIGHT + 8);
-  							*/                          
                             int yOffset = LemminiFrame.LEVEL_HEIGHT + 8;
-                            //draw each element individually
-                            LemmImage lemmName = LemmFont.strImage(String.format("%-15s", lemmingName));
-                            offGfx.drawImage(lemmName, menuOffsetX+4, yOffset);
-                            lemmName = null;
 
-                            /*
-                            //draw the heading item we want to replace with graphics
-                            LemmImage lemmOutTitle = LemmFont.strImage("OUT");
-                            offGfx.drawImage(lemmOutTitle, menuOffsetX+292, yOffset);
-                            LemmImage lemmInTitle = LemmFont.strImage("IN");
-                            offGfx.drawImage(lemmInTitle, menuOffsetX+454, yOffset);
-                            LemmImage lemmTimeTitle = LemmFont.strImage("TIME");
-                            offGfx.drawImage(lemmTimeTitle, menuOffsetX+598, yOffset);
-                            lemmOutTitle = null;
-                            lemmInTitle = null;
-                            lemmTimeTitle = null;
-                            */
-                            
-                            //draw the status icons
-                            LemmImage lemmOutIcon = MiscGfx.getImage(Index.STATUS_OUT);
-                            offGfx.drawImage(lemmOutIcon, menuOffsetX+292+23, yOffset);
-                            LemmImage lemmInIcon = MiscGfx.getImage(Index.STATUS_IN);
-                            offGfx.drawImage(lemmInIcon, menuOffsetX+454+7, yOffset);
-                            LemmImage lemmTimeIcon = MiscGfx.getImage(Index.STATUS_TIME);
-                            offGfx.drawImage(lemmTimeIcon, menuOffsetX+598+46, yOffset);
-                            lemmOutIcon = null;
-                            lemmInIcon = null;
-                            lemmTimeIcon = null;
-                            
-                            
-                            //draw the values that go with those headings.
-                            LemmImage lemmOut = LemmFont.strImage(String.format("%-4d", GameController.getNumLemmings()));
-                            offGfx.drawImage(lemmOut, menuOffsetX+292+72, yOffset);
-                            LemmImage lemmIn;
-                            if(GameController.getNumToRescue() > GameController.getNumExited()) {
-                                 lemmIn = LemmFont.strImage(String.format("%-4s", in), LemmFont.Color.RED);
+                            if (!GameController.isOptionEnabled(GameController.Option.ENHANCED_STATUS)) {
+                                //use the standard original "text-based" status bar
+                            	LemmFont.strImage(outStrGfx, status);
+                                offGfx.drawImage(outStrImg, menuOffsetX + 4, yOffset);
                             } else {
-                                lemmIn = LemmFont.strImage(String.format("%-4s", in));
+                            	int xOffName = 4;
+                            	//draw each element individually
+                                LemmImage lemmName = LemmFont.strImage(String.format("%-15s", lemmingName));
+                                offGfx.drawImage(lemmName, menuOffsetX + xOffName, yOffset);
+                                lemmName = null;
+
+                                //these are the default offsets when we're using text
+                                int xOffOut = 292;
+                                int xOffIn = 454;
+                                int xOffTime = 598;
+                                int xOffNeeded = 0; //not displayed when we are using text.
+                                int xOffSpace = 18; 
+                                
+                                int xWidthOut, xWidthIn, xWidthTime, xWidthNeeded=0;
+                                
+                                boolean showIcons = true;
+                                
+                                if (!showIcons) {
+                                    //draw the heading item we want to replace with graphics
+                                    LemmImage lemmOutTitle = LemmFont.strImage("OUT");
+                                    xWidthOut = lemmOutTitle.getWidth();
+                                    offGfx.drawImage(lemmOutTitle, menuOffsetX + xOffOut, yOffset);
+                                    LemmImage lemmInTitle = LemmFont.strImage("IN");
+                                    xWidthIn = lemmInTitle.getWidth();
+                                    offGfx.drawImage(lemmInTitle, menuOffsetX + xOffIn, yOffset);
+                                    LemmImage lemmTimeTitle = LemmFont.strImage("TIME");
+                                    xWidthTime = lemmTimeTitle.getWidth();
+                                    offGfx.drawImage(lemmTimeTitle, menuOffsetX + xOffTime, yOffset);
+                                    lemmOutTitle = null;
+                                    lemmInTitle = null;
+                                    lemmTimeTitle = null;
+                                } else {
+                                    //change the padding margins because the icons take up less space.
+                                    //if the icons are going in the same space as the text, these are the new offsets:
+                                	xOffOut += 22;
+                                    xOffIn += 4;
+                                    xOffTime += 40;
+                                    //otherwise, since we're going to add a new "Needed" value, we need to re-space everything else. 
+                                    xOffOut = 300;
+                                    xOffIn = 410;
+                                    xOffNeeded = 520;
+                                    xOffTime = 630;
+                                    
+                                    //because we're using icons, we don't need as much space between the titles and the values.
+                                    xOffSpace = 4;
+                                    
+                                    //draw the status icons
+                                    LemmImage lemmOutIcon = MiscGfx.getImage(Index.STATUS_OUT);
+                                    xWidthOut = lemmOutIcon.getWidth();
+                                    offGfx.drawImage(lemmOutIcon, menuOffsetX + xOffOut, yOffset);
+                                    LemmImage lemmInIcon = MiscGfx.getImage(Index.STATUS_IN);
+                                    xWidthIn = lemmInIcon.getWidth();
+                                    offGfx.drawImage(lemmInIcon, menuOffsetX + xOffIn, yOffset);
+                                    LemmImage lemmTimeIcon = MiscGfx.getImage(Index.STATUS_TIME);
+                                    xWidthTime = lemmTimeIcon.getWidth();
+                                    offGfx.drawImage(lemmTimeIcon, menuOffsetX + xOffTime, yOffset);
+
+                                    LemmImage lemmNeededIcon = MiscGfx.getImage(Index.STATUS_NEEDED);
+                                    xWidthNeeded = lemmNeededIcon.getWidth();
+                                    offGfx.drawImage(lemmNeededIcon, menuOffsetX + xOffNeeded, yOffset);
+
+                                    lemmNeededIcon = null;
+                                    lemmOutIcon = null;
+                                    lemmInIcon = null;
+                                    lemmTimeIcon = null;
+
+                                }
+                               
+                                int out = GameController.getNumLemmings();
+                                //draw the values that go with those headings.
+                                LemmImage lemmOut = LemmFont.strImage(String.format("%-4d", out));
+                                offGfx.drawImage(lemmOut, menuOffsetX + xOffOut + xWidthOut + xOffSpace, yOffset);
+                                LemmImage lemmIn;
+                                if(GameController.getNumToRescue() > GameController.getNumExited()) {
+                                     lemmIn = LemmFont.strImage(in, LemmFont.Color.RED);
+                                } else {
+                                    lemmIn = LemmFont.strImage(in);
+                                }
+                                offGfx.drawImage(lemmIn, menuOffsetX + xOffIn + xWidthIn + xOffSpace, yOffset);
+                                //and show the Needed icon
+                                if (showIcons) {
+                                    LemmImage lemmNeeded = LemmFont.strImage(rescue);
+                                    offGfx.drawImage(lemmNeeded, menuOffsetX + xOffNeeded + xWidthNeeded + xOffSpace, yOffset); //take off extra because the needed icon is very narrow
+                                    lemmNeeded = null;
+                                }
+                                LemmImage lemmTime = LemmFont.strImage(String.format("%s", GameController.getTimeString()));
+                                offGfx.drawImage(lemmTime, menuOffsetX + xOffTime + xWidthTime + xOffSpace, yOffset);
+
+                                lemmOut = null;
+                                lemmIn = null;
+                                lemmTime = null;
+                                
+                                //we've dispose of all the images we created, by setting them null... 
+                                //not sure if this actually does anything... it feels like we're creating a lot of waste for 
+                                //the garbage collector to deal with...
+                                //hopefully this will encourage the garbage collector to de0clutter earlier, 
+                                //because it really feels like we're using a lot of memory with all these changes before  
+                                
                             }
-                            offGfx.drawImage(lemmIn, menuOffsetX+454+54, yOffset);
-                            LemmImage lemmTime = LemmFont.strImage(String.format("%s", GameController.getTimeString()));
-                            offGfx.drawImage(lemmTime, menuOffsetX+598+90, yOffset);
-                            lemmOut = null;
-                            lemmIn = null;
-                            lemmTime = null;
-                            
-                            //dispose all the images we created.
-                            //not sure if this actually does anything... it feels like we're creating a lot of waste for 
-                            //the garbage collector to deal with...
-                            
+
                         }
                         // replay icon
                         LemmImage replayImage = GameController.getReplayImage();

@@ -79,6 +79,7 @@ public class OptionsDialog extends JDialog {
         jCheckBoxDisableScrollWheel = new javax.swing.JCheckBox();
         jCheckBoxDisableFrameStepping = new javax.swing.JCheckBox();
         jCheckBoxVisualSfx = new javax.swing.JCheckBox();
+        jCheckBoxEnhancedStatus = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -117,6 +118,9 @@ public class OptionsDialog extends JDialog {
         jCheckBoxVisualSfx.setSelected(GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
         jCheckBoxVisualSfx.setText("Visual SFX");
         
+        jCheckBoxEnhancedStatus.setSelected(GameController.isOptionEnabled(GameController.Option.ENHANCED_STATUS));
+        jCheckBoxEnhancedStatus.setText("Enhanced Status Bar");
+
         jComboBoxMixer.setSelectedIndex(GameController.sound.getMixerIdx());
 
         javax.swing.GroupLayout jPanelSoundLayout = new javax.swing.GroupLayout(jPanelSound);
@@ -248,6 +252,7 @@ public class OptionsDialog extends JDialog {
                 	.addComponent(jCheckBoxUnlockAllLevels)
                 	.addComponent(jCheckBoxDisableScrollWheel)
                 	.addComponent(jCheckBoxDisableFrameStepping)
+                	.addComponent(jCheckBoxEnhancedStatus)
                 	)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -278,6 +283,8 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jCheckBoxDisableScrollWheel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxDisableFrameStepping)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxEnhancedStatus)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -400,6 +407,7 @@ public class OptionsDialog extends JDialog {
         GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, jCheckBoxDisableScrollWheel.isSelected());
         GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, jCheckBoxDisableFrameStepping.isSelected());
         GameController.setOption(GameController.Option.VISUAL_SFX, jCheckBoxVisualSfx.isSelected());
+        GameController.setOption(GameController.Option.ENHANCED_STATUS, jCheckBoxEnhancedStatus.isSelected());
         
         //then commit all those settings to disk
         Core.saveSettings();
@@ -425,6 +433,7 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxDisableScrollWheel;
     private javax.swing.JCheckBox jCheckBoxDisableFrameStepping;
     private javax.swing.JCheckBox jCheckBoxVisualSfx;
+    private javax.swing.JCheckBox jCheckBoxEnhancedStatus;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;

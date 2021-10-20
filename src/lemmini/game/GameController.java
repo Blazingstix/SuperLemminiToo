@@ -95,7 +95,10 @@ public class GameController {
         UNLOCK_ALL_LEVELS,
         DISABLE_SCROLL_WHEEL,
         DISABLE_FRAME_STEPPING,
-        VISUAL_SFX
+        /** flag: show Visual SFX */
+        VISUAL_SFX,
+        /** flag: use new status with icons */
+        ENHANCED_STATUS
     }
     
     public static enum LevelFormat {
