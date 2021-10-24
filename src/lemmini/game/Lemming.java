@@ -1109,7 +1109,7 @@ public class Lemming {
      * @param e The Sound Effect to play
      */
     public void playVisualSFX(Sound.Effect e) {
-    	GameController.sound.playVisualSFX(e, midX(), midY());
+    	GameController.sound.playVisualSFX(e, footX(), midY()); //NOTE: footX was midX 
     }
     
     /**
@@ -1205,7 +1205,7 @@ public class Lemming {
      * Adds an explosion effect at the Lemming's position.
      */
     private void addExplosion() {
-        GameController.addExplosion(midX(), midY());
+        GameController.addExplosion(footX(), midY()); //note: footX was midX()
     }
     
     private Type getExploderType() {
@@ -1922,18 +1922,35 @@ public class Lemming {
         return y - lemRes.footY;
     }
     
+    /**
+     * Get x coordinate of middle of lemming
+     * @return
+     */
     public int midX() {
-        return x;
+        //TODO: figure out how to avoid a magic number of 3.
+    	return x + 3;
     }
     
+    /**
+     * Get y coordinate of foot less the "mid" position above the foot
+     * @return
+     */
     public int midY() {
         return y - lemRes.size;
     }
     
+    /**
+     * Get x coordinate of foot in pixels 
+     * @return
+     */
     public int footX() {
         return x;
     }
     
+    /**
+     * Get y coordinate of foot in pixels 
+     * @return
+     */
     public int footY() {
         return y;
     }

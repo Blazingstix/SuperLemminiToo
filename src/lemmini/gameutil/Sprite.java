@@ -246,7 +246,7 @@ public class Sprite {
                     }
                     if (frameIdx > 0) {
                         if (counter == 0 && lemming != null) {
-                        	GameController.sound.playVisualSFX(sound[frameIdx], lemming.midX(), lemming.midY());
+                        	GameController.sound.playVisualSFX(sound[frameIdx], lemming.midX(), lemming.midY()); //NOTE: footX() was midX()
                         }
                     } else {
                         frameIdx = 0;
@@ -356,9 +356,9 @@ public class Sprite {
         }
         lemming = l;
         if (sound.length == 1) {
-            GameController.sound.playVisualSFX(sound[0], l.midX(), l.midY());
+            GameController.sound.playVisualSFX(sound[0], l.midX(), l.midY()); //NOTE: footX() was midX()
         } else if (sound.length > 1) {
-            GameController.sound.playVisualSFX(sound[1], l.midX(), l.midY());
+            GameController.sound.playVisualSFX(sound[1], l.midX(), l.midY()); //NOTE: footX() was midX()
         }
         triggered = true;
         frameIdx = 0;

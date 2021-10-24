@@ -54,8 +54,8 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "1.20";
-    public static final String REV_DATE = "20 OCT 2021";
+    public static final String REVISION = "1.30";
+    public static final String REV_DATE = "BETA";
     
     private static final long serialVersionUID = 0x01L;
     
@@ -404,8 +404,9 @@ public class LemminiFrame extends JFrame {
                             GameController.setCheat(false);
                         }
                         break;
+                    case KeyEvent.VK_SPACE:
                     case KeyEvent.VK_F11:
-                    case KeyEvent.VK_P: //F11 or P toggles Pause
+                    case KeyEvent.VK_P: //SPACE, F11 or P toggles Pause
                         boolean isPaused = GameController.isPaused();
                         if (GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)
                                 && !isPaused && GameController.isFastForward()) {
@@ -485,7 +486,7 @@ public class LemminiFrame extends JFrame {
                     case KeyEvent.VK_ALT:
                     	lemminiPanelMain.setAltPressed(true);
                         break;
-                    case KeyEvent.VK_SPACE:
+                    case KeyEvent.VK_N:
                         if (GameController.isCheat()) {
                             Lemming l = new Lemming(lemminiPanelMain.getCursorX(), lemminiPanelMain.getCursorY(), Lemming.Direction.RIGHT);
                             GameController.addLemming(l);

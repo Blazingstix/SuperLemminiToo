@@ -699,10 +699,13 @@ public class LemminiPanel extends JPanel implements Runnable {
                         offGfx.setBackground(java.awt.Color.BLACK);
                         offGfx.clearRect(0, SCORE_Y, width, height - SCORE_Y);
                         // draw counter, icons, small level pic
+                        //TODO: replace this static cached icon bar + counter with a dynamic icon bar that can animate (and has title graphics?)
                         // draw menu
                         GameController.drawIcons(offGfx, menuOffsetX + ICONS_X, ICONS_Y);
                         // draw counters
                         GameController.drawCounters(offGfx, menuOffsetX + COUNTER_X, COUNTER_Y);
+
+                        
                         // draw minimap
                         offGfx.drawImage(MiscGfx.getMinimapImage(), menuOffsetX + SMALL_X - 4, SMALL_Y - 4);
                         offGfx.setClip(menuOffsetX + SMALL_X, SMALL_Y, Minimap.getVisibleWidth(), Minimap.getVisibleHeight());
@@ -922,7 +925,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                                     setCursor(LemmCursor.getCursor());
                                 }
                             } else {
-                                int lx = lemmUnderCursor.midX() - xOfsTemp;
+                                int lx = lemmUnderCursor.footX() - xOfsTemp; //NOTE: footX() was .midX()
                                 int ly = lemmUnderCursor.midY() - yOfsTemp;
                                 LemmImage cursorImg = LemmCursor.getBoxImage();
                                 lx -= cursorImg.getWidth() / 2;

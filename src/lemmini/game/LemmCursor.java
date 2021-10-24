@@ -203,7 +203,7 @@ public class LemmCursor  {
      */
     public static boolean doesCollide(final Lemming l, final int xOfs, final int yOfs) {
         // get center of lemming
-        int lx = l.midX() - xOfs;
+        int lx = l.footX() - xOfs; //NOTE: footX() was l.midX()
         int ly = l.midY() - yOfs;
         
         // calculate center of cursor

@@ -57,6 +57,15 @@ public class GraphicsContext {
         graphics.setColor(color);
     }
     
+    /**
+     * Draws as much of the specified image as is currently available.
+     * The image is drawn with its top-left corner at(x, y) in this graphics context's coordinate 
+     * space. Transparent pixels in the image do not affect whatever
+     * pixels are already there. 
+     * @param image the specified LemmImage sprite to be drawn
+     * @param x the x coordinate of the top-left corner.
+     * @param y the y coordinate of the top-left corner.
+     */
     public void drawImage(LemmImage image, int x, int y) {
         graphics.drawImage(image.getImage(), x, y, null);
     }
