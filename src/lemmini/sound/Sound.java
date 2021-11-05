@@ -454,7 +454,7 @@ public class Sound {
      * @param y
      */
     public void playVisualSFXSilent(final int idx, final int x, final int y) {
-    	if (GameController.isOptionEnabled(GameController.Option.VISUAL_SFX) && idx >= 0 && idx < Vsfx.VSFX_COUNT) {
+    	if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.VISUAL_SFX) && idx >= 0 && idx < Vsfx.VSFX_COUNT) {
 	    	Vsfx v = new Vsfx(x, y, idx);
 	        GameController.addVsfx(v);
     	}

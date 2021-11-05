@@ -1,6 +1,5 @@
 package lemmini.game;
 
-import java.awt.Point;
 import java.io.IOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -90,7 +89,15 @@ public class GameController {
         PAUSE_STOPS_FAST_FORWARD,
         NO_PERCENTAGES,
         REPLAY_SCROLL,
-        UNPAUSE_ON_ASSIGNMENT,
+        UNPAUSE_ON_ASSIGNMENT
+    }
+    
+    /**
+     * Options exclusive to SuperLemminiToo
+     * @author Charles
+     *
+     */
+    public static enum SuperLemminiTooOption {
         TIMED_BOMBERS,
         UNLOCK_ALL_LEVELS,
         DISABLE_SCROLL_WHEEL,
@@ -98,7 +105,10 @@ public class GameController {
         /** flag: show Visual SFX */
         VISUAL_SFX,
         /** flag: use new status with icons */
-        ENHANCED_STATUS
+        ENHANCED_STATUS,
+        /** flag: use new icon bar. Has better spacing, and supports animated icons. */
+        ENHANCED_ICONBAR,
+        ICON_LABELS
     }
     
     public static enum LevelFormat {
@@ -153,6 +163,9 @@ public class GameController {
     /** the foreground image */
     private static LemmImage fgImage;
     private static final Set<Option> options = EnumSet.noneOf(Option.class);
+    /** SuperLemminiToo Exclusive options*/
+    private static final Set<SuperLemminiTooOption> SLToptions = EnumSet.noneOf(SuperLemminiTooOption.class);
+
     /** flag: fast forward mode is active */
     private static boolean fastForward;
     private static boolean verticalLock;
@@ -1103,7 +1116,7 @@ public class GameController {
                         break;
                     case ReplayStream.NUKE:
                         nuke();
-                        Icons.press(Icons.Type.NUKE);
+                        pressIcon(Icons.Type.NUKE);
                         nukeOld = nuke;
                         break;
                     case ReplayStream.MOVE_POS: {
@@ -1122,28 +1135,28 @@ public class GameController {
                             lemmSkill = rs.skill;
                             switch (lemmSkill) {
                                 case CLIMBER:
-                                    Icons.press(Icons.Type.CLIMB);
+                                    pressIcon(Icons.Type.CLIMB);
                                     break;
                                 case FLOATER:
-                                    Icons.press(Icons.Type.FLOAT);
+                                    pressIcon(Icons.Type.FLOAT);
                                     break;
                                 case FLAPPER:
-                                    Icons.press(Icons.Type.BOMB);
+                                    pressIcon(Icons.Type.BOMB);
                                     break;
                                 case BLOCKER:
-                                    Icons.press(Icons.Type.BLOCK);
+                                    pressIcon(Icons.Type.BLOCK);
                                     break;
                                 case BUILDER:
-                                    Icons.press(Icons.Type.BUILD);
+                                    pressIcon(Icons.Type.BUILD);
                                     break;
                                 case BASHER:
-                                    Icons.press(Icons.Type.BASH);
+                                    pressIcon(Icons.Type.BASH);
                                     break;
                                 case MINER:
-                                    Icons.press(Icons.Type.MINE);
+                                    pressIcon(Icons.Type.MINE);
                                     break;
                                 case DIGGER:
-                                    Icons.press(Icons.Type.DIG);
+                                    pressIcon(Icons.Type.DIG);
                                     break;
                                 default:
                                     break;
@@ -1315,7 +1328,7 @@ public class GameController {
             lemmSkillRequest = lemm;
         }
         stopReplayMode();
-        if (!isOptionEnabled(Option.DISABLE_FRAME_STEPPING)) {
+        if (!isOptionEnabled(SuperLemminiTooOption.DISABLE_FRAME_STEPPING)) {
         	advanceFrame();
         }
     }
@@ -1453,7 +1466,7 @@ public class GameController {
             lemmSkillRequest = null; // erase request
             if (isPaused() && isOptionEnabled(Option.UNPAUSE_ON_ASSIGNMENT)) {
                 setPaused(false);
-                Icons.press(Icons.Type.PAUSE);
+                pressIcon(Icons.Type.PAUSE);
             }
             // add to replay stream
             if (!wasCheated) {
@@ -1579,7 +1592,7 @@ public class GameController {
                 default:
                     break; // supress sound
             }
-            Icons.press(type);
+            pressIcon(type);
         } else {
             sound.play(Sound.Effect.INVALID);
         }
@@ -1844,6 +1857,23 @@ public class GameController {
             Minimap.drawLemming(g, x, y, lx, ly);
         });
     }
+
+    /**
+     * Draw the original SuperLemmini icon bar, and accompanying skill/release rate values
+     * @param g graphics object
+     * @param x x coordinate in pixels
+     * @param y y coordinate in pixels
+     */
+    public static void drawIconsAndCounters(final GraphicsContext g, final int iconsX, final int iconsY, final int countersX, final int countersY) {
+    	drawIcons(g, iconsX, iconsY);
+    	drawCounters(g, countersX, countersY);
+/*
+    	if (!GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+        	//the enhanced icon bar should have the counters built into it.
+        	drawCounters(g, countersX, countersY);
+        }
+        */
+    }
     
     /**
      * Draw icon bar.
@@ -1851,7 +1881,7 @@ public class GameController {
      * @param x x coordinate in pixels
      * @param y y coordinate in pixels
      */
-    public static void drawIcons(final GraphicsContext g, final int x, final int y) {
+    private static void drawIcons(final GraphicsContext g, final int x, final int y) {
         g.drawImage(Icons.getImg(), x, y);
     }
     
@@ -1861,7 +1891,7 @@ public class GameController {
      * @param x x offset in pixels
      * @param y y offset in pixels
      */
-    public static void drawCounters(final GraphicsContext g, final int x, final int y) {
+    private static void drawCounters(final GraphicsContext g, final int x, final int y) {
         // draw counters
         Integer val = NumberUtils.INTEGER_ZERO;
         for (int i = 0; i < 10; i++) {
@@ -1905,7 +1935,7 @@ public class GameController {
                 }
             }
             LemmImage numImage = NumFont.numImage(val);
-            g.drawImage(numImage, x + Icons.WIDTH * i + Icons.WIDTH / 2 - numImage.getWidth() / 2, y);
+            g.drawImage(numImage, x + Icons.getIconWidth() * i + Icons.getIconWidth() / 2 - numImage.getWidth() / 2, y);
         }
     }
     
@@ -2473,6 +2503,23 @@ public class GameController {
     
     public static boolean isOptionEnabled(Option option) {
         return options.contains(option);
+    }
+    
+    public static void setOption(SuperLemminiTooOption option, boolean enable) {
+        if (enable) {
+            SLToptions.add(option);
+        } else {
+            SLToptions.remove(option);
+        }
+        if (option == SuperLemminiTooOption.ICON_LABELS && gameState != null) {
+        	Icons.redraw();
+        } else if(option == SuperLemminiTooOption.ENHANCED_ICONBAR && gameState != null) {
+        	Icons.redraw();
+        }
+    }
+    
+    public static boolean isOptionEnabled(SuperLemminiTooOption option) {
+        return SLToptions.contains(option);
     }
     
     /**

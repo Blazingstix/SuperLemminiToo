@@ -156,7 +156,7 @@ public class Player {
      * @return true if allowed, false if not
      */
     public boolean isAvailable(final String pack, final String rating, final int num) {
-        if (GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS) || isCheat()) {
+        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS) || isCheat()) {
             return true;
         }
         String id = LevelPack.getID(pack, rating);

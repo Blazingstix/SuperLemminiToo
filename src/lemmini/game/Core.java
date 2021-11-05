@@ -15,8 +15,8 @@ import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 import javax.swing.JOptionPane;
 import lemmini.LemminiFrame;
-import lemmini.extract.Extract;
-import lemmini.extract.ExtractException;
+//import lemmini.extract.Extract;
+//import lemmini.extract.ExtractException;
 import lemmini.graphics.LemmImage;
 import lemmini.gui.LegalFrame;
 import lemmini.tools.CaseInsensitiveFileTree;
@@ -157,7 +157,7 @@ public class Core {
         resourceTree = new CaseInsensitiveFileTree(resourcePath);
         
         //SourcePath is the source of your original WinLemm installation
-        Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
+        //Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
         String rev = programProps.get("revision", "zip-invalid");
         GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
         GameController.setOption(GameController.Option.SOUND_ON, programProps.getBoolean("sound", true));
@@ -172,37 +172,42 @@ public class Core {
         GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
         // new settings added by SuperLemminiToo
-        GameController.setOption(GameController.Option.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
-        GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
-        GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
-        GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
-        GameController.setOption(GameController.Option.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
-        GameController.setOption(GameController.Option.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
+        GameController.setOption(GameController.SuperLemminiTooOption.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", false));
 
-        // check for the existance of root.lzp.
+        // check for the existence of root.lzp.
         // if it's not there, then we must exit.
         List<Path> tmpDataFile = gameDataTree.getAllPaths(ROOT_ZIP_NAME);
         if(tmpDataFile.isEmpty() ) {
         	Path rootPath = Paths.get(gameDataPath.toString(), ROOT_ZIP_NAME);
         	throw new LemmException("Could not find main game data file.\nPlease enusure this file exists and is accessible by this user:\n\n" + rootPath.toString());
         }
-        
+
         // rev corresponds to the version number of the extracted resource files.
         // the revision is now contained within the root.lzp data zip, in a file called revision.ini
         // this is indicated by a revision of zip in the settings file.
         // if that setting doesn't exist, zip-invalid is the default value. 
         // if the rev is empty or equals zip-invalid, or doesn't == zip, then we'll probably have to re-extract the resource files.
+		/*
         boolean maybeDeleteOldFiles = !rev.isEmpty() && !(rev.equalsIgnoreCase("zip") || rev.equalsIgnoreCase("zip-invalid"));
-        // if rev is "zip" then the actual revision in inside root.lzp->revision.ini 
+        */
+        // if rev is "zip" then the actual revision in inside root.lzp->revision.ini
         if (rev.equalsIgnoreCase("zip")) {
         	rev = getRevisionFromRootLzp();
         }
+        
       
         //TODO: never try to extract resources... that should be moved to it's own program.
         //the goal of this program should be to have resources already included in the distributable.
         //maybe WilLem's hand-crafted remastered level pack for orig and ohno
         if (resourcePathStr.isEmpty() || !rev.equalsIgnoreCase(RES_REVISION) || createPatches) {
-        	throw new LemmException(String.format("Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), null));
+        	throw new LemmException(String.format("Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), (Object[])null));
         	// extract resources
             /*
         	try {
@@ -269,6 +274,7 @@ public class Core {
         }
         return StringUtils.EMPTY;
     }
+    
     
     /**
      * Reads in the contents of patch.ini into the HashSet resourceSet
@@ -370,12 +376,14 @@ public class Core {
         programProps.setBoolean("replayScroll", GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
         programProps.setBoolean("unpauseOnAssignment", GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
         // new settings added by SuperLemminiToo
-        programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
-        programProps.setBoolean("unlockAllLevels", GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
-        programProps.setBoolean("disableScrollWheel", GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
-        programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
-        programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
-        programProps.setBoolean("enhancedStatus", GameController.isOptionEnabled(GameController.Option.ENHANCED_STATUS));
+        programProps.setBoolean("timedBombers", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.TIMED_BOMBERS));
+        programProps.setBoolean("unlockAllLevels", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS));
+        programProps.setBoolean("disableScrollWheel", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL));
+        programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING));
+        programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.VISUAL_SFX));
+        programProps.setBoolean("enhancedStatus", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS));
+        programProps.setBoolean("enhancedIconBar", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR));
+        programProps.setBoolean("iconLabels", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
 
     }
     

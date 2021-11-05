@@ -80,6 +80,8 @@ public class OptionsDialog extends JDialog {
         jCheckBoxDisableFrameStepping = new javax.swing.JCheckBox();
         jCheckBoxVisualSfx = new javax.swing.JCheckBox();
         jCheckBoxEnhancedStatus = new javax.swing.JCheckBox();
+        jCheckBoxEnhancedIconBar = new javax.swing.JCheckBox();
+        jCheckBoxIconLabels = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -115,12 +117,19 @@ public class OptionsDialog extends JDialog {
 
         jLabelMixer.setText("SFX Mixer");
 
-        jCheckBoxVisualSfx.setSelected(GameController.isOptionEnabled(GameController.Option.VISUAL_SFX));
+        jCheckBoxVisualSfx.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.VISUAL_SFX));
         jCheckBoxVisualSfx.setText("Visual SFX");
         
-        jCheckBoxEnhancedStatus.setSelected(GameController.isOptionEnabled(GameController.Option.ENHANCED_STATUS));
+        jCheckBoxEnhancedStatus.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS));
         jCheckBoxEnhancedStatus.setText("Enhanced Status Bar");
 
+        jCheckBoxEnhancedIconBar.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR));
+        jCheckBoxEnhancedIconBar.setText("Enhanced Icon Bar");
+        //jCheckBoxEnhancedIconBar.setVisible(false);
+
+        jCheckBoxIconLabels.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
+        jCheckBoxIconLabels.setText("Show labels on the Icon Bar");
+        
         jComboBoxMixer.setSelectedIndex(GameController.sound.getMixerIdx());
 
         javax.swing.GroupLayout jPanelSoundLayout = new javax.swing.GroupLayout(jPanelSound);
@@ -218,18 +227,18 @@ public class OptionsDialog extends JDialog {
         jCheckBoxUnpauseOnAssignment.setSelected(GameController.isOptionEnabled(GameController.Option.UNPAUSE_ON_ASSIGNMENT));
         jCheckBoxUnpauseOnAssignment.setText("Unpause After Assigning Skill");
 
-        jCheckBoxTimedBombers.setSelected(GameController.isOptionEnabled(GameController.Option.TIMED_BOMBERS));
+        jCheckBoxTimedBombers.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.TIMED_BOMBERS));
         jCheckBoxTimedBombers.setText("Enable 5 second timed bombers");
 
-        jCheckBoxUnlockAllLevels.setSelected(GameController.isOptionEnabled(GameController.Option.UNLOCK_ALL_LEVELS));
+        jCheckBoxUnlockAllLevels.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS));
         jCheckBoxUnlockAllLevels.setText("Unlock all levels");
         jCheckBoxUnlockAllLevels.setToolTipText("All access to all levels, without having to complete previous ones.");
 
-        jCheckBoxDisableScrollWheel.setSelected(GameController.isOptionEnabled(GameController.Option.DISABLE_SCROLL_WHEEL));
+        jCheckBoxDisableScrollWheel.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL));
         jCheckBoxDisableScrollWheel.setText("Disable Scroll Wheel");
         jCheckBoxDisableScrollWheel.setToolTipText("Prevent the scroll wheel from changing the selected skill.");
 
-        jCheckBoxDisableFrameStepping.setSelected(GameController.isOptionEnabled(GameController.Option.DISABLE_FRAME_STEPPING));
+        jCheckBoxDisableFrameStepping.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING));
         jCheckBoxDisableFrameStepping.setText("Disable Frame Stepping");
         jCheckBoxDisableFrameStepping.setToolTipText("Disable advancing the game by single frames when paused.");
         
@@ -253,6 +262,8 @@ public class OptionsDialog extends JDialog {
                 	.addComponent(jCheckBoxDisableScrollWheel)
                 	.addComponent(jCheckBoxDisableFrameStepping)
                 	.addComponent(jCheckBoxEnhancedStatus)
+                	.addComponent(jCheckBoxEnhancedIconBar)
+                	.addComponent(jCheckBoxIconLabels)
                 	)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -285,6 +296,10 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jCheckBoxDisableFrameStepping)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxEnhancedStatus)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxEnhancedIconBar)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxIconLabels)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -402,12 +417,15 @@ public class OptionsDialog extends JDialog {
         GameController.setOption(GameController.Option.NO_PERCENTAGES, jCheckBoxNoPercentages.isSelected());
         GameController.setOption(GameController.Option.REPLAY_SCROLL, jCheckBoxReplayScroll.isSelected());
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, jCheckBoxUnpauseOnAssignment.isSelected());
-        GameController.setOption(GameController.Option.TIMED_BOMBERS, jCheckBoxTimedBombers.isSelected());
-        GameController.setOption(GameController.Option.UNLOCK_ALL_LEVELS, jCheckBoxUnlockAllLevels.isSelected());
-        GameController.setOption(GameController.Option.DISABLE_SCROLL_WHEEL, jCheckBoxDisableScrollWheel.isSelected());
-        GameController.setOption(GameController.Option.DISABLE_FRAME_STEPPING, jCheckBoxDisableFrameStepping.isSelected());
-        GameController.setOption(GameController.Option.VISUAL_SFX, jCheckBoxVisualSfx.isSelected());
-        GameController.setOption(GameController.Option.ENHANCED_STATUS, jCheckBoxEnhancedStatus.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.TIMED_BOMBERS, jCheckBoxTimedBombers.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS, jCheckBoxUnlockAllLevels.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL, jCheckBoxDisableScrollWheel.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING, jCheckBoxDisableFrameStepping.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.VISUAL_SFX, jCheckBoxVisualSfx.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, jCheckBoxEnhancedStatus.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, jCheckBoxEnhancedIconBar.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, jCheckBoxIconLabels.isSelected());
+        
         
         //then commit all those settings to disk
         Core.saveSettings();
@@ -434,6 +452,8 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxDisableFrameStepping;
     private javax.swing.JCheckBox jCheckBoxVisualSfx;
     private javax.swing.JCheckBox jCheckBoxEnhancedStatus;
+    private javax.swing.JCheckBox jCheckBoxEnhancedIconBar;
+    private javax.swing.JCheckBox jCheckBoxIconLabels;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;
