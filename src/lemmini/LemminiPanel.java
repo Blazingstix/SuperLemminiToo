@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import lemmini.game.*;
+import lemmini.game.GameController.SuperLemminiTooOption;
 //import lemmini.game.LemmFont.Color;
 import lemmini.game.MiscGfx.Index;
 import lemmini.gameutil.Fader;
@@ -72,10 +73,35 @@ public class LemminiPanel extends JPanel implements Runnable {
     /** y coordinate of minimap in pixels */
     static final int SMALL_Y = ICONS_Y;
     
-    /** x coordinate of enhanced icon bar*/
-    static final int ICONBAR_X = 32;
-    /** y coordinate of enhanced icon bar */
-    static final int ICONBAR_Y = LemminiFrame.LEVEL_HEIGHT + 40 + 14 - 10;
+    private int getIconBarX() {
+    	if (GameController.isOptionEnabled(SuperLemminiTooOption.ENHANCED_ICONBAR) ) {
+    		return 0;
+    	}
+    	return ICONS_X;
+    }
+    
+    private int getIconBarY() {
+    	if (GameController.isOptionEnabled(SuperLemminiTooOption.ENHANCED_ICONBAR) ) {
+    		return ICONS_Y - 10;
+    	}
+    	return ICONS_Y;
+    }
+    
+
+    private int getSmallX() {
+    	if (GameController.isOptionEnabled(SuperLemminiTooOption.ENHANCED_ICONBAR) ) {
+    		return SMALL_X + 10;
+    	}
+    	return SMALL_X;
+    }
+    
+    private int getSmallY() {
+    	if (GameController.isOptionEnabled(SuperLemminiTooOption.ENHANCED_ICONBAR) ) {
+    		return SMALL_Y - 3;
+    	}
+    	return SMALL_Y;
+    }
+    
     
     private int menuOffsetX;
     /** start x position of mouse drag (for mouse scrolling) */
@@ -392,12 +418,15 @@ public class LemminiPanel extends JPanel implements Runnable {
                     debugDraw(x, y, leftMousePressed);
                 }
                 if (buttonPressed == MouseEvent.BUTTON1) {
-                    if (y >= ICONS_Y && y < ICONS_Y + Icons.getIconHeight()) {
-                        Icons.Type type = GameController.getIconType(x - menuOffsetX - ICONS_X);
+                    if (y >= getIconBarY() && y < getIconBarY() + Icons.getIconHeight()) {
+                        //System.out.println("y:" + y + " x:" + x + "\n getIconBarX():" + getIconBarX() + " getIconBarY():" + getIconBarY());
+                    	//clicking on icons
+                    	Icons.Type type = GameController.getIconType(x - menuOffsetX - getIconBarX());
                         if (type != null) {
                             GameController.handleIconButton(type);
                         }
                     } else {
+                    	//clicking on lemmings
                         Lemming l = GameController.lemmUnderCursor(LemmCursor.getType());
                         if (l != null) {
                             GameController.requestSkill(l);
@@ -409,8 +438,8 @@ public class LemminiPanel extends JPanel implements Runnable {
                         }
                     }
                     // check minimap mouse move
-                    if (x >= SMALL_X + menuOffsetX && x < SMALL_X + menuOffsetX + Minimap.getVisibleWidth()
-                            && y >= SMALL_Y && y < SMALL_Y + Minimap.getVisibleHeight()) {
+                    if (x >= getSmallX() + menuOffsetX && x < getSmallX() + menuOffsetX + Minimap.getVisibleWidth()
+                            && y >= getSmallY() && y < getSmallY() + Minimap.getVisibleHeight()) {
                         holdingMinimap = true;
                     }
                     evt.consume();
@@ -455,8 +484,8 @@ public class LemminiPanel extends JPanel implements Runnable {
             case LEVEL:
                 if (buttonPressed == MouseEvent.BUTTON1) {
                     holdingMinimap = false;
-                    if (y > ICONS_Y && y < ICONS_Y + Icons.getIconHeight()) {
-                        Icons.Type type = GameController.getIconType(x - menuOffsetX - ICONS_X);
+                    if (y > getIconBarY() && y < getIconBarY() + Icons.getIconHeight()) {
+                        Icons.Type type = GameController.getIconType(x - menuOffsetX - getIconBarX());
                         if (type != null) {
                             GameController.releaseIcon(type);
                         }
@@ -705,20 +734,31 @@ public class LemminiPanel extends JPanel implements Runnable {
                         offGfx.clearRect(0, SCORE_Y, width, height - SCORE_Y);
                         // draw counter, icons, small level pic
                         // draw menu and skill counters
-                        int iconBarX = menuOffsetX + ICONS_X;
-                        int iconBarY = ICONS_Y;
-                        int countBarX = menuOffsetX + COUNTER_X;
+                        int iconBarX = menuOffsetX + getIconBarX();
+                        int iconBarY = getIconBarY();
+                        int countBarX = menuOffsetX + getIconBarX();
                         int countBarY = COUNTER_Y;
                         if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
-                        	iconBarX = ICONS_X;
-                        	iconBarY = ICONS_Y - 10;
-                        	countBarX -= menuOffsetX;
                         	countBarY += 7;
                         }
                         
-                    	GameController.drawIconsAndCounters(offGfx, iconBarX, iconBarY, countBarX, countBarY);
+                    	
+                        GameController.drawIconsAndCounters(offGfx, iconBarX, iconBarY, countBarX, countBarY);
+                        
+                        //draw the icon bar filler?
+                        LemmImage filler = MiscGfx.getImage(MiscGfx.Index.ICONBAR_FILLER);
+                        
+                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+                        	offGfx.drawImage(filler, menuOffsetX + SMALL_X - 18, getIconBarY());
+                        }
                         
                         // draw minimap
+                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+                        	drawMiniMapLarge(offGfx, width, height, minimapXOfsTemp, yOfsTemp);
+                        } else {
+                        	drawMiniMap(offGfx, width, height, minimapXOfsTemp, yOfsTemp);
+                        }
+                        /*
                         offGfx.drawImage(MiscGfx.getMinimapImage(), menuOffsetX + SMALL_X - 4, SMALL_Y - 4);
                         offGfx.setClip(menuOffsetX + SMALL_X, SMALL_Y, Minimap.getVisibleWidth(), Minimap.getVisibleHeight());
                         Minimap.draw(offGfx, menuOffsetX + SMALL_X, SMALL_Y);
@@ -750,7 +790,8 @@ public class LemminiPanel extends JPanel implements Runnable {
                                     menuOffsetX + SMALL_X + Minimap.getVisibleWidth() / 2 - downArrow.getWidth() / 2,
                                     SMALL_Y + Minimap.getVisibleHeight() + 4);
                         }
-
+                        */
+                        
                         // draw lemmings
                         offGfx.setClip(0, 0, width, levelHeight);
                         GameController.drawLemmings(offGfx);
@@ -964,6 +1005,84 @@ public class LemminiPanel extends JPanel implements Runnable {
         }
     }
     
+    private void drawMiniMap(GraphicsContext offGfx, final int width, final int height, final int minimapXOfsTemp, final int yOfsTemp) {
+   	 	final int BORDER_WIDTH = 4; 
+        // draw minimap
+        offGfx.drawImage(MiscGfx.getMinimapImage(), menuOffsetX + getSmallX() - BORDER_WIDTH, getSmallY() - BORDER_WIDTH);
+        offGfx.setClip(menuOffsetX + getSmallX(), getSmallY(), Minimap.getVisibleWidth(), Minimap.getVisibleHeight());
+        Minimap.draw(offGfx, menuOffsetX + getSmallX(), getSmallY());
+        GameController.drawMinimapLemmings(offGfx, menuOffsetX + getSmallX(), getSmallY());
+        offGfx.setClip(0, 0, width, height);
+        Minimap.drawFrame(offGfx, menuOffsetX + getSmallX(), getSmallY());
+        // draw minimap arrows
+        if (minimapXOfsTemp > 0) {
+            LemmImage leftArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_LEFT);
+            offGfx.drawImage(leftArrow,
+                    menuOffsetX + getSmallX() - BORDER_WIDTH - leftArrow.getWidth(),
+                    getSmallY() + Minimap.getVisibleHeight() / 2 - leftArrow.getHeight() / 2);
+        }
+        if (minimapXOfsTemp < ToolBox.scale(GameController.getWidth(), Minimap.getScaleX()) - Minimap.getVisibleWidth()) {
+            LemmImage rightArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_RIGHT);
+            offGfx.drawImage(rightArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() + BORDER_WIDTH,
+                    getSmallY() + Minimap.getVisibleHeight() / 2 - rightArrow.getHeight() / 2);
+        }
+        if (yOfsTemp > 0) {
+            LemmImage upArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_UP);
+            offGfx.drawImage(upArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() / 2 - upArrow.getWidth() / 2,
+                    getSmallY() - BORDER_WIDTH - upArrow.getHeight());
+        }
+        if (yOfsTemp < GameController.getHeight() - LemminiFrame.LEVEL_HEIGHT) {
+            LemmImage downArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_DOWN);
+            offGfx.drawImage(downArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() / 2 - downArrow.getWidth() / 2,
+                    getSmallY() + Minimap.getVisibleHeight() + BORDER_WIDTH);
+        }
+    }
+    
+    private void drawMiniMapLarge(GraphicsContext offGfx, final int width, final int height, final int minimapXOfsTemp, final int yOfsTemp) {
+    	 final int BORDER_WIDTH = 7; 
+    	// draw minimap
+        //draw border around minimap
+    	offGfx.drawImage(MiscGfx.getMinimapLargeImage(), menuOffsetX + getSmallX() - BORDER_WIDTH, getSmallY() - BORDER_WIDTH);
+        offGfx.setClip(menuOffsetX + getSmallX(), getSmallY(), Minimap.getVisibleWidth(), Minimap.getVisibleHeight());
+        //draw contents of minimap
+        Minimap.draw(offGfx, menuOffsetX + getSmallX(), getSmallY());
+        //draw lemmings onto minimap
+        GameController.drawMinimapLemmings(offGfx, menuOffsetX + getSmallX(), getSmallY());
+        offGfx.setClip(0, 0, width, height);
+        //draw the yellow frame around what's visible
+        Minimap.drawFrame(offGfx, menuOffsetX + getSmallX(), getSmallY());
+
+        //if the minimap goes off screen??
+        // draw minimap arrows
+        if (minimapXOfsTemp > 0) {
+            LemmImage leftArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_LEFT);
+            offGfx.drawImage(leftArrow,
+                    menuOffsetX + getSmallX() - BORDER_WIDTH - leftArrow.getWidth(),
+                    getSmallY() + Minimap.getVisibleHeight() / 2 - leftArrow.getHeight() / 2);
+        }
+        if (minimapXOfsTemp < ToolBox.scale(GameController.getWidth(), Minimap.getScaleX()) - Minimap.getVisibleWidth()) {
+            LemmImage rightArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_RIGHT);
+            offGfx.drawImage(rightArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() + BORDER_WIDTH,
+                    getSmallY() + Minimap.getVisibleHeight() / 2 - rightArrow.getHeight() / 2);
+        }
+        if (yOfsTemp > 0) {
+            LemmImage upArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_UP);
+            offGfx.drawImage(upArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() / 2 - upArrow.getWidth() / 2,
+                    getSmallY() - BORDER_WIDTH - upArrow.getHeight());
+        }
+        if (yOfsTemp < GameController.getHeight() - LemminiFrame.LEVEL_HEIGHT) {
+            LemmImage downArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_DOWN);
+            offGfx.drawImage(downArrow,
+                    menuOffsetX + getSmallX() + Minimap.getVisibleWidth() / 2 - downArrow.getWidth() / 2,
+                    getSmallY() + Minimap.getVisibleHeight() + BORDER_WIDTH);
+        }
+    }
+    
     private void updateFrame() {
         LemmImage fgImage = GameController.getFgImage();
         switch (GameController.getGameState()) {
@@ -1000,21 +1119,21 @@ public class LemminiPanel extends JPanel implements Runnable {
                     // mouse movement
                     if (holdingMinimap) {
                         int framePos = ToolBox.scale(xOfsTemp, Minimap.getScaleX()) - minimapXOfsTemp;
-                        if (xMouseScreen < Core.scale(menuOffsetX + SMALL_X) && framePos <= 0) {
+                        if (xMouseScreen < Core.scale(menuOffsetX + getSmallX()) && framePos <= 0) {
                             xOfsTemp -= getStepSize();
                             GameController.setXPos(xOfsTemp);
-                        } else if (xMouseScreen >= Core.scale(menuOffsetX + SMALL_X + Minimap.getVisibleWidth()) && framePos >= Minimap.getVisibleWidth() - ToolBox.scale(Core.getDrawWidth(), Minimap.getScaleX())) {
+                        } else if (xMouseScreen >= Core.scale(menuOffsetX + getSmallX() + Minimap.getVisibleWidth()) && framePos >= Minimap.getVisibleWidth() - ToolBox.scale(Core.getDrawWidth(), Minimap.getScaleX())) {
                             xOfsTemp += getStepSize();
                             GameController.setXPos(xOfsTemp);
                         } else {
-                            xOfsTemp = Minimap.move(Core.unscale(xMouseScreen) - SMALL_X - menuOffsetX, Core.unscale(yMouse) - SMALL_Y);
+                            xOfsTemp = Minimap.move(Core.unscale(xMouseScreen) - getSmallX() - menuOffsetX, Core.unscale(yMouse) - getSmallY());
                             GameController.setXPos(xOfsTemp);
                         }
                         if (!GameController.isVerticalLock()) {
-                            if (yMouseScreen < Core.scale(SMALL_Y)) {
+                            if (yMouseScreen < Core.scale(getSmallY())) {
                                 yOfsTemp -= getStepSize();
                                 GameController.setYPos(yOfsTemp);
-                            } else if (yMouseScreen >= Core.scale(SMALL_Y + Minimap.getVisibleHeight())) {
+                            } else if (yMouseScreen >= Core.scale(getSmallY() + Minimap.getVisibleHeight())) {
                                 yOfsTemp += getStepSize();
                                 GameController.setYPos(yOfsTemp);
                             }

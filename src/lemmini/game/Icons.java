@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.apache.commons.lang3.math.NumberUtils;
+
 import lemmini.game.GameController.SuperLemminiTooOption;
 import lemmini.gameutil.Sprite;
 import lemmini.graphics.GraphicsContext;
@@ -157,14 +159,14 @@ public class Icons {
     private static final List<Sprite> bgIconsLarge = new ArrayList<>(Type.values().length);
     /** list of Sprites the contain the icon labels */
     private static final List<Sprite> iconLabels = new ArrayList<>(Type.values().length);
-    
-    
+       
     /** 
      * Initialization. 
      * @throws ResourceException 
      */   
     public static void init() throws ResourceException { 
         bgIcons.clear(); 
+        bgIconsLarge.clear();
     	icons.clear(); 
     	iconLabels.clear();
         if (iconGfx != null) {
@@ -348,8 +350,8 @@ public class Icons {
     		Sprite bgIcon; 
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
                 bgIcon = bgIconsLarge.get(idx);
-                x = 1;
-                y = 14;
+                x = 1; //the larger icons have an added pixel on the side of padding.
+                y = 14; //the larger icons have 14 pixels more headroom (for the numbers)
             } else {
                 bgIcon = bgIcons.get(idx);
             }
@@ -407,9 +409,15 @@ public class Icons {
      * Redraws the icon bar, with current states.
      */
     static void redraw() {
+        if (iconGfx != null) {
+            iconGfx.dispose();
+        }
+        iconImg = ToolBox.createLemmImage(getIconWidth() * (1 + LAST_DRAWN), getIconHeight());
+        iconGfx = iconImg.createGraphicsContext();
         for (int i = 0; i <= LAST_DRAWN; i++) {
             drawIcon(i);
         }
         pressedIcon = null;
     }
+    
 }

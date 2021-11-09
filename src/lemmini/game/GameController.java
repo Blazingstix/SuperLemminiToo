@@ -1882,7 +1882,8 @@ public class GameController {
      * @param y y coordinate in pixels
      */
     private static void drawIcons(final GraphicsContext g, final int x, final int y) {
-        g.drawImage(Icons.getImg(), x, y);
+        //System.out.println("drawing IconBar: " + x + "/" + y);
+    	g.drawImage(Icons.getImg(), x, y);
     }
     
     /**
