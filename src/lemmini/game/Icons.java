@@ -1,14 +1,15 @@
 package lemmini.game;
 
 import java.util.ArrayList;
-import java.util.EnumSet;
+//import java.util.Arrays;
+//import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 //import java.util.ListIterator;
 import java.util.Locale;
-import java.util.Map;
+//import java.util.Map;
 
-import org.apache.commons.lang3.math.NumberUtils;
+//import org.apache.commons.lang3.math.NumberUtils;
 
 import lemmini.game.GameController.SuperLemminiTooOption;
 import lemmini.gameutil.Sprite;
@@ -74,116 +75,146 @@ public class Icons {
     private static final int ENHANCED_WIDTH = 34;
     private static final int ENHANCED_HEIGHT = 54;
     
+    public static enum IconType {
+    	MINUS,
+    	PLUS,
+    	CLIMB,
+    	FLOAT,
+    	BOMB,
+    	BLOCK,
+    	BUILD,
+    	BASH,
+    	MINE,
+    	DIG,
+    	PAUSE,
+    	FFWD,
+    	NUKE,
+    	RESTART,
+    	VLOCK,
+    	EMPTY
+    }
     
-    /** Icon types */
-    public static enum Type {
-        /** minus icon */
-        MINUS (DEFAULT_PITCH),
-        /** plus icon */
-        PLUS (DEFAULT_PITCH),
-        /** climber icon */
-        CLIMB (0),
-        /** floater icon */
-        FLOAT (1),
-        /** bomber icon */
-        BOMB (2),
-        /** blocker icon */
-        BLOCK (3),
-        /** builder icon */
-        BUILD (4),
-        /** basher icon */
-        BASH (5),
-        /** miner icon */
-        MINE (6),
-        /** digger icon */
-        DIG (7),
-        /** pause icon */
-        PAUSE (8),
-        /** nuke icon */
-        NUKE (9),
-        /** fast forward icon */
-        FFWD (10),
-        /** vertical scroll lock icon */
-        VLOCK (11),
-        /** restart icon */
-        RESTART (12),
-        /** an empty icon (not used) */
-        EMPTY (DEFAULT_PITCH);
-        
-        private static final Map<Integer, Type> LOOKUP = new HashMap<>();
-        
-        private final int pitch;
-        
-        static {
-            EnumSet.allOf(Type.class).stream().forEach(s -> LOOKUP.put(s.ordinal(), s));
-        }
-        
-        private Type(int newPitch) {
-            pitch = newPitch;
-        }
-        
-        /**
-         * Reverse lookup implemented via HashMap.
-         * @param val Ordinal value
-         * @return Parameter with ordinal value val
-         */
-        public static Type get(final int val) {
-            return LOOKUP.get(val);
-        }
-        
-        public int getPitch() {
-            return pitch;
+    /**
+     * The currently chosen order of icons
+     * @return
+     */
+    public static List<IconType> CurrentIconOrder() {
+        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+        	return EnhancedIconOrder();
+        } else {
+        	return StandardIconOrder();
         }
     }
     
-    /** 1st radio button */
-    static final int FIRST_RADIO = Type.CLIMB.ordinal();
-    /** last radio button */
-    static final int LAST_RADIO = Type.DIG.ordinal();
-    /** number of radio buttons */
-    private static final int NUM_RADIO = LAST_RADIO - FIRST_RADIO + 1;
-    /** last icon to be drawn */
-    private static final int LAST_DRAWN = Type.RESTART.ordinal();
+    /**
+     * List of all icons, in the classic SuperLemmini order
+     * @return
+     */
+    private static List<IconType> StandardIconOrder() {
+    	List<IconType> rslt;
+    	rslt = new ArrayList<IconType>();
+    	rslt.add(IconType.MINUS);
+    	rslt.add(IconType.PLUS);
+    	rslt.addAll(SkillIconOrder());
+    	rslt.add(IconType.PAUSE);
+    	rslt.add(IconType.NUKE);
+    	rslt.add(IconType.FFWD);
+    	rslt.add(IconType.VLOCK);
+    	rslt.add(IconType.RESTART);
+    	return rslt;
+    }
+
+    /**
+     * List of all icons, in the Enhanced SuperLemminiToo order
+     * @return
+     */
+    private static List<IconType> EnhancedIconOrder() {
+    	List<IconType> rslt;
+    	rslt = new ArrayList<IconType>();
+    	rslt.add(IconType.MINUS);
+    	rslt.add(IconType.PLUS);
+    	rslt.addAll(SkillIconOrder());
+    	rslt.add(IconType.PAUSE);
+    	rslt.add(IconType.FFWD);
+    	rslt.add(IconType.NUKE);
+    	rslt.add(IconType.RESTART);
+    	rslt.add(IconType.VLOCK);
+    	return rslt;
+    }
     
-    /** list of Sprites that contains the icons */
-    private static final List<Sprite> icons = new ArrayList<>(Type.values().length);
+	/**
+	 * List of basic skillset icons, in order. 
+	 * @return
+	 */
+    public static List<IconType> SkillIconOrder() {
+    	List<IconType> rslt;
+    	rslt = new ArrayList<IconType>();
+    	rslt.add(IconType.CLIMB);
+    	rslt.add(IconType.FLOAT);
+    	rslt.add(IconType.BOMB);
+    	rslt.add(IconType.BLOCK);
+    	rslt.add(IconType.BUILD);
+    	rslt.add(IconType.BASH);
+    	rslt.add(IconType.MINE);
+    	rslt.add(IconType.DIG);
+    	return rslt;
+    }
+
     /** buffered image that contains the whole icon bar in its current state */
     private static LemmImage iconImg;
     /** graphics object used to draw on iconImg */
     private static GraphicsContext iconGfx = null;
-    private static Type pressedIcon = null;
+    private static IconType pressedIcon = null;
     
+    /** list of Sprites that contains the icons */
+    private static final List<Sprite> icons = new ArrayList<>(IconType.values().length);
     /** list of Sprites that contains the standard-sized background icons */
-    private static final List<Sprite> bgIcons = new ArrayList<>(Type.values().length);
+    private static final List<Sprite> bgIcons = new ArrayList<>(IconType.values().length);
     /** list of Sprites that contains the larger enhanced-size background icons */
-    private static final List<Sprite> bgIconsLarge = new ArrayList<>(Type.values().length);
+    private static final List<Sprite> bgIconsLarge = new ArrayList<>(IconType.values().length);
     /** list of Sprites the contain the icon labels */
-    private static final List<Sprite> iconLabels = new ArrayList<>(Type.values().length);
+    private static final List<Sprite> iconLabels = new ArrayList<>(IconType.values().length);
        
+    private static final HashMap<IconType, Integer> iconFrame = new HashMap<>(IconType.values().length);
+    
     /** 
      * Initialization. 
      * @throws ResourceException 
      */   
     public static void init() throws ResourceException { 
-        bgIcons.clear(); 
+    	//load the hashmap with initial values for each of the IconTypes
+    	if (iconFrame.isEmpty()) {
+	    	for(IconType x : IconType.values()) {
+	    		iconFrame.put(x, 0);
+	    	}
+    	}
+    	LoadIconResources();
+        //reset the icon bar to draw it fresh
+        reset();
+    }
+    
+    public static void LoadIconResources() throws ResourceException {
+    	bgIcons.clear(); 
         bgIconsLarge.clear();
     	icons.clear(); 
     	iconLabels.clear();
-        if (iconGfx != null) {
+
+    	if (iconGfx != null) {
             iconGfx.dispose();
         }
-        iconImg = ToolBox.createLemmImage(getIconWidth() * (1 + LAST_DRAWN), getIconHeight());
+        List<IconType> iconOrder = CurrentIconOrder();
+        iconImg = ToolBox.createLemmImage(getIconWidth() * (iconOrder.size()), getIconHeight());
         iconGfx = iconImg.createGraphicsContext();
-        Type[] iconTypes = Type.values();
+
         //get the background image we're going to use...
-        for (int i = 0; i <= LAST_DRAWN; i++) {
+        for (int i = 0; i < iconOrder.size(); i++) {
         	LemmImage sourceImg;
         	Resource res;
         	Sprite icon;
         	
         	//load the individual icon 
         	res = Core.findResource(
-                    "gfx/icons/icon_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png",
+                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
                     true, Core.IMAGE_EXTENSIONS);
             sourceImg = Core.loadLemmImage(res);
             icon = new Sprite(sourceImg, 2, 1, false);
@@ -205,27 +236,26 @@ public class Icons {
 
             //load the label overlays
             res = Core.findResource(
-                    "gfx/icon_labels/label_" + iconTypes[i].name().toLowerCase(Locale.ROOT) + ".png",
+                    "gfx/icon_labels/label_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
                     true, Core.IMAGE_EXTENSIONS);
             sourceImg = Core.loadLemmImage(res);
             icon = new Sprite(sourceImg, 2, 1, false);
             iconLabels.add(icon);
-            
         }
-        //reset the icon bar to draw it fresh
-        reset();
     }
+    
     
     /**
      * Get icon type by x position.
      * @param x x position inside bar in pixels
      * @return Icon type
      */
-    public static Type getType(final int x) {
-        if (x < 0 || x >= (LAST_DRAWN + 1) * getIconWidth()) {
+    public static IconType getType(final int x) {
+        List<IconType> iconOrder = CurrentIconOrder();
+    	if (x < 0 || x >= iconOrder.size() * getIconWidth()) {
             return null; // invalid
         }
-        return Type.get(x / getIconWidth());
+        return iconOrder.get(x / getIconWidth());
     }
     
     /**
@@ -241,9 +271,10 @@ public class Icons {
      * @param type
      * @return
      */
-    static boolean isPressed(Type type) {
-        int idx = type.ordinal();
-        if (idx > LAST_DRAWN) {
+    static boolean isPressed(IconType type) {
+        List<IconType> iconOrder = CurrentIconOrder();
+    	int idx = iconOrder.indexOf(type);
+        if (idx == -1) {
             return false;
         }
         return (icons.get(idx).getFrameIdx() != 0);
@@ -253,14 +284,19 @@ public class Icons {
      * Press down icon.
      * @param type Icon Type
      */
-    static void press(final Type type) {
-    	int idx = type.ordinal();
-        switch (type) {
+    static void press(final IconType type) {
+        List<IconType> iconOrder = CurrentIconOrder();
+    	int idx = iconOrder.indexOf(type);
+    	if (idx == -1) {
+    		return;
+    	}
+
+    	switch (type) {
             case PAUSE:
             case FFWD:
             case VLOCK:
                 //these three icons are toggle icons.
-                if (idx <= LAST_DRAWN) {
+                if (idx < iconOrder.size()) {
                 	Sprite icon = icons.get(idx);
                     int toggleFrame = (icon.getFrameIdx() == 0) ? 1 : 0;
                 	setIconFrame(idx, toggleFrame);
@@ -276,13 +312,14 @@ public class Icons {
             case MINE:
             case DIG:
             	//update the icons for the "Radio Buttons" i.e. the skills
-            	for (int i = FIRST_RADIO; i <= LAST_RADIO; i++) {
-                    if (i != idx) {
+            	for (IconType x : SkillIconOrder()) {
+            		int i = iconOrder.indexOf(x);
+            		if (i != -1 && i != idx) {
                     	//reset all the skills *not* selected to show as unselected
                     	//the skill that *is* selected will be handled below.
                     	setIconFrame(i, 0);
                     	drawIcon(i);
-                    } 
+            		}
             	}
                 pressedIcon = type;
                 /* falls through */
@@ -302,8 +339,13 @@ public class Icons {
      * Release icon.
      * @param type Icon Type
      */
-    static void release(final Type type) {
-        int idx = type.ordinal();
+    static void release(final IconType type) {
+        List<IconType> iconOrder = CurrentIconOrder();
+    	int idx = iconOrder.indexOf(type);
+    	if (idx == -1) {
+    		return;
+    	}
+
         switch (type) {
             case MINUS:
             case PLUS:
@@ -327,7 +369,10 @@ public class Icons {
      * @param idx
      */
     private static void setIconFrame(int iconIdx, int frameIdx) {
-        if (iconIdx <= LAST_DRAWN) {
+        if (iconIdx < CurrentIconOrder().size()) {
+            IconType type = CurrentIconOrder().get(iconIdx);
+            iconFrame.replace(type, frameIdx);
+            /*
             Sprite bgIcon = bgIcons.get(iconIdx);
             Sprite bgIconLarge = bgIconsLarge.get(iconIdx);
             Sprite icon = icons.get(iconIdx);
@@ -336,6 +381,7 @@ public class Icons {
             bgIconLarge.setFrameIdx(frameIdx);
             icon.setFrameIdx(frameIdx);
             iconLabel.setFrameIdx(frameIdx);
+            */
         }
     }
     
@@ -344,8 +390,9 @@ public class Icons {
      * @param idx
      */
     private static void drawIcon(int idx) {
-    	if (idx <= LAST_DRAWN) {
-            int x = 0;
+    	if (idx <= CurrentIconOrder().size()) {
+            IconType type = CurrentIconOrder().get(idx);
+    		int x = 0;
             int y = 0;
     		Sprite bgIcon; 
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
@@ -355,8 +402,16 @@ public class Icons {
             } else {
                 bgIcon = bgIcons.get(idx);
             }
-            Sprite icon = icons.get(idx);
             Sprite iconLabel = iconLabels.get(idx);
+            Sprite icon = icons.get(idx);
+
+            //set the frame to use for each Sprite
+            int frameIdx = iconFrame.get(type);
+            int frameIdx2 = (frameIdx > 0) ? 1 : 0;
+            bgIcon.setFrameIdx(frameIdx2);
+            iconLabel.setFrameIdx(frameIdx2);
+            icon.setFrameIdx(frameIdx);
+            
         	iconGfx.drawImage(bgIcon.getImage(), getIconWidth() * idx, 0);
             iconGfx.drawImage(icon.getImage(), getIconWidth() * idx + x, 0 + y);
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS))
@@ -368,37 +423,53 @@ public class Icons {
      * Get the selected skill icon.
      * @return the selected skill icon if one is pressed, or null if none is pressed
      */
-    static Type getPressedIcon() {
+    static IconType getPressedIcon() {
         return pressedIcon;
     }
     
-    static Type getNextRadioIcon(Type type) {
-        int ordinal = type.ordinal();
-        if (ordinal >= FIRST_RADIO && ordinal < LAST_RADIO) {
-            return Type.get(ordinal + 1);
-        } else if (ordinal == LAST_RADIO) {
-            return Type.get(FIRST_RADIO);
-        } else {
-            return null;
-        }
+    static IconType getNextRadioIcon(IconType type) {
+    	List<IconType> skillOrder = SkillIconOrder();
+    	int skillIdx = skillOrder.indexOf(type);
+    	if (skillIdx == -1) {
+    		//outside the range of skills
+    		return null;
+    	}
+    	
+    	//get the next index up (if we're at the end, get the 1st index)
+    	int nextSkillIdx;
+    	if (skillIdx == skillOrder.size() - 1) {
+    		nextSkillIdx = 0;
+    	} else {
+    		nextSkillIdx = skillIdx + 1;
+    	}
+    	
+    	return skillOrder.get(nextSkillIdx);
     }
     
-    static Type getPreviousRadioIcon(Type type) {
-        int ordinal = type.ordinal();
-        if (ordinal > FIRST_RADIO && ordinal <= LAST_RADIO) {
-            return Type.get(ordinal - 1);
-        } else if (ordinal == FIRST_RADIO) {
-            return Type.get(LAST_RADIO);
-        } else {
-            return null;
-        }
+    static IconType getPreviousRadioIcon(IconType type) {
+    	List<IconType> skillOrder = SkillIconOrder();
+    	int skillIdx = skillOrder.indexOf(type);
+    	if (skillIdx == -1) {
+    		//outside the range of skills
+    		return null;
+    	}
+    	
+    	//get the next index up (if we're at the start, get the last index)
+    	int nextSkillIdx;
+    	if (skillIdx == 0) {
+    		nextSkillIdx = skillOrder.size() - 1;
+    	} else {
+    		nextSkillIdx = skillIdx - 1;
+    	}
+    	
+    	return skillOrder.get(nextSkillIdx);
     }
     
     /**
      * Reset icon bar.
      */
     static void reset() {
-        for (int i = 0; i <= LAST_DRAWN; i++) {
+        for (int i = 0; i < CurrentIconOrder().size(); i++) {
             setIconFrame(i, 0);
             drawIcon(i);
         }
@@ -412,12 +483,44 @@ public class Icons {
         if (iconGfx != null) {
             iconGfx.dispose();
         }
-        iconImg = ToolBox.createLemmImage(getIconWidth() * (1 + LAST_DRAWN), getIconHeight());
+        List<IconType> iconOrder = CurrentIconOrder();
+        iconImg = ToolBox.createLemmImage(getIconWidth() * (iconOrder.size()), getIconHeight());
         iconGfx = iconImg.createGraphicsContext();
-        for (int i = 0; i <= LAST_DRAWN; i++) {
+        for (int i = 0; i < iconOrder.size(); i++) {
             drawIcon(i);
         }
         pressedIcon = null;
+    }
+    
+    /**
+     * Returns the pitch of the tone to play when clicking the button.
+     * @param type
+     * @return
+     */
+    static int GetPitch(IconType type) {
+		List<IconType> iconOrder = CurrentIconOrder();
+		int idx = iconOrder.indexOf(type);
+		if (idx == -1)
+			return DEFAULT_PITCH;
+		
+		switch (type) {
+    		case MINUS:
+    		case PLUS:
+    		case EMPTY:
+    			return DEFAULT_PITCH;
+    		default:
+    			int pitch = 0;
+    			for (int i = 0; i < CurrentIconOrder().size(); i++) {
+    				IconType tmpType = iconOrder.get(i);
+    				if (tmpType == type) {
+    					return pitch;
+    				} else if (tmpType != IconType.MINUS && tmpType != IconType.PLUS && tmpType != IconType.EMPTY) {
+    					pitch++;
+    				}
+    			}
+    	}
+    	
+    	return DEFAULT_PITCH;
     }
     
 }

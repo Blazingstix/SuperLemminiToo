@@ -330,35 +330,35 @@ public class LemminiFrame extends JFrame {
                 switch (code) {
                     case KeyEvent.VK_1:
                     case KeyEvent.VK_F3:
-                        GameController.handleIconButton(Icons.Type.CLIMB);
+                        GameController.handleIconButton(Icons.IconType.CLIMB);
                         break;
                     case KeyEvent.VK_2:
                     case KeyEvent.VK_F4:
-                        GameController.handleIconButton(Icons.Type.FLOAT);
+                        GameController.handleIconButton(Icons.IconType.FLOAT);
                         break;
                     case KeyEvent.VK_3:
                     case KeyEvent.VK_F5:
-                        GameController.handleIconButton(Icons.Type.BOMB);
+                        GameController.handleIconButton(Icons.IconType.BOMB);
                         break;
                     case KeyEvent.VK_4:
                     case KeyEvent.VK_F6:
-                        GameController.handleIconButton(Icons.Type.BLOCK);
+                        GameController.handleIconButton(Icons.IconType.BLOCK);
                         break;
                     case KeyEvent.VK_5:
                     case KeyEvent.VK_F7:
-                        GameController.handleIconButton(Icons.Type.BUILD);
+                        GameController.handleIconButton(Icons.IconType.BUILD);
                         break;
                     case KeyEvent.VK_6:
                     case KeyEvent.VK_F8:
-                        GameController.handleIconButton(Icons.Type.BASH);
+                        GameController.handleIconButton(Icons.IconType.BASH);
                         break;
                     case KeyEvent.VK_7:
                     case KeyEvent.VK_F9:
-                        GameController.handleIconButton(Icons.Type.MINE);
+                        GameController.handleIconButton(Icons.IconType.MINE);
                         break;
                     case KeyEvent.VK_8:
                     case KeyEvent.VK_F10:
-                        GameController.handleIconButton(Icons.Type.DIG);
+                        GameController.handleIconButton(Icons.IconType.DIG);
                         break;
                     case KeyEvent.VK_D: //CTRL-SHIFT-D is to enter Debug mode. just D (while in Debug mode) is Draw mode
                     	if (lemminiPanelMain.isControlPressed() && lemminiPanelMain.isShiftPressed() && lemminiPanelMain.isAltPressed()) {
@@ -380,7 +380,7 @@ public class LemminiFrame extends JFrame {
                         break;
                     case KeyEvent.VK_S:
                         GameController.setVerticalLock(!GameController.isVerticalLock());
-                        GameController.pressIcon(Icons.Type.VLOCK);
+                        GameController.pressIcon(Icons.IconType.VLOCK);
                         break;
                     case KeyEvent.VK_V:
                         LemmImage tmp = GameController.getLevel().createMinimap(GameController.getFgImage(), 1.0, 1.0, true, false, true);
@@ -411,15 +411,15 @@ public class LemminiFrame extends JFrame {
                         if (GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD)
                                 && !isPaused && GameController.isFastForward()) {
                             GameController.setFastForward(false);
-                            GameController.pressIcon(Icons.Type.FFWD);
+                            GameController.pressIcon(Icons.IconType.FFWD);
                         }
                         GameController.setPaused(!isPaused);
-                        GameController.pressIcon(Icons.Type.PAUSE);
+                        GameController.pressIcon(Icons.IconType.PAUSE);
                         break;
                     case KeyEvent.VK_F:
                     case KeyEvent.VK_ENTER: //F or ENTER toggles Fast-Forward
                         GameController.setFastForward(!GameController.isFastForward());
-                        GameController.pressIcon(Icons.Type.FFWD);
+                        GameController.pressIcon(Icons.IconType.FFWD);
                         break;
                     case KeyEvent.VK_T:
                         if (GameController.isCheat()) {
@@ -506,7 +506,7 @@ public class LemminiFrame extends JFrame {
                         GameController.pressMinus(GameController.KEYREPEAT_KEY);
                         break;
                     case KeyEvent.VK_F12:
-                        GameController.handleIconButton(Icons.Type.NUKE);
+                        GameController.handleIconButton(Icons.IconType.NUKE);
                         break;
                     case KeyEvent.VK_ESCAPE:
                         GameController.endLevel();
@@ -660,7 +660,7 @@ public class LemminiFrame extends JFrame {
                     GameController.releaseMinus(GameController.KEYREPEAT_KEY);
                     break;
                 case KeyEvent.VK_F12:
-                    GameController.releaseIcon(Icons.Type.NUKE);
+                    GameController.releaseIcon(Icons.IconType.NUKE);
                     break;
                 case KeyEvent.VK_LEFT:
                     if (GameController.isOptionEnabled(GameController.Option.ADVANCED_SELECT)) {

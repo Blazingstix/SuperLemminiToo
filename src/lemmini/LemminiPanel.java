@@ -421,7 +421,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                     if (y >= getIconBarY() && y < getIconBarY() + Icons.getIconHeight()) {
                         //System.out.println("y:" + y + " x:" + x + "\n getIconBarX():" + getIconBarX() + " getIconBarY():" + getIconBarY());
                     	//clicking on icons
-                    	Icons.Type type = GameController.getIconType(x - menuOffsetX - getIconBarX());
+                    	Icons.IconType type = GameController.getIconType(x - menuOffsetX - getIconBarX());
                         if (type != null) {
                             GameController.handleIconButton(type);
                         }
@@ -485,7 +485,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                 if (buttonPressed == MouseEvent.BUTTON1) {
                     holdingMinimap = false;
                     if (y > getIconBarY() && y < getIconBarY() + Icons.getIconHeight()) {
-                        Icons.Type type = GameController.getIconType(x - menuOffsetX - getIconBarX());
+                        Icons.IconType type = GameController.getIconType(x - menuOffsetX - getIconBarX());
                         if (type != null) {
                             GameController.releaseIcon(type);
                         }
@@ -495,10 +495,10 @@ public class LemminiPanel extends JPanel implements Runnable {
                     // the the mouse is dragged out and released outside
                     GameController.releasePlus(GameController.KEYREPEAT_ICON);
                     GameController.releaseMinus(GameController.KEYREPEAT_ICON);
-                    GameController.releaseIcon(Icons.Type.MINUS);
-                    GameController.releaseIcon(Icons.Type.PLUS);
-                    GameController.releaseIcon(Icons.Type.NUKE);
-                    GameController.releaseIcon(Icons.Type.RESTART);
+                    GameController.releaseIcon(Icons.IconType.MINUS);
+                    GameController.releaseIcon(Icons.IconType.PLUS);
+                    GameController.releaseIcon(Icons.IconType.NUKE);
+                    GameController.releaseIcon(Icons.IconType.RESTART);
                 }
                 if (buttonPressed == (swapButtons ? MouseEvent.BUTTON2 : MouseEvent.BUTTON3)) {
                     switch (LemmCursor.getType()) {
@@ -662,10 +662,10 @@ public class LemminiPanel extends JPanel implements Runnable {
         downPressed = false;
         GameController.releasePlus(GameController.KEYREPEAT_ICON | GameController.KEYREPEAT_KEY);
         GameController.releaseMinus(GameController.KEYREPEAT_ICON | GameController.KEYREPEAT_KEY);
-        GameController.releaseIcon(Icons.Type.MINUS);
-        GameController.releaseIcon(Icons.Type.PLUS);
-        GameController.releaseIcon(Icons.Type.NUKE);
-        GameController.releaseIcon(Icons.Type.RESTART);
+        GameController.releaseIcon(Icons.IconType.MINUS);
+        GameController.releaseIcon(Icons.IconType.PLUS);
+        GameController.releaseIcon(Icons.IconType.NUKE);
+        GameController.releaseIcon(Icons.IconType.RESTART);
         LemmCursor.setBox(false);
         setCursor(LemmCursor.CursorType.NORMAL);
         isFocused = false;

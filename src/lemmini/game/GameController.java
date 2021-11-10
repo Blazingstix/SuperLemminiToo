@@ -1116,7 +1116,7 @@ public class GameController {
                         break;
                     case ReplayStream.NUKE:
                         nuke();
-                        pressIcon(Icons.Type.NUKE);
+                        pressIcon(Icons.IconType.NUKE);
                         nukeOld = nuke;
                         break;
                     case ReplayStream.MOVE_POS: {
@@ -1135,28 +1135,28 @@ public class GameController {
                             lemmSkill = rs.skill;
                             switch (lemmSkill) {
                                 case CLIMBER:
-                                    pressIcon(Icons.Type.CLIMB);
+                                    pressIcon(Icons.IconType.CLIMB);
                                     break;
                                 case FLOATER:
-                                    pressIcon(Icons.Type.FLOAT);
+                                    pressIcon(Icons.IconType.FLOAT);
                                     break;
                                 case FLAPPER:
-                                    pressIcon(Icons.Type.BOMB);
+                                    pressIcon(Icons.IconType.BOMB);
                                     break;
                                 case BLOCKER:
-                                    pressIcon(Icons.Type.BLOCK);
+                                    pressIcon(Icons.IconType.BLOCK);
                                     break;
                                 case BUILDER:
-                                    pressIcon(Icons.Type.BUILD);
+                                    pressIcon(Icons.IconType.BUILD);
                                     break;
                                 case BASHER:
-                                    pressIcon(Icons.Type.BASH);
+                                    pressIcon(Icons.IconType.BASH);
                                     break;
                                 case MINER:
-                                    pressIcon(Icons.Type.MINE);
+                                    pressIcon(Icons.IconType.MINE);
                                     break;
                                 case DIGGER:
-                                    pressIcon(Icons.Type.DIG);
+                                    pressIcon(Icons.IconType.DIG);
                                     break;
                                 default:
                                     break;
@@ -1466,7 +1466,7 @@ public class GameController {
             lemmSkillRequest = null; // erase request
             if (isPaused() && isOptionEnabled(Option.UNPAUSE_ON_ASSIGNMENT)) {
                 setPaused(false);
-                pressIcon(Icons.Type.PAUSE);
+                pressIcon(Icons.IconType.PAUSE);
             }
             // add to replay stream
             if (!wasCheated) {
@@ -1496,7 +1496,7 @@ public class GameController {
      * Handle pressing of an icon button.
      * @param type icon type
      */
-    public static synchronized void handleIconButton(final Icons.Type type) {
+    public static synchronized void handleIconButton(final Icons.IconType type) {
         //Lemming.Type lemmSkillOld = lemmSkill;
         if (testIcon(type)) {
             switch (type) {
@@ -1543,7 +1543,7 @@ public class GameController {
                 case PAUSE:
                     if (isOptionEnabled(Option.PAUSE_STOPS_FAST_FORWARD) && !paused && fastForward) {
                         fastForward = false;
-                        pressIcon(Icons.Type.FFWD);
+                        pressIcon(Icons.IconType.FFWD);
                     }
                     setPaused(!isPaused());
                     break;
@@ -1587,7 +1587,7 @@ public class GameController {
                 case FFWD:
                 case VLOCK:
                 case RESTART:
-                    sound.playPitched(Sound.PitchedEffect.SKILL, type.getPitch());
+                    sound.playPitched(Sound.PitchedEffect.SKILL, Icons.GetPitch(type));
                     break;
                 default:
                     break; // supress sound
@@ -1597,15 +1597,15 @@ public class GameController {
             sound.play(Sound.Effect.INVALID);
         }
     }
-    
+   
     /**
      * Selects the next skill.
      */
     public static synchronized void nextSkill() {
-        Icons.Type pressedIcon = Icons.getPressedIcon();
-        Icons.Type testIcon;
+        Icons.IconType pressedIcon = Icons.getPressedIcon();
+        Icons.IconType testIcon;
         if (pressedIcon == null) {
-            testIcon = Icons.Type.get(Icons.FIRST_RADIO);
+            testIcon = Icons.SkillIconOrder().get(0);
         } else {
             testIcon = Icons.getNextRadioIcon(pressedIcon);
         }
@@ -1621,10 +1621,10 @@ public class GameController {
      * Selects the previous skill.
      */
     public static synchronized void previousSkill() {
-        Icons.Type pressedIcon = Icons.getPressedIcon();
-        Icons.Type testIcon;
+        Icons.IconType pressedIcon = Icons.getPressedIcon();
+        Icons.IconType testIcon;
         if (pressedIcon == null) {
-            testIcon = Icons.Type.get(Icons.LAST_RADIO);
+            testIcon = Icons.SkillIconOrder().get(Icons.SkillIconOrder().size()-1);
         } else {
             testIcon = Icons.getPreviousRadioIcon(pressedIcon);
         }
@@ -1641,7 +1641,7 @@ public class GameController {
      * @param type icon type
      * @return true if the icon button can be pressed, false otherwise
      */
-    private static boolean testIcon(final Icons.Type type) {
+    private static boolean testIcon(final Icons.IconType type) {
         switch (type) {
             case PLUS:
             case MINUS:
@@ -2324,7 +2324,7 @@ public class GameController {
      * @param x x position in pixels
      * @return icon type
      */
-    public static Icons.Type getIconType(final int x) {
+    public static Icons.IconType getIconType(final int x) {
         return Icons.getType(x);
     }
     
@@ -2332,7 +2332,7 @@ public class GameController {
      * Icon was pressed.
      * @param t icon type
      */
-    public static void pressIcon(final Icons.Type t) {
+    public static void pressIcon(final Icons.IconType t) {
         Icons.press(t);
     }
     
@@ -2340,7 +2340,7 @@ public class GameController {
      * Icon was released.
      * @param t icon type
      */
-    public static void releaseIcon(final Icons.Type t) {
+    public static void releaseIcon(final Icons.IconType t) {
         Icons.release(t);
     }
     
@@ -2515,6 +2515,12 @@ public class GameController {
         if (option == SuperLemminiTooOption.ICON_LABELS && gameState != null) {
         	Icons.redraw();
         } else if(option == SuperLemminiTooOption.ENHANCED_ICONBAR && gameState != null) {
+        	try {
+        		Icons.LoadIconResources();
+        	}
+        	catch (ResourceException e) {
+        		System.out.println("error loading resources...");
+        	}
         	Icons.redraw();
         }
     }
