@@ -127,7 +127,7 @@ public class TextDialog {
      * @param col LemmFont color
      */
     public void addString(final String s, final String group,
-            final int x0, final int y0, final LemmFont.Color col) {
+            final int x0, final int y0, final LemmFont.LemmColor col) {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
@@ -157,7 +157,7 @@ public class TextDialog {
      * @param y Y position relative to center expressed in character heights
      */
     public void addString(final String s, final String group, final int x, final int y) {
-        addString(s, group, x, y, LemmFont.Color.GREEN);
+        addString(s, group, x, y, LemmFont.LemmColor.GREEN);
     }
     
     /**
@@ -168,7 +168,7 @@ public class TextDialog {
      * @param col LemmFont color
      */
     public void addStringCentered(final String s, final String group,
-            final int y0, final LemmFont.Color col) {
+            final int y0, final LemmFont.LemmColor col) {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
@@ -201,7 +201,7 @@ public class TextDialog {
      * @param y Y position relative to center expressed in character heights
      */
     public void addStringCentered(final String s, final String group, final int y) {
-        addStringCentered(s, group, y, LemmFont.Color.GREEN);
+        addStringCentered(s, group, y, LemmFont.LemmColor.GREEN);
     }
     
     /**
@@ -265,7 +265,7 @@ public class TextDialog {
      */
     public void addTextButton(final String t, final String ts, final String group,
             final int x0, final int y0, final TextScreen.Button type,
-            final LemmFont.Color textCol, final LemmFont.Color selectedCol) {
+            final LemmFont.LemmColor textCol, final LemmFont.LemmColor selectedCol) {
         int x = x0 * LemmFont.getWidth();
         int y = y0 * (LemmFont.getHeight() + 4);
         TextButton b = new TextButton(x, y, type);
@@ -460,7 +460,7 @@ class TextButton extends Button {
      * @param s String which contains the button text
      * @param color Color of the button (LemmFont color!)
      */
-    void setText(final String s, final LemmFont.Color color) {
+    void setText(final String s, final LemmFont.LemmColor color) {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
@@ -478,7 +478,7 @@ class TextButton extends Button {
      * @param s String which contains the selected button text
      * @param color Color of the button (LemmFont color!)
      */
-    void setTextSelected(final String s, final LemmFont.Color color) {
+    void setTextSelected(final String s, final LemmFont.LemmColor color) {
         if (LemmFont.getCharCount(s) <= 0) {
             return;
         }
@@ -507,7 +507,7 @@ class TextDialogImage {
         image = img;
     }
     
-    TextDialogImage(final String text, final int xi, final int yi, final LemmFont.Color col) {
+    TextDialogImage(final String text, final int xi, final int yi, final LemmFont.LemmColor col) {
         x = xi;
         y = yi;
         image = LemmFont.strImage(text, col);

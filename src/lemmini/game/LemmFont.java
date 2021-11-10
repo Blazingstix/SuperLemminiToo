@@ -37,7 +37,7 @@ import org.apache.commons.lang3.StringUtils;
 public class LemmFont {
     
     /** Colors */
-    public static enum Color {
+    public static enum LemmColor {
         /** green color */
         GREEN,
         /** blue color */
@@ -135,7 +135,7 @@ public class LemmFont {
      * @param y Y coordinate in pixels
      * @param color Color
      */
-    public static void strImage(final GraphicsContext g, String s, int x, final int y, final Color color) {
+    public static void strImage(final GraphicsContext g, String s, int x, final int y, final LemmColor color) {
         s = Normalizer.normalize(s, Normalizer.Form.NFC);
         
         for (int c, i = 0; i < s.length(); i += Character.charCount(c)) {
@@ -158,7 +158,7 @@ public class LemmFont {
      * @param s string to draw.
      * @param color Color
      */
-    public static void strImage(final GraphicsContext g, final String s, final Color color) {
+    public static void strImage(final GraphicsContext g, final String s, final LemmColor color) {
         strImage(g, s, 0, 0, color);
     }
     
@@ -168,7 +168,7 @@ public class LemmFont {
      * @param color Color
      * @return a buffered image of the needed size that contains an image of the given string
      */
-    public static LemmImage strImage(final String s, final Color color) {
+    public static LemmImage strImage(final String s, final LemmColor color) {
         LemmImage image = ToolBox.createLemmImage(getCharCount(s) * width, height);
         GraphicsContext g = image.createGraphicsContext();
         try {
@@ -188,7 +188,7 @@ public class LemmFont {
      * @return a buffered image of the needed size that contains an image of the given string
      */
     public static LemmImage strImage(final String s) {
-        return strImage(s, Color.GREEN);
+        return strImage(s, LemmColor.GREEN);
     }
     
     /**
@@ -197,10 +197,10 @@ public class LemmFont {
      * @param s string to draw.
      */
     public static void strImage(final GraphicsContext g, final String s) {
-        strImage(g, s, 0, 0, Color.GREEN);
+        strImage(g, s, 0, 0, LemmColor.GREEN);
     }
     
-    private static void drawCharacter(GraphicsContext g, int c, int x, int y, Color color) {
+    private static void drawCharacter(GraphicsContext g, int c, int x, int y, LemmColor color) {
         if (chars.containsKey(c)) {
             LemmChar lemmChar = chars.get(c);
             g.drawImage(subsets.get(lemmChar.subset).getGlyph(lemmChar.glyphIndex).getColor(color), x, y);
@@ -209,7 +209,7 @@ public class LemmFont {
         }
     }
     
-    private static void drawMissingChar(GraphicsContext g, int c, int x, int y, Color color) {
+    private static void drawMissingChar(GraphicsContext g, int c, int x, int y, LemmColor color) {
         g.drawImage(missingChar.getColor(color), x, y);
         boolean bmpCodePoint = Character.isBmpCodePoint(c);
         int digitsPerRow = (bmpCodePoint ? 2 : 3);
@@ -433,7 +433,7 @@ public class LemmFont {
             glyphColors = Arrays.asList(glyphColorsArray);
         }
         
-        LemmImage getColor(Color color) {
+        LemmImage getColor(LemmColor color) {
             return glyphColors.get(color.ordinal());
         }
     }

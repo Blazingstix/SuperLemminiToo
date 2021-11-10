@@ -413,9 +413,25 @@ public class Icons {
             icon.setFrameIdx(frameIdx);
             
         	iconGfx.drawImage(bgIcon.getImage(), getIconWidth() * idx, 0);
-            iconGfx.drawImage(icon.getImage(), getIconWidth() * idx + x, 0 + y);
+
+        	//these 5 icon types don't have numbers with them, so we can move the icons up a tad
+        	int yIcon = 0;
+        	int yLabel = 0;
+        	switch(type) {
+	        	case FFWD:
+	        	case PAUSE:
+	        	case RESTART:
+	        	case VLOCK:
+	        	case NUKE:
+	        		yIcon = -8;
+	        		yLabel=-10;
+	        		break;
+	    		default:
+        	}
+        	
+        	iconGfx.drawImage(icon.getImage(), getIconWidth() * idx + x, 0 + y + yIcon);
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS))
-            	iconGfx.drawImage(iconLabel.getImage(), getIconWidth() * idx + x, 0 + y);
+            	iconGfx.drawImage(iconLabel.getImage(), getIconWidth() * idx + x, 0 + y + yLabel);
         }
     }
     

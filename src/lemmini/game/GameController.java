@@ -9,6 +9,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import javax.swing.JOptionPane;
+import java.awt.Color;
 
 import lemmini.LemminiFrame;
 import lemmini.extract.ExtractDAT;
@@ -1895,48 +1896,57 @@ public class GameController {
     private static void drawCounters(final GraphicsContext g, final int x, final int y) {
         // draw counters
         Integer val = NumberUtils.INTEGER_ZERO;
-        for (int i = 0; i < 10; i++) {
-            switch (i) {
-                case 0:
+        //TODO: match these up with wherever the actual 
+        List<Icons.IconType> iconOrder = Icons.CurrentIconOrder();
+        for (int i = 0; i < iconOrder.size(); i++) {
+        	Icons.IconType type = iconOrder.get(i);
+        	switch (type) {
+        		case MINUS:
                     val = level.getReleaseRate();
                     break;
-                case 1:
+        		case PLUS:
                     val = lockReleaseRate ? null : releaseRate;
                     break;
-                case 2:
+        		case CLIMB:
                     val = numClimbers;
                     break;
-                case 3:
+        		case FLOAT:
                     val = numFloaters;
                     break;
-                case 4:
+        		case BOMB:
                     val = numBombers;
                     break;
-                case 5:
+        		case BLOCK:
                     val = numBlockers;
                     break;
-                case 6:
+        		case BUILD:
                     val = numBuilders;
                     break;
-                case 7:
+        		case BASH:
                     val = numBashers;
                     break;
-                case 8:
+        		case MINE:
                     val = numMiners;
                     break;
-                case 9:
+        		case DIG:
                     val = numDiggers;
                     break;
-                default:
-                    break;
-            }
+        		default:
+        			val = 0;
+        			break;
+        	}
             if (val != null) {
-                if (i >= 2 && val.compareTo(NumberUtils.INTEGER_ZERO) <= 0) {
-                    continue;
+                if ((type != Icons.IconType.MINUS || type != Icons.IconType.PLUS) && val.compareTo(NumberUtils.INTEGER_ZERO) <= 0) {
+                    //don't show any numbers for skills that are below (or equal to) 0.
+                	continue;
                 }
             }
             LemmImage numImage = NumFont.numImage(val);
-            g.drawImage(numImage, x + Icons.getIconWidth() * i + Icons.getIconWidth() / 2 - numImage.getWidth() / 2, y);
+            int centerX = x + Icons.getIconWidth() * i + Icons.getIconWidth() / 2;
+            g.setColor(Color.BLACK);
+            g.fillRect(centerX-8, y, 16, 11);
+            g.fillRect(centerX-9, y+1, 18, 9);
+            g.drawImage(numImage, centerX - numImage.getWidth() / 2, y);
         }
     }
     

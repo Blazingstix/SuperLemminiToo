@@ -938,7 +938,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                                 offGfx.drawImage(lemmOut, menuOffsetX + xOffOut + xWidthOut + xOffSpace, yOffset);
                                 LemmImage lemmIn;
                                 if(GameController.getNumToRescue() > GameController.getNumExited()) {
-                                     lemmIn = LemmFont.strImage(in, LemmFont.Color.RED);
+                                     lemmIn = LemmFont.strImage(in, LemmFont.LemmColor.RED);
                                 } else {
                                     lemmIn = LemmFont.strImage(in);
                                 }

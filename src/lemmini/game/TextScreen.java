@@ -4,7 +4,7 @@ import java.awt.Color;
 import java.awt.RenderingHints;
 import java.util.List;
 import lemmini.LemminiFrame;
-import static lemmini.game.LemmFont.Color.*;
+import static lemmini.game.LemmFont.LemmColor.*;
 import lemmini.graphics.GraphicsContext;
 import lemmini.graphics.LemmImage;
 import lemmini.tools.ToolBox;
