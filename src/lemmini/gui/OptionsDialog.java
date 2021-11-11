@@ -218,8 +218,8 @@ public class OptionsDialog extends JDialog {
         jCheckBoxPauseStopsFastForward.setSelected(GameController.isOptionEnabled(GameController.Option.PAUSE_STOPS_FAST_FORWARD));
         jCheckBoxPauseStopsFastForward.setText("Stop Fast-Forward When Pausing");
 
-        jCheckBoxNoPercentages.setSelected(GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
-        jCheckBoxNoPercentages.setText("Never Show Percentages");
+        jCheckBoxNoPercentages.setSelected(!GameController.isOptionEnabled(GameController.Option.NO_PERCENTAGES));
+        jCheckBoxNoPercentages.setText("Show Percentages");
 
         jCheckBoxReplayScroll.setSelected(GameController.isOptionEnabled(GameController.Option.REPLAY_SCROLL));
         jCheckBoxReplayScroll.setText("Scroll Level During Replay");
@@ -414,7 +414,7 @@ public class OptionsDialog extends JDialog {
         GameController.setOption(GameController.Option.SWAP_BUTTONS, jCheckBoxSwap.isSelected());
         GameController.setOption(GameController.Option.FASTER_FAST_FORWARD, jCheckBoxFaster.isSelected());
         GameController.setOption(GameController.Option.PAUSE_STOPS_FAST_FORWARD, jCheckBoxPauseStopsFastForward.isSelected());
-        GameController.setOption(GameController.Option.NO_PERCENTAGES, jCheckBoxNoPercentages.isSelected());
+        GameController.setOption(GameController.Option.NO_PERCENTAGES, !jCheckBoxNoPercentages.isSelected());
         GameController.setOption(GameController.Option.REPLAY_SCROLL, jCheckBoxReplayScroll.isSelected());
         GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, jCheckBoxUnpauseOnAssignment.isSelected());
         GameController.setOption(GameController.SuperLemminiTooOption.TIMED_BOMBERS, jCheckBoxTimedBombers.isSelected());

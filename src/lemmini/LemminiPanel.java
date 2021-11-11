@@ -758,40 +758,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         } else {
                         	drawMiniMap(offGfx, width, height, minimapXOfsTemp, yOfsTemp);
                         }
-                        /*
-                        offGfx.drawImage(MiscGfx.getMinimapImage(), menuOffsetX + SMALL_X - 4, SMALL_Y - 4);
-                        offGfx.setClip(menuOffsetX + SMALL_X, SMALL_Y, Minimap.getVisibleWidth(), Minimap.getVisibleHeight());
-                        Minimap.draw(offGfx, menuOffsetX + SMALL_X, SMALL_Y);
-                        GameController.drawMinimapLemmings(offGfx, menuOffsetX + SMALL_X, SMALL_Y);
-                        offGfx.setClip(0, 0, width, height);
-                        Minimap.drawFrame(offGfx, menuOffsetX + SMALL_X, SMALL_Y);
-                        // draw minimap arrows
-                        if (minimapXOfsTemp > 0) {
-                            LemmImage leftArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_LEFT);
-                            offGfx.drawImage(leftArrow,
-                                    menuOffsetX + SMALL_X - 4 - leftArrow.getWidth(),
-                                    SMALL_Y + Minimap.getVisibleHeight() / 2 - leftArrow.getHeight() / 2);
-                        }
-                        if (minimapXOfsTemp < ToolBox.scale(GameController.getWidth(), Minimap.getScaleX()) - Minimap.getVisibleWidth()) {
-                            LemmImage rightArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_RIGHT);
-                            offGfx.drawImage(rightArrow,
-                                    menuOffsetX + SMALL_X + Minimap.getVisibleWidth() + 4,
-                                    SMALL_Y + Minimap.getVisibleHeight() / 2 - rightArrow.getHeight() / 2);
-                        }
-                        if (yOfsTemp > 0) {
-                            LemmImage upArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_UP);
-                            offGfx.drawImage(upArrow,
-                                    menuOffsetX + SMALL_X + Minimap.getVisibleWidth() / 2 - upArrow.getWidth() / 2,
-                                    SMALL_Y - 4 - upArrow.getHeight());
-                        }
-                        if (yOfsTemp < GameController.getHeight() - LemminiFrame.LEVEL_HEIGHT) {
-                            LemmImage downArrow = MiscGfx.getImage(MiscGfx.Index.MINIMAP_ARROW_DOWN);
-                            offGfx.drawImage(downArrow,
-                                    menuOffsetX + SMALL_X + Minimap.getVisibleWidth() / 2 - downArrow.getWidth() / 2,
-                                    SMALL_Y + Minimap.getVisibleHeight() + 4);
-                        }
-                        */
-                        
+                         
                         // draw lemmings
                         offGfx.setClip(0, 0, width, levelHeight);
                         GameController.drawLemmings(offGfx);

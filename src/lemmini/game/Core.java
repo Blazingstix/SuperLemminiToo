@@ -74,7 +74,7 @@ public class Core {
     /** path for temporary files */
     public static final String TEMP_PATH = "temp/";
     /** The revision string for resource compatibility - not necessarily the version number */
-    public static final String RES_REVISION = "0.104";
+    public static final String RES_REVISION = "0.130";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
@@ -141,24 +141,28 @@ public class Core {
         // read main ini file
         programProps = new Props();
         
-        if (!programProps.load(programPropsFilePath)) { // might exist or not - if not, it's created
+        if (!programProps.load(programPropsFilePath)) { 
+        	// might exist or not - if not, it's created
+        	// show the Legal Disclaimer. And force the user to choose "I Agree."
+        	// NOTE: the Legal Discalimer is loaded from "disclaimer.htm"
             LegalFrame ld = new LegalFrame();
             ld.setVisible(true);
             ld.waitUntilClosed();
             if (!ld.isOK()) {
+            	// user does not agree, so we exit.
                 return false;
             }
         }
         
-        bilinear = programProps.getBoolean("bilinear", true);
-        String resourcePathStr = programProps.get("resourcePath", StringUtils.EMPTY);
+        bilinear = programProps.getBoolean("bilinear", false);
+        String resourcePathStr = programProps.get("resourcePath", Paths.get(SystemUtils.USER_HOME, ".superlemminitoo").toString());
         //resourcePath is the source of your game resources
         resourcePath = Paths.get(resourcePathStr);
         resourceTree = new CaseInsensitiveFileTree(resourcePath);
         
         //SourcePath is the source of your original WinLemm installation
         //Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
-        String rev = programProps.get("revision", "zip-invalid");
+        String rev = programProps.get("revision", "zip");
         GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
         GameController.setOption(GameController.Option.SOUND_ON, programProps.getBoolean("sound", true));
         GameController.setMusicGain(programProps.getDouble("musicGain", 1.0));
@@ -168,18 +172,18 @@ public class Core {
         GameController.setOption(GameController.Option.SWAP_BUTTONS, programProps.getBoolean("swapButtons", false));
         GameController.setOption(GameController.Option.FASTER_FAST_FORWARD, programProps.getBoolean("fasterFastForward", false));
         GameController.setOption(GameController.Option.PAUSE_STOPS_FAST_FORWARD, programProps.getBoolean("pauseStopsFastForward", false));
-        GameController.setOption(GameController.Option.NO_PERCENTAGES, programProps.getBoolean("noPercentages", false));
+        GameController.setOption(GameController.Option.NO_PERCENTAGES, programProps.getBoolean("noPercentages", true));
         GameController.setOption(GameController.Option.REPLAY_SCROLL, programProps.getBoolean("replayScroll", true));
-        GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", false));
+        GameController.setOption(GameController.Option.UNPAUSE_ON_ASSIGNMENT, programProps.getBoolean("unpauseOnAssignment", true));
         // new settings added by SuperLemminiToo
         GameController.setOption(GameController.SuperLemminiTooOption.TIMED_BOMBERS, programProps.getBoolean("timedBombers", true));
-        GameController.setOption(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", false));
-        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", false));
-        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", false));
+        GameController.setOption(GameController.SuperLemminiTooOption.UNLOCK_ALL_LEVELS, programProps.getBoolean("unlockAllLevels", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_SCROLL_WHEEL, programProps.getBoolean("disableScrollWheel", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", true));
         GameController.setOption(GameController.SuperLemminiTooOption.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
-        GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", false));
+        GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", true));
 
         // check for the existence of root.lzp.
         // if it's not there, then we must exit.
@@ -262,7 +266,7 @@ public class Core {
      * @return Returns the revision value, or "" if nothing if found.
      */
     private static String getRevisionFromRootLzp() {
-        try (ZipFile zip = new CaseInsensitiveZipFile(resourceTree.getPath(ROOT_ZIP_NAME).toFile())) {
+        try (ZipFile zip = new CaseInsensitiveZipFile(gameDataTree.getPath(ROOT_ZIP_NAME).toFile())) {
             ZipEntry entry = zip.getEntry("revision.ini");
             try (Reader r = ToolBox.getBufferedReader(zip.getInputStream(entry))) {
                 Props p = new Props();

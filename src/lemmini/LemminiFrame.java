@@ -55,7 +55,7 @@ public class LemminiFrame extends JFrame {
     
     public static final int LEVEL_HEIGHT = 320;
     public static final String REVISION = "1.30";
-    public static final String REV_DATE = "BETA";
+    public static final String REV_DATE = "11 Nov 2021";
     
     private static final long serialVersionUID = 0x01L;
     
