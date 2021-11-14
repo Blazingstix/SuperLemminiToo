@@ -182,8 +182,10 @@ public class Core {
         GameController.setOption(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING, programProps.getBoolean("disableFrameStepping", true));
         GameController.setOption(GameController.SuperLemminiTooOption.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.SHOW_STATUS_TOTALS, programProps.getBoolean("showStatusTotals", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.ANIMATED_ICONS, programProps.getBoolean("animatedIcons", true));
 
         // check for the existence of root.lzp.
         // if it's not there, then we must exit.
@@ -386,8 +388,10 @@ public class Core {
         programProps.setBoolean("disableFrameStepping", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DISABLE_FRAME_STEPPING));
         programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.VISUAL_SFX));
         programProps.setBoolean("enhancedStatus", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS));
+        programProps.setBoolean("showStatusTotals", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.SHOW_STATUS_TOTALS));
         programProps.setBoolean("enhancedIconBar", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR));
         programProps.setBoolean("iconLabels", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
+        programProps.setBoolean("animatedIcons", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ANIMATED_ICONS));
 
     }
     
@@ -448,6 +452,7 @@ public class Core {
      */
     public static Resource findResource(String fname, boolean searchMods, String... extensions) throws ResourceException {
         String fnameNoExt = FilenameUtils.removeExtension(fname);
+        String originalExt = FilenameUtils.getExtension(fname);
         if (searchMods) {
             // try to load the file from the mod paths with each extension
             for (String mod : GameController.getModPaths()) {

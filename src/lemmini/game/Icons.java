@@ -44,6 +44,12 @@ import lemmini.tools.ToolBox;
 public class Icons {
     
     private static final int DEFAULT_PITCH = 4;
+    /** a special counter for animation frames 31.2 frames/second */
+    private static final int[] ANIMATION_CTR = {3, 3, 4, 3, 3}; //allows for a maximum of 5 seconds.
+
+    /** internal counter tracking when to move to the next frame of animation */
+    private static int animateCtr = 0;
+    private static int currentAnimateFrame = 0;
     
     /**
      * icon width in pixels (of currently selected icon bar)
@@ -164,7 +170,8 @@ public class Icons {
     private static LemmImage iconImg;
     /** graphics object used to draw on iconImg */
     private static GraphicsContext iconGfx = null;
-    private static IconType pressedIcon = null;
+    /** the currently selected skill */
+    private static IconType selectedSkill = null;
     
     /** list of Sprites that contains the icons */
     private static final List<Sprite> icons = new ArrayList<>(IconType.values().length);
@@ -175,7 +182,10 @@ public class Icons {
     /** list of Sprites the contain the icon labels */
     private static final List<Sprite> iconLabels = new ArrayList<>(IconType.values().length);
        
+    /** the current frame for each icon's sprite */
     private static final HashMap<IconType, Integer> iconFrame = new HashMap<>(IconType.values().length);
+    /** the current pressed state of each icon (true is pressed, false is not pressed) */
+    private static final HashMap<IconType, Boolean> iconPressed = new HashMap<>(IconType.values().length);
     
     /** 
      * Initialization. 
@@ -186,6 +196,12 @@ public class Icons {
     	if (iconFrame.isEmpty()) {
 	    	for(IconType x : IconType.values()) {
 	    		iconFrame.put(x, 0);
+	    	}
+    	}
+    	//load the hashmap with initial values for each of the IconTypes
+    	if (iconPressed.isEmpty()) {
+	    	for(IconType x : IconType.values()) {
+	    		iconPressed.put(x, false);
 	    	}
     	}
     	LoadIconResources();
@@ -211,15 +227,36 @@ public class Icons {
         	LemmImage sourceImg;
         	Resource res;
         	Sprite icon;
-        	
-        	//load the individual icon 
-        	res = Core.findResource(
-                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
-                    true, Core.IMAGE_EXTENSIONS);
-            sourceImg = Core.loadLemmImage(res);
-            icon = new Sprite(sourceImg, 2, 1, false);
-            icons.add(icon);
-
+       	
+            if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+	        	//animated icons we need to load a little differently.
+            	// 1) we try the animated icon for the mod *only*
+            	// 2) if that's not found, we try the static icon for the mod
+            	// 3) if that's not found, we try the standard animated icon 
+            	// 4) if there's no standard animated icon, we load the standard static icon.
+	        	res = Core.findResource(
+	                    "gfx/iconbar/anim_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
+	                    true, Core.IMAGE_EXTENSIONS);
+	        	if (res == null) {
+		        	res = Core.findResource(
+		                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
+		                    true, Core.IMAGE_EXTENSIONS);
+	        	}
+	        	
+	            sourceImg = Core.loadLemmImage(res);
+	            int frames = sourceImg.getHeight() / 40;
+	            icon = new Sprite(sourceImg, frames, 1, false);
+	            icons.add(icon);
+            } else {
+	        	//load the individual icon 
+	        	res = Core.findResource(
+	                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
+	                    true, Core.IMAGE_EXTENSIONS);
+	            sourceImg = Core.loadLemmImage(res);
+	            icon = new Sprite(sourceImg, 2, 1, false);
+	            icons.add(icon);
+            }
+	            
             //load standard size backgrounds
             //TODO: allow for multiple different background objects
             res = Core.findResource("gfx/icons/icon_empty.png", true, Core.IMAGE_EXTENSIONS);
@@ -297,8 +334,8 @@ public class Icons {
             case VLOCK:
                 //these three icons are toggle icons.
                 if (idx < iconOrder.size()) {
-                	Sprite icon = icons.get(idx);
-                    int toggleFrame = (icon.getFrameIdx() == 0) ? 1 : 0;
+                	//Sprite icon = icons.get(idx);
+                    boolean toggleFrame = !iconPressed.get(type).booleanValue();
                 	setIconFrame(idx, toggleFrame);
                 	drawIcon(idx);
                 }
@@ -317,23 +354,61 @@ public class Icons {
             		if (i != -1 && i != idx) {
                     	//reset all the skills *not* selected to show as unselected
                     	//the skill that *is* selected will be handled below.
-                    	setIconFrame(i, 0);
+                    	setIconFrame(i, false);
                     	drawIcon(i);
             		}
             	}
-                pressedIcon = type;
+            	selectedSkill = type;
                 /* falls through */
             case MINUS:
             case PLUS:
             case NUKE:
             case RESTART:
-            	setIconFrame(idx, 1);
+            	setIconFrame(idx, true);
             	drawIcon(idx);
                 break;
             default:
                 break;
         }
     }
+    
+    /** 
+     * Update the frame for animated icons.
+     */
+    static public void Animate() {
+		if (++animateCtr >= ANIMATION_CTR[currentAnimateFrame % ANIMATION_CTR.length]) {
+			animateCtr -= ANIMATION_CTR[currentAnimateFrame % ANIMATION_CTR.length];
+			currentAnimateFrame = currentAnimateFrame++ % ANIMATION_CTR.length;
+    	
+	    	List<IconType> iconOrder = CurrentIconOrder();
+			for (IconType x:iconPressed.keySet()) {
+				if(iconPressed.get(x)) {
+			    	int idx = iconOrder.indexOf(x);
+			        if (idx != -1) {
+			        	if (idx < icons.size()-1) {
+				        	int frameCount = icons.get(idx).getNumFrames();
+				        	if (frameCount > 2) {
+				        		int oldFrame = iconFrame.get(x);
+				        		int newFrame = (oldFrame + 1) % frameCount;
+				        		iconFrame.replace(x, newFrame);
+				        		drawIcon(idx);
+			        		}
+			        	}
+		        	}
+		        }
+			}
+		}
+    }
+
+    /*
+    if (++explodeCtr >= MAX_EXPLODE_CTR[explodeNumCtr - 1]) {
+        explodeCtr -= MAX_EXPLODE_CTR[explodeNumCtr - 1];
+        explodeNumCtr--;
+        if (explodeNumCtr == 0) {
+            explode = true;
+        }
+    }
+    */
     
     /**
      * Release icon.
@@ -350,12 +425,12 @@ public class Icons {
             case MINUS:
             case PLUS:
             case RESTART:
-            	setIconFrame(idx, 0);
+            	setIconFrame(idx, false);
             	drawIcon(idx);
                 break;
             case NUKE:
                 if (!GameController.isNuked()) {
-                	setIconFrame(idx, 0);
+                	setIconFrame(idx, false);
                 	drawIcon(idx);
                 }
                 break;
@@ -366,22 +441,14 @@ public class Icons {
     
     /**
      * Sets the current Sprite Index for the 
-     * @param idx
+     * @param iconIdx the index of the icon, from the CurrentIconOrder()
      */
-    private static void setIconFrame(int iconIdx, int frameIdx) {
+    private static void setIconFrame(int iconIdx, boolean pressed) {
         if (iconIdx < CurrentIconOrder().size()) {
+            int frameIdx = pressed ? 1 : 0;
             IconType type = CurrentIconOrder().get(iconIdx);
             iconFrame.replace(type, frameIdx);
-            /*
-            Sprite bgIcon = bgIcons.get(iconIdx);
-            Sprite bgIconLarge = bgIconsLarge.get(iconIdx);
-            Sprite icon = icons.get(iconIdx);
-            Sprite iconLabel = iconLabels.get(iconIdx);
-            bgIcon.setFrameIdx(frameIdx);
-            bgIconLarge.setFrameIdx(frameIdx);
-            icon.setFrameIdx(frameIdx);
-            iconLabel.setFrameIdx(frameIdx);
-            */
+            iconPressed.replace(type,  pressed);
         }
     }
     
@@ -406,10 +473,10 @@ public class Icons {
             Sprite icon = icons.get(idx);
 
             //set the frame to use for each Sprite
-            int frameIdx = iconFrame.get(type);
-            int frameIdx2 = (frameIdx > 0) ? 1 : 0;
-            bgIcon.setFrameIdx(frameIdx2);
-            iconLabel.setFrameIdx(frameIdx2);
+            int frameIdx = Math.min(iconFrame.get(type), icon.getNumFrames()-1);
+            int staticFrameIdx = (iconPressed.get(type)) ? 1 : 0;
+            bgIcon.setFrameIdx(staticFrameIdx);
+            iconLabel.setFrameIdx(staticFrameIdx);
             icon.setFrameIdx(frameIdx);
             
         	iconGfx.drawImage(bgIcon.getImage(), getIconWidth() * idx, 0);
@@ -424,8 +491,8 @@ public class Icons {
 		        	case RESTART:
 		        	case VLOCK:
 		        	case NUKE:
-		        		yIcon = -8;
-		        		yLabel=-10;
+		        		yIcon = -4;
+		        		yLabel = -10;
 		        		break;
 		    		default:
 	        	}
@@ -441,8 +508,8 @@ public class Icons {
      * Get the selected skill icon.
      * @return the selected skill icon if one is pressed, or null if none is pressed
      */
-    static IconType getPressedIcon() {
-        return pressedIcon;
+    static IconType getSelectedSkill() {
+        return selectedSkill;
     }
     
     static IconType getNextRadioIcon(IconType type) {
@@ -488,10 +555,10 @@ public class Icons {
      */
     static void reset() {
         for (int i = 0; i < CurrentIconOrder().size(); i++) {
-            setIconFrame(i, 0);
+            setIconFrame(i, false);
             drawIcon(i);
         }
-        pressedIcon = null;
+        selectedSkill = null;
     }
     
     /**
@@ -507,7 +574,7 @@ public class Icons {
         for (int i = 0; i < iconOrder.size(); i++) {
             drawIcon(i);
         }
-        pressedIcon = null;
+        selectedSkill = null;
     }
     
     /**

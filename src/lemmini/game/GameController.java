@@ -107,9 +107,14 @@ public class GameController {
         VISUAL_SFX,
         /** flag: use new status with icons */
         ENHANCED_STATUS,
+        /** flag: on enhanced status bar, show the totals in smaller print. */
+        SHOW_STATUS_TOTALS,
         /** flag: use new icon bar. Has better spacing, and supports animated icons. */
         ENHANCED_ICONBAR,
-        ICON_LABELS
+        /** flag: show text labels on icons */
+        ICON_LABELS,
+        /** flag: show animated icons */
+        ANIMATED_ICONS
     }
     
     public static enum LevelFormat {
@@ -1603,7 +1608,7 @@ public class GameController {
      * Selects the next skill.
      */
     public static synchronized void nextSkill() {
-        Icons.IconType pressedIcon = Icons.getPressedIcon();
+        Icons.IconType pressedIcon = Icons.getSelectedSkill();
         Icons.IconType testIcon;
         if (pressedIcon == null) {
             testIcon = Icons.SkillIconOrder().get(0);
@@ -1622,7 +1627,7 @@ public class GameController {
      * Selects the previous skill.
      */
     public static synchronized void previousSkill() {
-        Icons.IconType pressedIcon = Icons.getPressedIcon();
+        Icons.IconType pressedIcon = Icons.getSelectedSkill();
         Icons.IconType testIcon;
         if (pressedIcon == null) {
             testIcon = Icons.SkillIconOrder().get(Icons.SkillIconOrder().size()-1);
@@ -1652,21 +1657,21 @@ public class GameController {
             case RESTART:
                 return true;
             case CLIMB:
-                return (isCheat() || numClimbers > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numClimbers > 0) && Icons.getSelectedSkill() != type;
             case FLOAT:
-                return (isCheat() || numFloaters > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numFloaters > 0) && Icons.getSelectedSkill() != type;
             case BOMB:
-                return (isCheat() || numBombers > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numBombers > 0) && Icons.getSelectedSkill() != type;
             case BLOCK:
-                return (isCheat() || numBlockers > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numBlockers > 0) && Icons.getSelectedSkill() != type;
             case BUILD:
-                return (isCheat() || numBuilders > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numBuilders > 0) && Icons.getSelectedSkill() != type;
             case BASH:
-                return (isCheat() || numBashers > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numBashers > 0) && Icons.getSelectedSkill() != type;
             case MINE:
-                return (isCheat() || numMiners > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numMiners > 0) && Icons.getSelectedSkill() != type;
             case DIG:
-                return (isCheat() || numDiggers > 0) && Icons.getPressedIcon() != type;
+                return (isCheat() || numDiggers > 0) && Icons.getSelectedSkill() != type;
             case NUKE:
                 return !nuke;
             default:
@@ -1884,6 +1889,7 @@ public class GameController {
      */
     private static void drawIcons(final GraphicsContext g, final int x, final int y) {
         //System.out.println("drawing IconBar: " + x + "/" + y);
+    	Icons.Animate();
     	g.drawImage(Icons.getImg(), x, y);
     }
     
@@ -2328,6 +2334,15 @@ public class GameController {
     public static int getNumLemmingsMax() {
         return numLemmingsMax;
     }
+    
+    /**
+     * Get the number of lemmings still in the entrance gate.
+     * @return number of lemmings still in the entrance gate.
+     */
+    public static int getNumLemmingsUnreleased() {
+    	return getNumLemmingsMax() - numLemmingsOut;
+    }
+    
     
     /**
      * Get icon type from x position.
