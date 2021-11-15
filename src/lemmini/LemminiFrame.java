@@ -53,10 +53,12 @@ import org.apache.commons.lang3.SystemUtils;
  */
 public class LemminiFrame extends JFrame {
     
-    public static final int LEVEL_HEIGHT = 320;
-    public static final String REVISION = "1.40";
+    // These variables define the current revision
+	public static final String REVISION = "1.40";
     public static final String REV_DATE = "15 Nov 2021";
+    //RES_REVISION is stored in Core.
     
+    public static final int LEVEL_HEIGHT = 320;
     private static final long serialVersionUID = 0x01L;
     
     private int unmaximizedPosX;

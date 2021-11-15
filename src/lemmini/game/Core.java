@@ -54,6 +54,9 @@ import org.apache.commons.lang3.SystemUtils;
  * @author Volker Oth
  */
 public class Core {
+
+	public static final String RES_REVISION = "1.40";
+
     
     /** extensions accepted for level files in file dialog */
     public static final String[] LEVEL_EXTENSIONS = {"ini", "lvl", "dat"};
@@ -74,7 +77,6 @@ public class Core {
     /** path for temporary files */
     public static final String TEMP_PATH = "temp/";
     /** The revision string for resource compatibility - not necessarily the version number */
-    public static final String RES_REVISION = "0.130";
     
     public static final Path[] EMPTY_PATH_ARRAY = {};
     
