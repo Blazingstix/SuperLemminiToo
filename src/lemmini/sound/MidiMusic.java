@@ -234,7 +234,7 @@ public class MidiMusic implements MusicPlayer {
     
     private static Soundbank getSoundbank(Resource res) {
         try {
-            Resource res2 = Core.findResource(res.getOriginalPath(), true, Core.SOUNDBANK_EXTENSIONS);
+            Resource res2 = Core.findResource(res.getOriginalPath(), Core.SOUNDBANK_EXTENSIONS);
             if (res2 == null) {
                 return null;
             }

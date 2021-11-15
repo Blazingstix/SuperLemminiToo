@@ -70,7 +70,7 @@ public class Explosion {
      * @throws ResourceException
      */
     static void init() throws ResourceException {
-        Resource res = Core.findResource("gfx/misc/explode.png", true, Core.IMAGE_EXTENSIONS);
+        Resource res = Core.findResource("gfx/misc/explode.png", Core.IMAGE_EXTENSIONS);
         expImg = Core.loadLemmImage(res);
     }
     

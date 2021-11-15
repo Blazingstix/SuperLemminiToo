@@ -250,8 +250,8 @@ public class Icons {
             } else {
 	        	//load the individual icon 
 	        	res = Core.findResource(
-	                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
-	                    true, Core.IMAGE_EXTENSIONS);
+	                    "gfx/icons/icon_" + iconName + ".png",
+	                    Core.IMAGE_EXTENSIONS);
 	            sourceImg = Core.loadLemmImage(res);
 	            icon = new Sprite(sourceImg, 2, 1, false);
 	            icons.add(icon);
@@ -259,22 +259,22 @@ public class Icons {
 	            
             //load standard size backgrounds
             //TODO: allow for multiple different background objects
-            res = Core.findResource("gfx/icons/icon_empty.png", true, Core.IMAGE_EXTENSIONS);
+            res = Core.findResource("gfx/icons/icon_empty.png", Core.IMAGE_EXTENSIONS);
             sourceImg = Core.loadLemmImage(res);
             icon = new Sprite(sourceImg, 2, 1, false);
             bgIcons.add(icon);
 
             //load larger background icons
             //TODO: allow for multiple different background objects
-            res = Core.findResource("gfx/iconbar/icon_empty_large.png", true, Core.IMAGE_EXTENSIONS);
+            res = Core.findResource("gfx/iconbar/icon_empty_large.png", Core.IMAGE_EXTENSIONS);
             sourceImg = Core.loadLemmImage(res);
             icon = new Sprite(sourceImg, 2, 1, false);
             bgIconsLarge.add(icon);
 
             //load the label overlays
             res = Core.findResource(
-                    "gfx/icon_labels/label_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
-                    true, Core.IMAGE_EXTENSIONS);
+                    "gfx/icon_labels/label_" + iconName + ".png",
+                    Core.IMAGE_EXTENSIONS);
             sourceImg = Core.loadLemmImage(res);
             icon = new Sprite(sourceImg, 2, 1, false);
             iconLabels.add(icon);

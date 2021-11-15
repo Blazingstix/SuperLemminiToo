@@ -98,9 +98,9 @@ public class LemmCursor  {
         cursor.clear();
         boxCursor.clear();
         CursorType[] cursorTypes = CursorType.values();
-        Resource res = Core.findResource("gfx/misc/cursor.png", true, Core.IMAGE_EXTENSIONS);
+        Resource res = Core.findResource("gfx/misc/cursor.png", Core.IMAGE_EXTENSIONS);
         cursorImg = ToolBox.getAnimation(Core.loadLemmImage(res), cursorTypes.length);
-        res = Core.findResource("gfx/misc/box.png", true, Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/misc/box.png", Core.IMAGE_EXTENSIONS);
         boxImg = ToolBox.getAnimation(Core.loadLemmImage(res), cursorTypes.length);
         LemmImage firstCursorImg = cursorImg.get(0);
         int cx = firstCursorImg.getWidth() / 2;

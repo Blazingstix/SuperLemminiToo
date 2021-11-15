@@ -66,7 +66,7 @@ public class SpecialGraphicSet {
         // load main image
         res = Core.findResource(
                 "styles/special/" + name + "/" + name + ".png",
-                true, Core.IMAGE_EXTENSIONS);
+                Core.IMAGE_EXTENSIONS);
         image = Core.loadLemmImage(res);
         
         // load mask
@@ -74,7 +74,7 @@ public class SpecialGraphicSet {
         try {
             res = Core.findResource(
                     "styles/special/" + name + "/" + name + "m.png",
-                    true, Core.IMAGE_EXTENSIONS);
+                    Core.IMAGE_EXTENSIONS);
             sourceImage = Core.loadLemmImage(res);
         } catch (ResourceException ex) {
             sourceImage = image;
@@ -90,7 +90,7 @@ public class SpecialGraphicSet {
         try {
             res = Core.findResource(
                     "styles/special/" + name + "/" + name + "s.png",
-                    true, Core.IMAGE_EXTENSIONS);
+                    Core.IMAGE_EXTENSIONS);
             sourceImage = Core.loadLemmImage(res);
             steelMask = new boolean[sourceImage.getHeight()][sourceImage.getWidth()];
             for (int y = 0; y < steelMask.length; y++) {

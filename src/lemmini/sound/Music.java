@@ -89,7 +89,7 @@ public class Music {
     public static void load(final String fName) throws ResourceException, LemmException {
         close();
         playing = false;
-        Resource res = Core.findResource(fName, true, Core.MUSIC_EXTENSIONS);
+        Resource res = Core.findResource(fName, Core.MUSIC_EXTENSIONS);
         switch (FilenameUtils.getExtension(res.getFileName()).toLowerCase(Locale.ROOT)) {
             case "mid":
                 if (!midiAvailable) {

@@ -657,7 +657,7 @@ public class GameController {
             	music="";
             }
         	//get the "real" file, from the requested resource:
-        	Resource res = Core.findResource("music/" + music, true, Core.MUSIC_EXTENSIONS);
+        	Resource res = Core.findResource("music/" + music, Core.MUSIC_EXTENSIONS);
         	String ext = FilenameUtils.getExtension(res.getFileName()).toLowerCase(Locale.ROOT);
             //only show the error if it's not an .ogg file
         	// .ogg files not playing properly is the result of missing dependencies.

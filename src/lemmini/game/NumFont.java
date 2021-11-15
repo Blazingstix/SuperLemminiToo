@@ -48,14 +48,14 @@ public class NumFont {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        Resource res = Core.findResource("gfx/misc/numfont.png", true, Core.IMAGE_EXTENSIONS);
+        Resource res = Core.findResource("gfx/misc/numfont.png", Core.IMAGE_EXTENSIONS);
         NUM_IMG.clear();
         LemmImage sourceImg = Core.loadLemmImage(res);
         width = sourceImg.getWidth();
         height = sourceImg.getHeight() / 10;
         List<LemmImage> numImgTemp = ToolBox.getAnimation(sourceImg, 10);
         NUM_IMG.addAll(numImgTemp);
-        res = Core.findResource("gfx/misc/numfont2.png", true, Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/misc/numfont2.png", Core.IMAGE_EXTENSIONS);
         sourceImg = Core.loadLemmImage(res);
         numImgTemp = ToolBox.getAnimation(sourceImg, 5);
         NUM_IMG.addAll(numImgTemp);

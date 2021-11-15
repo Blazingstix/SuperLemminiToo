@@ -412,34 +412,50 @@ public class Core {
      * @throws ResourceException if file is not found
      */
     public static Resource findResource(String fname, boolean searchMods) throws ResourceException {
-        if (searchMods) {
-            // try to load the file from the mod paths
-            for (String mod : GameController.getModPaths()) {
-                String resString = mod + "/" + fname;
-                if (resourceTree.exists(resString)) {
-                    return new FileResource(fname, resString, resourceTree);
-                }
-                for (ZipFile zipFile : zipFiles) {
-                    ZipEntry entry = zipFile.getEntry(resString);
-                    if (entry != null && !entry.isDirectory()) {
-                        return new ZipEntryResource(fname, zipFile, entry);
-                    }
-                }
-            }
+        String originalExt = FilenameUtils.getExtension(fname);
+        return findResource(fname, searchMods, true, originalExt);
+    }
+    
+    /**
+     * Get Path to resource in resource path (searches mods and main file by default).
+     * @param fname file name (without resource path)
+     * @param extensions 
+     * @return resource object
+     * @throws ResourceException if file is not found
+     */
+    public static Resource findResource(String fname, String... extensions) throws ResourceException {
+        return findResource(fname, true, true, extensions);
+    }
+    
+    /**
+     * Get Path to resource in resource path (searches main file by default).
+     * @param fname file name (without resource path)
+     * @param searchMods are mods included in the search?
+     * @param extensions 
+     * @return resource object
+     * @throws ResourceException if file is not found
+     */
+    public static Resource findResource(String fname, boolean searchMods, String... extensions) throws ResourceException {
+        return findResource(fname, searchMods, true, extensions);
+    }
+
+    /**
+     * Get Path to resource in resource path.
+     * @param fname file name (without resource path)
+     * @param searchMods are mods included in the search?
+     * @param searchMain is the main folder included in the search?
+     * @param extensions 
+     * @return resource object
+     * @throws ResourceException if file is not found
+     */
+    public static Resource findResource(String fname, boolean searchMods, boolean searchMain, String... extensions) throws ResourceException {
+        Resource rslt = findResourceEx(fname, searchMods, searchMain, extensions);
+        if (rslt == null) {
+	        // file still not found, so throw a ResourceException
+	        throw new ResourceException(fname);
         }
-        // file not found in mod folders or mods not searched,
-        // so look for it in the main folders
-        if (resourceTree.exists(fname)) {
-            return new FileResource(fname, fname, resourceTree);
-        }
-        for (ZipFile zipFile : zipFiles) {
-            ZipEntry entry = zipFile.getEntry(fname);
-            if (entry != null && !entry.isDirectory()) {
-                return new ZipEntryResource(fname, zipFile, entry);
-            }
-        }
-        // file still not found, so throw a ResourceException
-        throw new ResourceException(fname);
+        
+        return rslt;
     }
     
     /**
@@ -450,9 +466,8 @@ public class Core {
      * @return resource object
      * @throws ResourceException if file is not found
      */
-    public static Resource findResource(String fname, boolean searchMods, String... extensions) throws ResourceException {
+    public static Resource findResourceEx(String fname, boolean searchMods, boolean searchMain, String... extensions) throws ResourceException {
         String fnameNoExt = FilenameUtils.removeExtension(fname);
-        String originalExt = FilenameUtils.getExtension(fname);
         if (searchMods) {
             // try to load the file from the mod paths with each extension
             for (String mod : GameController.getModPaths()) {
@@ -474,22 +489,24 @@ public class Core {
         }
         // file not found in mod folders or mods not searched,
         // so look for it in the main folders, again with each extension
-        for (String ext : extensions) {
-            String resString = fnameNoExt + "." + ext;
-            if (resourceTree.exists(resString)) {
-                return new FileResource(fname, resString, resourceTree);
-            }
-        }
-        for (ZipFile zipFile : zipFiles) {
-            for (String ext : extensions) {
-                ZipEntry entry = zipFile.getEntry(fnameNoExt + "." + ext);
-                if (entry != null && !entry.isDirectory()) {
-                    return new ZipEntryResource(fname, zipFile, entry);
-                }
-            }
+        if (searchMain) {
+	        for (String ext : extensions) {
+	            String resString = fnameNoExt + "." + ext;
+	            if (resourceTree.exists(resString)) {
+	                return new FileResource(fname, resString, resourceTree);
+	            }
+	        }
+	        for (ZipFile zipFile : zipFiles) {
+	            for (String ext : extensions) {
+	                ZipEntry entry = zipFile.getEntry(fnameNoExt + "." + ext);
+	                if (entry != null && !entry.isDirectory()) {
+	                    return new ZipEntryResource(fname, zipFile, entry);
+	                }
+	            }
+	        }
         }
         // file still not found, so throw a ResourceException
-        throw new ResourceException(fname);
+        return null;
     }
     
     public static List<String> searchForResources(String folder, boolean searchMods, String... extensions) {

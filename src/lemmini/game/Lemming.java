@@ -1648,12 +1648,12 @@ public class Lemming {
             if (type.frames > 0) {
                 res = Core.findResource(
                         "gfx/lemming/lemm_" + type.name().toLowerCase(Locale.ROOT) + ".png",
-                        true, Core.IMAGE_EXTENSIONS);
+                        Core.IMAGE_EXTENSIONS);
                 LemmImage sourceImg = Core.loadLemmImage(res);
                 if (bidirectional) {
                     res = Core.findResource(
                             "gfx/lemming/lemm_" + type.name().toLowerCase(Locale.ROOT) + "_left.png",
-                            true, Core.IMAGE_EXTENSIONS);
+                            Core.IMAGE_EXTENSIONS);
                     LemmImage sourceImgLeft = Core.loadLemmImage(res);
                     newLemResource = new LemmingResource(sourceImg, sourceImgLeft, type.frames);
                 } else {
@@ -1668,14 +1668,14 @@ public class Lemming {
                 // mask_Y: frames, directions, step
                 res = Core.findResource(
                         "gfx/lemming/mask_" + type.name().toLowerCase(Locale.ROOT) + ".png",
-                        true, Core.IMAGE_EXTENSIONS);
+                        Core.IMAGE_EXTENSIONS);
                 LemmImage sourceImg = Core.loadLemmImage(res);
                 List<Mask> masks = new ArrayList<>(2);
                 masks.add(new Mask(sourceImg, type.maskFrames));
                 if (bidirectional) {
                     res = Core.findResource(
                             "gfx/lemming/mask_" + type.name().toLowerCase(Locale.ROOT) + "_left.png",
-                            true, Core.IMAGE_EXTENSIONS);
+                            Core.IMAGE_EXTENSIONS);
                     LemmImage sourceImgLeft = Core.loadLemmImage(res);
                     masks.add(new Mask(sourceImgLeft, type.maskFrames));
                 }
@@ -2220,7 +2220,7 @@ class ExplodeFont {
      * @throws ResourceException
      */
     ExplodeFont() throws ResourceException {
-        Resource res = Core.findResource("gfx/lemming/countdown.png", true, Core.IMAGE_EXTENSIONS);
+        Resource res = Core.findResource("gfx/lemming/countdown.png", Core.IMAGE_EXTENSIONS);
         LemmImage sourceImg = Core.loadLemmImage(res);
         img = ToolBox.getAnimation(sourceImg, 5);
     }

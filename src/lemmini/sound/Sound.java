@@ -268,7 +268,7 @@ public class Sound {
             for (int i = 0; i < sampleNum; i++) {
                 res = Core.findResource(
                         "sound/" + sampleNames.get(i),
-                        true, Core.SOUND_EXTENSIONS);
+                        Core.SOUND_EXTENSIONS);
                 if (loaded) {
                     if (res.equals(resources[i])) {
                         continue;

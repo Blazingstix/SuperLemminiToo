@@ -89,7 +89,7 @@ public class LemmFont {
                 break;
             }
             
-            res = Core.findResource("gfx/font/" + fileName, true, Core.IMAGE_EXTENSIONS);
+            res = Core.findResource("gfx/font/" + fileName, Core.IMAGE_EXTENSIONS);
             
             String name = FilenameUtils.removeExtension(fileName);
             
