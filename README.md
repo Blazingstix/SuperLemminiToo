@@ -1,7 +1,7 @@
 # SuperLemminiToo
 My personal fork of SuperLemmini, which itself is a fork of Lemmini
 
-# SuperLemminiToo v1.20 2021-Oct-20
+# SuperLemminiToo v1.40 2021-Nov-15
 
 This is SuperLemminiToo: a fork of SuperLemmini, which is itself a fork of Lemmini.
 I made this because there were some minor features I wanted to see in SuperLemmini, which didn't appear to be in the original author's immediate timeline.
@@ -31,6 +31,18 @@ Removed clunky full text saying In, Out, Time and replaced with with slick icons
 And because of the space gained by using icons, I added a 4th icon for number of lemmings needed.
 Also, as an extra visual indicator, I made the "In" number Red until you've saved enough Lemmings to pass the level.
 
+Enhanced Icon Bar!
+
+The icon bar has been resized to give a less cramped look. Also the skill counters have been lowered ot be part of the icon buttons now, instead of hovering above them in the black space. The order of icons has changed too, to match the Lemmings for Windows 95 release (which was the last official release for PC, I believe). Now it's Minus, Plus, all 8 skills, then Pause, Fast-Forward, Nuke, Restart, ScrollLock. This pairs like-minded icons together (game speed icons: pause/fast-forward; level restart icons: nuke/restart; and then the scroll lock icon nearest to the map (also farthest away from the others, because it's only applicable for vertical levels... which are specialty levels, and don't even exist in any of the original official Lemmings levels.
+
+Animated Icons!
+
+The icons on the icon bar are now animated!  These are straight from the Lemmings for Windows 95 release (with minimal changes to more easily blend in with different themes)!  Never before seen on modern releases (probably... I dunno)!!  If you have a mod enabled (such as Xmas theme), then the engine will check for animated icons in that mod, then static icons in that mod. Failing to find any mod-specific icons, it will then use animated standard icons, and lastly for the few icons that are not animated (i.e. plus, minus, restart, and vertical scroll lock) it will fall back to the standard static icons.
+
+Icon Labels!
+
+A little bonus feature to go with the new Enhanced Icon Bar. You can toggle on or off text labels to go with all the icons.
+
 All levels unlocked. (Also a toggable option.)
 
 In SuperLemmini this was considered a "cheat" that was enabled with a secret level code.  The "cheat" code also enabled a bunch of special debug features, which I didn't want.  I figure the game's about having fun, so why shouldn't people be able to skip a level they're having difficulty with. Who's to tell them no?
@@ -52,6 +64,8 @@ Minor UI/Gameplay Tweaks.
 I want to stress that this program was truly written by Volker Oth (Lemmini) and Ryan Sakowski (SuperLemmini), over a combined total of more than twenty years. All I've done is hack a couple lines of code. None of this could be possible without the literally thousands of hours of work done by those two individuals, and their making the source code freely available. Thansk you both for letting me re-live some joy from my childhood in a new way, and for letting me share it with my kids.
 
 Also special thanks to WillLem from the LemmingsForums.net for providing the updated title graphic, and being all around supportive of this endeavour and SuperLemmini in particular.
+
+Special thanks as well to jkapp76 from the LemmingsForums.net for making title icons. I modified them slightly to incorporate them into Icon Labels toggle in SuperLemminiToo.
 
 # ==KNOWN ISSUES====
 
