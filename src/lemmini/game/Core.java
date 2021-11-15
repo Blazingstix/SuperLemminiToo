@@ -183,6 +183,7 @@ public class Core {
         GameController.setOption(GameController.SuperLemminiTooOption.VISUAL_SFX, programProps.getBoolean("visualSFX", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, programProps.getBoolean("enhancedStatus", true));
         GameController.setOption(GameController.SuperLemminiTooOption.SHOW_STATUS_TOTALS, programProps.getBoolean("showStatusTotals", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.SHOW_LEVEL_NAME, programProps.getBoolean("showLevelName", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ANIMATED_ICONS, programProps.getBoolean("animatedIcons", true));
@@ -389,6 +390,7 @@ public class Core {
         programProps.setBoolean("visualSFX", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.VISUAL_SFX));
         programProps.setBoolean("enhancedStatus", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS));
         programProps.setBoolean("showStatusTotals", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.SHOW_STATUS_TOTALS));
+        programProps.setBoolean("showLevelName", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.SHOW_LEVEL_NAME));
         programProps.setBoolean("enhancedIconBar", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR));
         programProps.setBoolean("iconLabels", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
         programProps.setBoolean("animatedIcons", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ANIMATED_ICONS));

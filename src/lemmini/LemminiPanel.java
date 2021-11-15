@@ -749,10 +749,10 @@ public class LemminiPanel extends JPanel implements Runnable {
                         GameController.drawIconsAndCounters(offGfx, iconBarX, iconBarY, countBarX, countBarY);
                         
                         //draw the icon bar filler?
-                        LemmImage filler = MiscGfx.getImage(MiscGfx.Index.ICONBAR_FILLER);
-                        
                         if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+                            LemmImage filler = MiscGfx.getImage(MiscGfx.Index.ICONBAR_FILLER);
                         	offGfx.drawImage(filler, menuOffsetX + SMALL_X - 18, getIconBarY());
+                        	filler = null;
                         }
                         
                         // draw minimap
@@ -991,7 +991,7 @@ public class LemminiPanel extends JPanel implements Runnable {
                         }
                         
                         // now we show the title of the level
-                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS)) {
+                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_STATUS) && GameController.isOptionEnabled(GameController.SuperLemminiTooOption.SHOW_LEVEL_NAME)) {
                             //Level level = GameController.getLevel();
                         	//level.getLevelName();
                             String rating = GameController.getCurLevelPack().getRatings().get(GameController.getCurRating());

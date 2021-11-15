@@ -109,6 +109,8 @@ public class GameController {
         ENHANCED_STATUS,
         /** flag: on enhanced status bar, show the totals in smaller print. */
         SHOW_STATUS_TOTALS,
+        /** flag: show the level title (and rating) in the level */
+        SHOW_LEVEL_NAME,
         /** flag: use new icon bar. Has better spacing, and supports animated icons. */
         ENHANCED_ICONBAR,
         /** flag: show text labels on icons */

@@ -228,21 +228,44 @@ public class Icons {
         	Resource res;
         	Sprite icon;
        	
+        	String iconName = iconOrder.get(i).toString().toLowerCase(Locale.ROOT);
+        	
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
 	        	//animated icons we need to load a little differently.
             	// 1) we try the animated icon for the mod *only*
             	// 2) if that's not found, we try the static icon for the mod
             	// 3) if that's not found, we try the standard animated icon 
             	// 4) if there's no standard animated icon, we load the standard static icon.
-	        	res = Core.findResource(
-	                    "gfx/iconbar/anim_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
-	                    true, Core.IMAGE_EXTENSIONS);
-	        	if (res == null) {
-		        	res = Core.findResource(
-		                    "gfx/icons/icon_" + iconOrder.get(i).toString().toLowerCase(Locale.ROOT) + ".png",
-		                    true, Core.IMAGE_EXTENSIONS);
-	        	}
 	        	
+            	// 1) check for animated mods
+            	res = Core.findResourceEx(
+	                    "gfx/iconbar/anim_" + iconName + ".png",
+	                    true, false, 
+	                    Core.IMAGE_EXTENSIONS);
+	        	// 2) check for static mods
+            	if (res == null) {
+		        	res = Core.findResourceEx(
+		                    "gfx/icons/icon_" + iconName + ".png",
+		                    true, false,
+		                    Core.IMAGE_EXTENSIONS);
+	        	}
+	        	// 3) check for animated standard
+            	if (res == null) {
+                	res = Core.findResourceEx(
+    	                    "gfx/iconbar/anim_" + iconName + ".png",
+    	                    false, true, 
+    	                    Core.IMAGE_EXTENSIONS);
+	        	}
+            	// 4) check for static standard
+            	if (res == null) {
+		        	res = Core.findResourceEx(
+		                    "gfx/icons/icon_" + iconName + ".png",
+		                    false, true,
+		                    Core.IMAGE_EXTENSIONS);
+	        	}
+            	// if we still can't find anything, then this should throw an error.
+            	if (res == null)
+            		res = Core.findResource("gfx/icons/icon_" + iconName + ".png", Core.IMAGE_EXTENSIONS);
 	            sourceImg = Core.loadLemmImage(res);
 	            int frames = sourceImg.getHeight() / 40;
 	            icon = new Sprite(sourceImg, frames, 1, false);
