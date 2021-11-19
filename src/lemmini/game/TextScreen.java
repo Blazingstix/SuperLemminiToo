@@ -346,7 +346,7 @@ public class TextScreen {
     public static void init() {
         synchronized (monitor) {
             rotImg = new LemmImage[ROT_ANIM_LENGTH];
-            rotImg[0] = MiscGfx.getImage(MiscGfx.Index.LEMMINI);
+            rotImg[0] = MiscGfx.getImage(MiscGfx.Index.LEMMINI).getScaledInstance(560,  154);
             for (int i = 1; i < rotImg.length; i++) {
                 if (i < ROT_ANIM_LENGTH - (ROT_ANIM_LENGTH / 2)) {
                     rotImg[i] = rotImg[0].getScaledInstance(rotImg[0].getWidth(),
@@ -373,12 +373,21 @@ public class TextScreen {
                     scrollerGfx.dispose();
                 }
             }
+            
+            LemmImage tickerTape = MiscGfx.getImage(MiscGfx.Index.TICKER_TAPE);
+            
             scrollerImg = ToolBox.createLemmImage(
-                    tempScrollerImg.getWidth(), tempScrollerImg.getHeight() * 2);
+                    (int)(tempScrollerImg.getWidth()*0.5) + (tickerTape.getWidth()*2), Math.max((int)(tempScrollerImg.getHeight()*0.5), tickerTape.getHeight())); //we'll drop the width by
             try {
                 scrollerGfx = scrollerImg.createGraphicsContext();
-                scrollerGfx.setBackground(new Color(0, 0, 0, 0));
-                scrollerGfx.drawImage(tempScrollerImg, 0, 0, scrollerImg.getWidth(), scrollerImg.getHeight());
+                scrollerGfx.setBackground(new Color(0, 0, 0, 0)); //set transparent background.
+                //draw the ticker-tape repeatedly onto the background:
+                int idx = 0;
+                do {
+                	scrollerGfx.drawImage(tickerTape, idx, 0);
+                	idx += tickerTape.getWidth();
+                } while(idx < scrollerImg.getWidth());
+                scrollerGfx.drawImage(tempScrollerImg, 0, 3, 0.5); //and draw the font and half-size.
             } finally {
                 if (scrollerGfx != null) {
                     scrollerGfx.dispose();

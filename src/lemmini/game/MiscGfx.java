@@ -66,7 +66,9 @@ public class MiscGfx {
         STATUS_NEEDED,
         /** status icon 4: time limit */
         STATUS_TIME,
-        ICONBAR_FILLER
+        ICONBAR_FILLER,
+        /** the scrolling ticker-tape shown at the start of the game. */
+        TICKER_TAPE
     }
     
 
@@ -142,6 +144,10 @@ public class MiscGfx {
         images.addAll(anim);
         /* 20: ICONBAR_FILLER */
         res = Core.findResource("gfx/misc/iconbar_filler.png", Core.IMAGE_EXTENSIONS);
+        img = Core.loadLemmImage(res);
+        images.add(img);
+        /* 21: TICKER_TAPE */
+        res = Core.findResource("gfx/misc/ticker-tape.png", Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
 

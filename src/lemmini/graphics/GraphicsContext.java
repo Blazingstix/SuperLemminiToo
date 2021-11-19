@@ -74,13 +74,14 @@ public class GraphicsContext {
         graphics.drawImage(image.getImage(), x, y, null);
     }
     
+    
     public void drawImage(LemmImage image, int x, int y, double scale) {
     	BufferedImage origImage = image.getImage();
     	BufferedImage newResized = resize(origImage, (int)(image.getWidth() * scale), (int)(image.getHeight() * scale));
     	graphics.drawImage(newResized, x, y, null);
     }
     
-    private static BufferedImage resize(BufferedImage image, int width, int height) {
+    public static BufferedImage resize(BufferedImage image, int width, int height) {
     	BufferedImage newResizedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
     	Graphics2D g = newResizedImage.createGraphics();
 

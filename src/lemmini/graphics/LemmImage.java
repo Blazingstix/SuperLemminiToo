@@ -3,7 +3,10 @@ package lemmini.graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map;
+
 import lemmini.tools.ToolBox;
 
 
@@ -59,6 +62,16 @@ public class LemmImage {
         }
     }
     
+    public LemmImage getScaledInstance(int targetWidth, int targetHeight) {
+        Map<RenderingHints.Key,Object> hints = new HashMap<>();
+        hints.put(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        hints.put(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        hints.put(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        //g.addRenderingHints(hints);
+        
+    	return getScaledInstance(targetWidth, targetHeight, RenderingHints.VALUE_INTERPOLATION_BILINEAR, false);
+    }
+
     public LemmImage getScaledInstance(int targetWidth, int targetHeight,
             Object interpolationHint, boolean multipass) {
         int transparency = image.getTransparency();
