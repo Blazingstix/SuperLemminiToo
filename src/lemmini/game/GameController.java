@@ -318,7 +318,8 @@ public class GameController {
      * @throws ResourceException
      */
     public static void init() throws ResourceException {
-        width = Level.DEFAULT_WIDTH;
+        System.out.println("initializing GameController...");
+    	width = Level.DEFAULT_WIDTH;
         height = Level.DEFAULT_HEIGHT;
         
         fgImage = ToolBox.createLemmImage(width, height);
@@ -408,6 +409,8 @@ public class GameController {
         stopReplayMode = false;
         
         wasCheated = isCheat();
+
+        System.out.println("GameController initialization complete.");
     }
     
     /**

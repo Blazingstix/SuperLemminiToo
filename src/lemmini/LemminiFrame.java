@@ -73,10 +73,10 @@ public class LemminiFrame extends JFrame {
      * Creates new form LemminiFrame
      */
     public LemminiFrame() {
-        try {
+    	try {
         	//found at: https://stackoverflow.com/questions/2837263/how-do-i-get-the-directory-that-the-currently-executing-jar-file-is-in
         	String currentFolderStr = URLDecoder.decode(getClass().getProtectionDomain().getCodeSource().getLocation().getFile(), "UTF-8");
-        	
+        	System.out.println("Current directory: " + currentFolderStr);
         	boolean successful = Core.init(createPatches, currentFolderStr); // initialize Core object
             if (!successful) {
                 System.exit(0);
@@ -94,8 +94,40 @@ public class LemminiFrame extends JFrame {
         RepeatingReleasedEventsFixer.install();
     }
     
+    private static void consoleInit() {
+        //logo curtesy of: https://www.coolgenerator.com/ascii-text-generator
+    	String logo = " ________  ___  ___  ________  _______   ________                                                                 \r\n"
+        		+ "|\\   ____\\|\\  \\|\\  \\|\\   __  \\|\\  ___ \\ |\\   __  \\                                                                \r\n"
+        		+ "\\ \\  \\___|\\ \\  \\\\\\  \\ \\  \\|\\  \\ \\   __/|\\ \\  \\|\\  \\                                                               \r\n"
+        		+ " \\ \\_____  \\ \\  \\\\\\  \\ \\   ____\\ \\  \\_|/_\\ \\   _  _\\                                                              \r\n"
+        		+ "  \\|____|\\  \\ \\  \\\\\\  \\ \\  \\___|\\ \\  \\_|\\ \\ \\  \\\\  \\|                                                             \r\n"
+        		+ "    ____\\_\\  \\ \\_______\\ \\__\\    \\ \\_______\\ \\__\\\\ _\\                                                             \r\n"
+        		+ "   |\\_________\\|_______|\\|__|     \\|_______|\\|__|\\|__|                                                            \r\n"
+        		+ "   \\|_________|                                                                                                   \r\n"
+        		+ " ___       _______   _____ ______   _____ ______   ___  ________   ___          _________  ________  ________     \r\n"
+        		+ "|\\  \\     |\\  ___ \\ |\\   _ \\  _   \\|\\   _ \\  _   \\|\\  \\|\\   ___  \\|\\  \\        |\\___   ___\\\\   __  \\|\\   __  \\    \r\n"
+        		+ "\\ \\  \\    \\ \\   __/|\\ \\  \\\\\\__\\ \\  \\ \\  \\\\\\__\\ \\  \\ \\  \\ \\  \\\\ \\  \\ \\  \\       \\|___ \\  \\_\\ \\  \\|\\  \\ \\  \\|\\  \\   \r\n"
+        		+ " \\ \\  \\    \\ \\  \\_|/_\\ \\  \\\\|__| \\  \\ \\  \\\\|__| \\  \\ \\  \\ \\  \\\\ \\  \\ \\  \\           \\ \\  \\ \\ \\  \\\\\\  \\ \\  \\\\\\  \\  \r\n"
+        		+ "  \\ \\  \\____\\ \\  \\_|\\ \\ \\  \\    \\ \\  \\ \\  \\    \\ \\  \\ \\  \\ \\  \\\\ \\  \\ \\  \\           \\ \\  \\ \\ \\  \\\\\\  \\ \\  \\\\\\  \\ \r\n"
+        		+ "   \\ \\_______\\ \\_______\\ \\__\\    \\ \\__\\ \\__\\    \\ \\__\\ \\__\\ \\__\\\\ \\__\\ \\__\\           \\ \\__\\ \\ \\_______\\ \\_______\\\r\n"
+        		+ "    \\|_______|\\|_______|\\|__|     \\|__|\\|__|     \\|__|\\|__|\\|__| \\|__|\\|__|            \\|__|  \\|_______|\\|_______|";
+        System.out.println(logo);
+        System.out.println("===================================================================================================================");
+        System.out.println("      Version " + REVISION + "     (Resource Revision: " + Core.RES_REVISION + ")                 Date: " + REV_DATE);    
+        System.out.println("===================================================================================================================");
+        System.out.println("");
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy MMMM d  HH:mm:ss");  
+        java.time.LocalDateTime now = java.time.LocalDateTime.now();  
+        System.out.println(dtf.format(now) + "\nloading SuperLemminiToo..." );
+        System.out.println("    Java version: " + System.getProperty("java.version").toString());
+        System.out.println("    OS Name: " + System.getProperty("os.name"));
+        System.out.println("    OS Version: " + System.getProperty("os.version"));
+        System.out.println("");
+         };
+    
     void init() {
-        try {
+        System.out.println("\ninitializing LemminiFrame...");
+    	try {
             // initialize the game controller and main panel
             GameController.init();
             lemminiPanelMain.init();
@@ -136,6 +168,7 @@ public class LemminiFrame extends JFrame {
             ToolBox.showException(ex);
             System.exit(1);
         }
+        System.out.println("LemminiFrame initialization complete.");
     }
     
     /**
@@ -779,23 +812,54 @@ public class LemminiFrame extends JFrame {
      * @throws IOException
      */
     public static void main(String[] args) throws IOException {
-        Path level = null;
+    	//write opening console log
+    	consoleInit();
+
+        /*
+         * Check JVM version
+         */
+        if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8)) {
+            System.out.println("JVM >= 1.8 [FAIL]");
+        	JOptionPane.showMessageDialog(null, "SuperLemminiToo requires JVM 1.8 or later.", "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        } else {
+            System.out.println("JVM >= 1.8 [PASS]");
+        }
+        
+        // check free memory
+        long free = Runtime.getRuntime().maxMemory();
+        long memReq = 96 * 1024 * 1024;
+        if (free < memReq) {
+        	System.out.println("memory check: " + (int)(free / (1024*1024)) + "MB >= " + (int)(memReq / (1024*1024)) + "MB [FAIL]");
+        	JOptionPane.showMessageDialog(null, "You need at least 96MB of heap.", "Error", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        } else {
+        	System.out.println("memory check: " + (int)(free / (1024*1024)) + "MB >= " + (int)(memReq / (1024*1024)) + "MB [PASS]");
+        }
+    	
+    	Path level = null;
         for (int i = 0; i < args.length; i++) {
             switch (args[i].toLowerCase(Locale.ROOT)) {
                 case "-l":
-                    i++;
+                	i++;
                     if (i < args.length) {
                         level = Paths.get(args[i]);
+                        System.out.println("argument detected: -L, but no level filename supplied.");
+                    } else {
+                        System.out.println("argument detected: -L " + level.toString());
                     }
                     break;
                 case "-p":
                     createPatches = true;
+                    System.out.println("argument detected: -P <not supported in SuperLemminiToo>");
                     break;
                 default:
                     break;
             }
         }
         
+
+        System.out.println("applying system \"Look and Feel\" and system specific settings...");
         /*
          * Set "Look and Feel" to system default
          */
@@ -809,21 +873,6 @@ public class LemminiFrame extends JFrame {
          * Apple menu bar for MacOS
          */
         System.setProperty("apple.laf.useScreenMenuBar", "true");
-        
-        /*
-         * Check JVM version
-         */
-        if (!SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_1_8)) {
-            JOptionPane.showMessageDialog(null, "SuperLemminiToo requires JVM 1.8 or later.", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
-        
-        // check free memory
-        long free = Runtime.getRuntime().maxMemory();
-        if (free < 96 * 1024 * 1024) {
-            JOptionPane.showMessageDialog(null, "You need at least 96MB of heap.", "Error", JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
         
         // workaround to adjust time base to 1ms under Windows
         // see http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6435126
@@ -844,10 +893,12 @@ public class LemminiFrame extends JFrame {
         };
         
         /* Create and display the form */
+        System.out.println("\ncreating LemminiFrame...");
         thisFrame = new LemminiFrame();
         thisFrame.init();
         
         if (level != null) {
+        	System.out.println("external level loaded. starting up inside level...");
             int[] levelPosition = GameController.addExternalLevel(level, null, true);
             GameController.requestChangeLevel(levelPosition[0], levelPosition[1], levelPosition[2], false);
         }

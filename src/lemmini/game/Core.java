@@ -125,25 +125,30 @@ public class Core {
      * @throws IOException
      */
     public static boolean init(final boolean createPatches, String workingFolder) throws LemmException, IOException  {
+    	System.out.println("\ninitializing Core...");
     	String tmp;// = java.net.URLDecoder.decode(workingFolder, "UTF-8");
     	tmp = new java.io.File(workingFolder).getPath();
     	gamePath = Paths.get(tmp);
+    	System.out.println("    gamePath detected as: "+ gamePath.toString());	
     	//if it's within the .jar file, we want the folder one up from that. 
     	if (gamePath.toString().endsWith(".jar")) {
             gameDataPath = Paths.get(gamePath.getParent().toString(), "data");
     	} else {
             gameDataPath = Paths.get(gamePath.toString(), "data");
     	}
-    		
+    	System.out.println("    gameDataPath detected as: "+ gameDataPath.toString());	
+    	
         gameDataTree = new CaseInsensitiveFileTree(gameDataPath); 
 
         // get ini path
         programPropsFilePath = Paths.get(SystemUtils.USER_HOME);
         programPropsFilePath = programPropsFilePath.resolve(PROGRAM_PROPS_FILE_NAME);
+        System.out.println("    game config: " + programPropsFilePath.toString());
         // read main ini file
         programProps = new Props();
         
         if (!programProps.load(programPropsFilePath)) { 
+        	System.out.println("    unable to read config file... prompting disclaimer agreement ...");
         	// might exist or not - if not, it's created
         	// show the Legal Disclaimer. And force the user to choose "I Agree."
         	// NOTE: the Legal Discalimer is loaded from "disclaimer.htm"
@@ -152,19 +157,27 @@ public class Core {
             ld.waitUntilClosed();
             if (!ld.isOK()) {
             	// user does not agree, so we exit.
-                return false;
+                System.out.println("    user declined agreement. quitting...");
+            	return false;
+            } else {
+                System.out.println("    user agreed");
             }
+        } else {
+        	System.out.println("    config file read successfully");
         }
         
-        bilinear = programProps.getBoolean("bilinear", false);
         String resourcePathStr = programProps.get("resourcePath", Paths.get(SystemUtils.USER_HOME, ".superlemminitoo").toString());
         //resourcePath is the source of your game resources
         resourcePath = Paths.get(resourcePathStr);
+        System.out.println("      resourcePath: " + resourcePath.toString());
         resourceTree = new CaseInsensitiveFileTree(resourcePath);
         
         //SourcePath is the source of your original WinLemm installation
         //Path sourcePath = Paths.get(programProps.get("sourcePath", StringUtils.EMPTY));
         String rev = programProps.get("revision", "zip");
+        //TODO: remove dependency on this setting... the revision being internal to the root.lzp file should be non-negotiable.
+        System.out.println("      revision: " + rev);
+        bilinear = programProps.getBoolean("bilinear", false);
         GameController.setOption(GameController.Option.MUSIC_ON, programProps.getBoolean("music", true));
         GameController.setOption(GameController.Option.SOUND_ON, programProps.getBoolean("sound", true));
         GameController.setMusicGain(programProps.getDouble("musicGain", 1.0));
@@ -189,12 +202,16 @@ public class Core {
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ANIMATED_ICONS, programProps.getBoolean("animatedIcons", true));
-
+        System.out.println("      all settings read from config");
+        
         // check for the existence of root.lzp.
         // if it's not there, then we must exit.
+        System.out.println("    searching for " + ROOT_ZIP_NAME + " in " + gameDataPath.toString());
         List<Path> tmpDataFile = gameDataTree.getAllPaths(ROOT_ZIP_NAME);
+        System.out.println("      " + tmpDataFile.size() + " found");
         if(tmpDataFile.isEmpty() ) {
         	Path rootPath = Paths.get(gameDataPath.toString(), ROOT_ZIP_NAME);
+        	System.out.println("root.lzp not found. quitting...");
         	throw new LemmException("Could not find main game data file.\nPlease enusure this file exists and is accessible by this user:\n\n" + rootPath.toString());
         }
 
@@ -208,15 +225,57 @@ public class Core {
         */
         // if rev is "zip" then the actual revision in inside root.lzp->revision.ini
         if (rev.equalsIgnoreCase("zip")) {
+        	System.out.println("    detecting " + ROOT_ZIP_NAME + " revision...");
         	rev = getRevisionFromRootLzp();
+        } else {
+        	System.out.println("    using revision in " + PROGRAM_PROPS_FILE_NAME + "...");
         }
+    	String revStr="      revision: " + rev;
+    	if (rev.equalsIgnoreCase(RES_REVISION)) {
+    		revStr += " [GOOD]";
+    	} else {
+    		revStr += " [BAD -- should be " + RES_REVISION + "]";
+    	}
+    	System.out.println(revStr);
         
       
-        //TODO: never try to extract resources... that should be moved to it's own program.
+        //NOTE: we'll never try to extract resources... that should be moved to it's own program.
         //the goal of this program should be to have resources already included in the distributable.
         //maybe WilLem's hand-crafted remastered level pack for orig and ohno
-        if (resourcePathStr.isEmpty() || !rev.equalsIgnoreCase(RES_REVISION) || createPatches) {
+        if (resourcePathStr.isEmpty()) {
+        	if (resourcePathStr.isEmpty()) {
+        		System.out.println("    resourcePath is invalid...");
+        	}
+        	System.out.println("    quitting...");
+        	throw new LemmException(String.format("resourcePath Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), (Object[])null));
+        }
+
+        //NOTE: we'll never try to extract resources... that should be moved to it's own program.
+        //the goal of this program should be to have resources already included in the distributable.
+        //maybe WilLem's hand-crafted remastered level pack for orig and ohno
+        if (!rev.equalsIgnoreCase(RES_REVISION)) {
+        	if (!rev.equalsIgnoreCase(RES_REVISION)) {
+        		System.out.println("    " + ROOT_ZIP_NAME + " revision does not match required resource revision (" + RES_REVISION +")");
+        	}
+        	System.out.println("    quitting...");
+
         	throw new LemmException(String.format("Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), (Object[])null));
+        }
+
+        //NOTE: we'll never try to extract resources... that should be moved to it's own program.
+        //the goal of this program should be to have resources already included in the distributable.
+        //maybe WilLem's hand-crafted remastered level pack for orig and ohno
+        if (createPatches) {
+        	if (createPatches) {
+        		System.out.println("    forced resource creating was selected... unsupported...");
+        	}
+        	System.out.println("    quitting...");
+
+        	throw new LemmException(String.format("Game resources not found.\n Please place a valid copy of root.lzp into " + gameDataPath.toString(), (Object[])null));
+        }
+
+        
+        //if(extractResource) {
         	// extract resources
             /*
         	try {
@@ -246,23 +305,28 @@ public class Core {
                 programProps.save(programPropsFilePath);
             }
             */
-        }
-
+        //}
+        
+        System.out.println("    populating resourceSet from patch.ini...");
         populateResourceSet();
         
         // create temp folder
+        System.out.println("    creating temp folder: " + Paths.get(resourceTree.getRoot().toString(), TEMP_PATH).toString());
         resourceTree.createDirectories(TEMP_PATH);
         
         // create folder for external level cache
+        System.out.println("    creating external level cache folder: " + Paths.get(resourceTree.getRoot().toString(), EXTERNAL_LEVEL_CACHE_PATH).toString());
         resourceTree.createDirectories(EXTERNAL_LEVEL_CACHE_PATH);
         
-        
+        System.out.println("    loading lzp add-on packs...");
         loadZipFiles();
        
         System.gc(); // force garbage collection here before the game starts
         
+        System.out.println("    loading player settings...");
         loadPlayerSettings();
         
+        System.out.println("Core initialization complete.");
         return true;
     }
     
@@ -579,7 +643,7 @@ public class Core {
             JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
             // invalidate resources
             //programProps.set("revision", "zip-invalid"); //NOTE: we don't want to do that now that we're bundling the root.lzp with the executable.
-            programProps.save(programPropsFilePath);
+            //programProps.save(programPropsFilePath);
         } else {
             String out = String.format("The resource %s is missing.%n", rsrc);
             JOptionPane.showMessageDialog(null, out, "Error", JOptionPane.ERROR_MESSAGE);
