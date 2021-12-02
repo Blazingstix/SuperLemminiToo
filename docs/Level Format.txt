@@ -1,0 +1,201 @@
+The first line of a level file must begin with "# LVL" (without quotes). The line may have additional text as long as it begins with those characters.
+
+
+mainLevel: (string) If set, then all objects, terrain, steel, parameters marked in this documentation with "ignored if mainLevel is set", and all undefined parameters will be loaded from the level file specified here.
+
+releaseRate: (integer) The initial and lowest allowed release rate. Valid values range from -99 to 106. (Default: 0)
+
+maxReleaseRate: (integer) The highest allowed release rate. If equal to or less than the value of releaseRate, then the release rate will be locked to that value. (Default: 99)
+
+lockReleaseRate: (boolean) If true, the release rate cannot be changed. (Default: false)
+
+numLemmings: (integer) The number of lemmings that will be released in the level. (Default: 1)
+
+numToRescue: (integer) The number of lemmings that the player must save in order to win the level. (This is not a percentage!) (Default: 0)
+
+(The following two parameters are loaded from the level specified in mainLevel only if neither one of these is specified in this level.)
+
+timeLimit: (integer) The number of minutes the player has to complete the level. Has no effect if timeLimitSeconds is also set. If this is set to Infinity, or if neither this nor timeLimitSeconds is set to a value that is greater than zero, then the level has no time limit.
+
+timeLimitSeconds: (integer) The number of seconds the player has to complete the level. If both timeLimit and timeLimitSeconds are set, then only timeLimitSeconds is used; the two values do not add together. If this is set to Infinity, or if neither this nor timeLimit is set to a value that is greater than zero, then the level has no time limit.
+
+numClimbers/numFloaters/numBombers/numBlockers/numBuilders/numBashers/numMiners/numDiggers: (integer) Each of these defines how many of the respective skill the player is given. If set to Infinity, then the player will have an infinite number of that skill. (Default: 0)
+
+entranceOrder: (integer list) A comma-separated list that specifies the order in which the lemmings are released from the entrances. The first non-fake entrance in the object section, regardless of its actual position there, is 0, the second is 1, the third is 2, and so on. Entrances in this list that aren't in the object section are ignored. By default, the order is 0, 1, 2, ..., (n - 1) (where n is the number of entrances) unless there are exactly three entrances, in which case the default order is 0, 1, 2, 1.
+
+(The following two parameters are loaded from the level specified in mainLevel only if neither one of these is specified in this level.)
+
+xPosCenter: (integer) The starting X position of the center of the screen. If this value would cause the blank areas beyond the level edges to be displayed (and the window width is not wider than the level), then the actual starting position is adjusted so that such areas are not displayed. (Default: 0)
+
+xPos: (integer) (Deprecated--please use xPosCenter instead.) In SuperLemmini, this parameter is equivalent to xPosCenter minus 400. For example, setting xPos to 1406 is the same as setting xPosCenter to 1806. Has no effect if xPosCenter is also defined.
+
+yPosCenter: (integer) The starting Y position of the center of the screen. If this value would cause the blank areas beyond the level edges to be displayed (and the height of the level portion of the window is not taller than the level), then the actual starting position is adjusted so that such areas are not displayed. (Default: 0)
+
+style: (string) (ignored if mainLevel is set) The name of the main style used in this level. This must be set even if specialStyle is defined. The names of the default styles are dirt, fire, marble, pillar, crystal, brick, rock, snow, bubble, and xmas.
+
+specialStyle: (string) (ignored if mainLevel is set) The name of the special style used in this level. When set, a single (usually large) terrain piece is added to the level, and various colors (such as the background and brick colors) may be changed. Objects and terrain pieces from the level's normal style may be used as well. The names of the default special styles are awesome, menace, beastii, beasti, covox, prima, and apple.
+
+specialStylePositionX: (integer) (ignored if mainLevel is set) The X position of the top-left corner of the special graphic. This overrides the positionX parameter in the special style's INI file and has no effect if no special style is set.
+
+specialStylePositionY: (integer) (ignored if mainLevel is set) The Y position of the top-left corner of the special graphic. This overrides the positionY parameter in the special style's INI file and has no effect if no special style is set.
+
+music: (string) The music file to be used in this level. Overrides the music file that's specified in levelpack.ini.
+
+superlemming: (boolean) If true, then gameplay will run significantly faster than normal. This includes the game timer unless forceNormalTimerSpeed is set to true. (Default: false)
+
+forceNormalTimerSpeed: (boolean) If true, then the game timer will not run faster when superlemming mode is enabled. This does not affect bomber timers. (Default: false)
+
+classicSteel: (boolean) If true, then steel will work as it did in the original games. (Default: false)
+
+autosteelMode: (integer) (ignored if mainLevel is set) Sets the autosteel mode. Valid values and their effects are as follows:
+--0: Disables autosteel. This is the default value.
+--1: Terrain pieces listed in the current style's steelTiles parameter act as steel unless erased.
+--2: Same as 1, except that parts of steel pieces that are obscured by non-steel pieces do not act as steel.
+
+maxFallDistance: (integer) The maximum distance in pixels that a non-floater can fall without splatting. This overrides maxFallDistance in levelpack.ini. (Default: 126)
+
+width: (integer) (ignored if mainLevel is set) The width of the level in pixels. (Default: 3200)
+
+height: (integer) (ignored if mainLevel is set) The height of the level in pixels. (Default: 320)
+
+topBoundary: (integer) (ignored if mainLevel is set) The highest that a lemming is allowed to be, expressed as a number of pixels below the top of the level. Walkers will turn around if they encounter terrain that goes higher than this, and builders will stop building and walk on (without turning around) if they reach this height. (Default: 8)
+
+bottomBoundary: (integer) (ignored if mainLevel is set) The lowest that a lemming is allowed to be, expressed as a number of pixels below the bottom of the level. Lemmings that reach this boundary will die. (Default: 20)
+
+leftBoundary: (integer) (ignored if mainLevel is set) The farthest left that a lemming is allowed to be, expressed as a number of pixels right of the left edge of the level. Left-facing lemmings that reach this boundary will stop whatever skill they are using turn around. (Default: 0)
+
+rightBoundary: (integer) (ignored if mainLevel is set) The farthest right that a lemming is allowed to be, expressed as a number of pixels right of the right edge of the level. Right-facing lemmings that reach this boundary will stop whatever skill they are using turn around. (Note that this usually needs to be negative!) (Default: -16)
+
+
+Objects (section ignored if mainLevel is set):
+
+This section contains the entries for the objects. The definition of each object is as follows:
+
+object_n = ID, X position, Y position, paint mode, flags, object-specific modifier, style
+
+--n: The index number of this object entry in this level. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--ID: (integer) The ID of this object in the level's main style. If a style is specified for this object, then the object from that style is used instead. If this value is negative, then this object entry is ignored. Otherwise, the value must match a valid object in the style. In the default styles, 0 is an exit and 1 is an entrance.
+
+--X position: (integer) The X position of the top-left pixel of this object, expressed as a number of pixels right of the left edge of the level. Negative values are permitted.
+
+--Y position: (integer) The Y position of the top-left pixel of this object, expressed as a number of pixels below the top of the level. Negative values are permitted.
+
+--paint mode: (integer) A bit field consisting of mutually exclusive drawing flags. Only one drawing flag should be set. If multiple flags are set, then precedence is as follows, in order from highest to lowest: 2, 8, 4. If no flags are set, then the full object is drawn in front of terrain. Defined flags are as follows:
+----2: Don't draw the object. The object is still active unless marked as fake in [flags].
+----4: Draw behind terrain.
+----8: Draw only where visible terrain exists (this includes builder steps).
+
+--flags: (integer) A bit field consisting of additional options, some of which are drawing options that are not mutually exclusive with those in the fourth value. Defined flags are as follows:
+----1: Draw the object upside down. This affects only the appearance of the object.
+----2: Makes the object fake. For most object types, this disables the trigger area. For entrances, this prevents the object from releasing lemmings.
+----4: Applies the object mask upside down. If the object's type is triggered by a lemming's feet (currently anything other than one-way arrows and steel), then the mask is also moved down by 20 pixels. Has no effect on entrances.
+----8: Flips the object and its mask horizontally.
+----16: Rotates the object and its mask 90 degrees clockwise. If combined with 2, 4, or 8, rotation occurs before flipping.
+
+--object-specific modifier: (integer) An optional value whose effect depends on the object type. For now, this is defined only for entrances, where setting this to 1 makes the entrance release left-facing lemmings. If a style is specified for this object, then this value must also be specified.
+
+--style: (string) An optional value that specifies which style to load this object from. If not specified, the level's main style is used instead.
+
+In this example:
+
+object_4 = 7, 1904, 216, 4, 8, 0, fire
+
+...this object entry's index in this level is 4, and the object is placed at coordinates (1904, 216), is drawn behind terrain, is flipped horizontally, has no object-specific modifier, and uses object 7 from the fire style (the flame pit).
+
+
+Terrain (section ignored if mainLevel is set):
+
+This section contains the entries for the terrain pieces. The definition of each terrain entry is as follows:
+
+terrain_n = ID, X position, Y position, modifier, style
+
+--n: The index number of this terrain entry in this level. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--ID: (integer) The ID of the terrain piece in the level's main style. If a style is specified for this terrain piece, then the terrain piece from that style is used instead. If this value is negative, then this terrain entry is ignored. Otherwise, the value must match a valid terrain piece in the style.
+
+--X position: (integer) The X position of the top-left pixel of the terrain piece, expressed as a number of pixels right of the left edge of the level. Negative values are permitted.
+
+--Y position: (integer) The Y position of the top-left pixel of the terrain piece, expressed as a number of pixels below the top of the level. Negative values are permitted.
+
+--modifier: (integer) A bit field consisting of drawing flags. Combining is allowed. Defined flags are as follows:
+----1: Makes the terrain piece invisible. If 2 is also set, then the piece will erase other terrain without appearing to do so.
+----2: Causes the terrain piece to erase other terrain that it would otherwise cover. The piece itself is not drawn. Has no effect if 8 is set.
+----4: Draws the terrain piece upside-down.
+----8: Draws the terrain piece behind existing terrain.
+----16: Makes the terrain piece fake; the piece will be drawn, but lemmings will be able to walk through it. If 2 is also set, then the piece will appear to erase terrain without actually doing so.
+----32: Flips the terrain piece horizontally.
+----64: Prevents one-way arrows and steel objects that are rendered only on terrain from being drawn over any part of this terrain piece that is not obscured by other terrain pieces. Has no effect on background terrain pieces.
+----128: Rotates this terrain piece 90 degrees clockwise. If combined with 4 or 32, rotation occurs before flipping.
+
+--style: (string) An optional value that specifies which style to load this terrain piece from. If not specified, the level's main style is used instead.
+
+In this example:
+
+terrain_9 = 12, 708, 302, 2, brick
+
+...this terrain entry's index in this level is 9, and the terrain piece is placed at coordinates (708, 302), erases other terrain, and uses terrain piece 12 from the brick style.
+
+
+Steel (section ignored if mainLevel is set):
+
+This section contains the entries for steel. The definition of each steel entry is as follows:
+
+steel_n = X position, Y position, width, height, flags
+
+--n: The index number of this steel entry in this level. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--X position: (integer) The X position of the top-left pixel of the steel area, expressed as a number of pixels right of the left edge of the level. Negative values are permitted.
+
+--Y position: (integer) The Y position of the top-left pixel of the steel area, expressed as a number of pixels below the top of the level. Negative values are permitted.
+
+--width: (integer) The width of the steel area in pixels. Must be zero or greater.
+
+--height: (integer) The height of the steel area in pixels. Must be zero or greater.
+
+--flags: (integer) An optional bit field consisting of flags. Currently, the only flag that's supported is 1, which makes this steel area remove steel instead of adding it. Only autosteel and lower-index steel entries are affected.
+
+In this example:
+
+steel_3 = 972, 206, 48, 32, 0
+
+...this steel entry's index in this level is 3, and the steel area is placed at coordinates (972, 206), is 48x32 pixels in size, and adds steel rather than removing it.
+
+
+Background (section ignored if mainLevel is set):
+
+Throughout this section, the variable m is the background layer number, and the variable n is the index number of the object or terrain piece. Layer numbers must start at 0, must not be zero-padded, and must be contiguous.
+
+bg_m_width: (integer) The width of the background layer. This is needed even if the layer is not tiled. Must be greater than 0.
+
+bg_m_height: (integer) The height of the background layer. This is needed even if the layer is not tiled. Must be greater than 0.
+
+bg_m_tiled: (boolean) If true, then the background layer is tiled. Otherwise, only one instance of it is drawn.
+
+bg_m_tint: (integer) The color to apply as a tint, preferably as a hexadecimal number in the form of 0xAARRGGBB, where AA is the alpha channel (how much of the color to apply), RR is the red channel, GG is the green channel, and BB is the blue channel. You absolutely must specify an alpha greater than 00 for this to have any effect!
+
+bg_m_offsetX: (integer) The X position of the top-left corner of the background layer when the screen is scrolled completely to the left.
+
+bg_m_offsetY: (integer) The Y position of the top-left corner of the background layer when the screen is scrolled completely to the top.
+
+bg_m_scrollSpeedX: (floating point) The horizontal scrolling speed of the background layer in relation to the main level. A value of 0.0 means that the layer does not scroll horizontally at all. A value of 1.0 means that the layer scrolls at the same speed as the main level. Values between 0.0 and 1.0 cause the layer to scroll more slowly than the level. Values greater than 1.0 cause the layer to scroll faster than the level. Negative values cause the layer to scroll in the opposite direction.
+
+bg_m_scrollSpeedY: (floating point) The vertical scrolling speed of the background layer in relation to the main level. A value of 0.0 means that the layer does not scroll vertically at all. A value of 1.0 means that the layer scrolls at the same speed as the main level. Values between 0.0 and 1.0 cause the layer to scroll more slowly than the level. Values greater than 1.0 cause the layer to scroll faster than the level. Negative values cause the layer to scroll in the opposite direction.
+
+bg_m_scale: (floating point) How much to scale the background layer. A value of 1.0 applies no scaling, smaller values shrink the layer, and larger values enlarge the layer.
+
+bg_m_object_n: The position of the object on the background tile. The format is exactly the same as what's described in the Objects section.
+
+bg_m_terrain_n: The position of the terrain piece on the background tile. The format is exactly the same as what's described in the Terrain section.
+
+
+name: (string) The name of the level.
+
+author: (string) The name of the level's author.
+
+
+Hints (ignored if this level file is being used as the value of a "mainLevel" parameter):
+
+It's possible to add hints to levels. Hints become available once a level has been failed three times, with the first hint becoming available after three failures, the second after four failures, the third after five failures, and so on. Hints do not stay unlocked if the level is changed or SuperLemmini closes.
+
+To add hints, add a hint_n parameter for each hint, replacing n with the hint's index, starting at 0. Then, add the hints as the values of those parameters.

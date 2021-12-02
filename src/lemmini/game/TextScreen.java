@@ -376,18 +376,31 @@ public class TextScreen {
             
             LemmImage tickerTape = MiscGfx.getImage(MiscGfx.Index.TICKER_TAPE);
             
+            double scaleHeight = 2;
+            double scaleWidth = 1;
+            
+            if(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.CLASSIC_TICKER)) {
+            	scaleHeight=0.5;
+            	scaleWidth=0.5;
+            }
+            
             scrollerImg = ToolBox.createLemmImage(
-                    (int)(tempScrollerImg.getWidth()*0.5) + (tickerTape.getWidth()*2), Math.max((int)(tempScrollerImg.getHeight()*0.5), tickerTape.getHeight())); //we'll drop the width by
+                    (int)(tempScrollerImg.getWidth()*scaleWidth) + (tickerTape.getWidth()*2), Math.max((int)(tempScrollerImg.getHeight()*scaleHeight), tickerTape.getHeight())); //we'll drop the width by
             try {
                 scrollerGfx = scrollerImg.createGraphicsContext();
                 scrollerGfx.setBackground(new Color(0, 0, 0, 0)); //set transparent background.
-                //draw the ticker-tape repeatedly onto the background:
-                int idx = 0;
-                do {
-                	scrollerGfx.drawImage(tickerTape, idx, 0);
-                	idx += tickerTape.getWidth();
-                } while(idx < scrollerImg.getWidth());
-                scrollerGfx.drawImage(tempScrollerImg, 0, 3, 0.5); //and draw the font and half-size.
+                if(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.CLASSIC_TICKER)) {
+	                //draw the ticker-tape repeatedly onto the background:
+	                int idx = 0;
+	                do {
+	                	scrollerGfx.drawImage(tickerTape, idx, 0);
+	                	idx += tickerTape.getWidth();
+	                } while(idx < scrollerImg.getWidth());
+	                scrollerGfx.drawImage(tempScrollerImg, 0, 3, scaleHeight); //and draw the font and half-size.
+                } else {
+                    scrollerGfx.setBackground(new Color(0, 0, 0, 0));
+                	scrollerGfx.drawImage(tempScrollerImg, 0, 0, scrollerImg.getWidth(), scrollerImg.getHeight());
+                }
             } finally {
                 if (scrollerGfx != null) {
                     scrollerGfx.dispose();

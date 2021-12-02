@@ -209,6 +209,69 @@ public class Icons {
         reset();
     }
     
+    
+    private static boolean ModHasEnhancedIconBar() throws ResourceException {
+    	//create a list of all possible images in the EnhancedIconBar
+    	//we're going to check is any one of these exists. 
+    	//If so, we'll assume this mod supports the Enhanced Toolbar, 
+    	//and so we won't use any static icons.
+    	List<String> iconbarImages;
+    	iconbarImages = new ArrayList<String>();
+    	iconbarImages.add("icon_empty_large");
+    	iconbarImages.add("iconbar_filler");
+    	//static transparent icons
+    	iconbarImages.add("ticon_bash");
+    	iconbarImages.add("ticon_block");
+    	iconbarImages.add("ticon_bomb");
+    	iconbarImages.add("ticon_build");
+    	iconbarImages.add("ticon_climb");
+    	iconbarImages.add("ticon_dig");
+    	iconbarImages.add("ticon_float");
+    	iconbarImages.add("ticon_mine");
+    	iconbarImages.add("ticon_minus");
+    	iconbarImages.add("ticon_plus");
+    	iconbarImages.add("ticon_pause");
+    	iconbarImages.add("ticon_ffwd");
+    	iconbarImages.add("ticon_nuke");
+    	iconbarImages.add("ticon_restart");
+    	iconbarImages.add("ticon_vlock");
+    	//animated icons
+    	iconbarImages.add("anim_bash");
+    	iconbarImages.add("anim_block");
+    	iconbarImages.add("anim_bomb");
+    	iconbarImages.add("anim_build");
+    	iconbarImages.add("anim_climb");
+    	iconbarImages.add("anim_dig");
+    	iconbarImages.add("anim_float");
+    	iconbarImages.add("anim_mine");
+    	iconbarImages.add("anim_minus");
+    	iconbarImages.add("anim_plus");
+    	iconbarImages.add("anim_pause");
+    	iconbarImages.add("anim_ffwd");
+    	iconbarImages.add("anim_nuke");
+    	iconbarImages.add("anim_restart");
+    	iconbarImages.add("anim_vlock");
+    	//large mini map
+    	iconbarImages.add("large_minimap_center");
+    	iconbarImages.add("large_minimap_left");
+    	iconbarImages.add("large_minimap_right");
+
+    	Resource res = null;
+    	//now check for a Mod resource for each of the images listed above.
+    	for (String img : iconbarImages) {
+    		String resString ="gfx/iconbar/" + img + ".png";
+    		res = Core.findResourceEx(
+                    resString,
+                    true, false,
+                    Core.IMAGE_EXTENSIONS);
+    		if (res != null) {
+    			//if one exists, then this mod is Enhanced-Iconbar-Aware!
+    			return true;
+    		}
+    	}
+    	return false;
+    }
+    
     public static void LoadIconResources() throws ResourceException {
     	bgIcons.clear(); 
         bgIconsLarge.clear();
@@ -222,63 +285,69 @@ public class Icons {
         iconImg = ToolBox.createLemmImage(getIconWidth() * (iconOrder.size()), getIconHeight());
         iconGfx = iconImg.createGraphicsContext();
 
+        boolean bModUsesEnhancedIconBar;
+        bModUsesEnhancedIconBar = ModHasEnhancedIconBar();
+        
         //get the background image we're going to use...
         for (int i = 0; i < iconOrder.size(); i++) {
         	LemmImage sourceImg;
-        	Resource res;
+        	Resource res = null;
         	Sprite icon;
        	
         	String iconName = iconOrder.get(i).toString().toLowerCase(Locale.ROOT);
         	
-            if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
-	        	//animated icons we need to load a little differently.
-            	// 1) we try the animated icon for the mod *only*
-            	// 2) if that's not found, we try the static icon for the mod
-            	// 3) if that's not found, we try the standard animated icon 
-            	// 4) if there's no standard animated icon, we load the standard static icon.
-	        	
-            	// 1) check for animated mods
+            
+        	//animated icons we need to load a little differently.
+        	// 1) we try the animated icon for the mod *only*
+        	// 2) if that's not found, we try the transparent static icon for the mod
+        	// 3) if that's not found, we try the original static icon (with background) for the mod
+        	// 4) if that's not found, we try the standard animated icon 
+        	// 5) if there's no standard animated icon, we load the standard transparent static icon.
+        	
+        	// 1) check for animated mods
+        	if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
             	res = Core.findResourceEx(
 	                    "gfx/iconbar/anim_" + iconName + ".png",
 	                    true, false, 
 	                    Core.IMAGE_EXTENSIONS);
-	        	// 2) check for static mods
-            	if (res == null) {
-		        	res = Core.findResourceEx(
-		                    "gfx/icons/icon_" + iconName + ".png",
-		                    true, false,
-		                    Core.IMAGE_EXTENSIONS);
-	        	}
-	        	// 3) check for animated standard
+        	}
+        	// 2) check for static mods
+        	if (res == null && bModUsesEnhancedIconBar) {
+	        	res = Core.findResourceEx(
+	                    "gfx/iconbar/ticon_" + iconName + ".png",
+	                    true, false,
+	                    Core.IMAGE_EXTENSIONS);
+        	}
+        	// 3) check for old-style static mods (with background)
+        	if (res == null && !bModUsesEnhancedIconBar) {
+	        	res = Core.findResourceEx(
+	                    "gfx/icons/icon_" + iconName + ".png",
+	                    true, false,
+	                    Core.IMAGE_EXTENSIONS);
+        	}
+        	if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
+        		// 4) check for animated standard
             	if (res == null) {
                 	res = Core.findResourceEx(
     	                    "gfx/iconbar/anim_" + iconName + ".png",
     	                    false, true, 
     	                    Core.IMAGE_EXTENSIONS);
 	        	}
-            	// 4) check for static standard
-            	if (res == null) {
-		        	res = Core.findResourceEx(
-		                    "gfx/icons/icon_" + iconName + ".png",
-		                    false, true,
-		                    Core.IMAGE_EXTENSIONS);
-	        	}
-            	// if we still can't find anything, then this should throw an error.
-            	if (res == null)
-            		res = Core.findResource("gfx/icons/icon_" + iconName + ".png", Core.IMAGE_EXTENSIONS);
-	            sourceImg = Core.loadLemmImage(res);
-	            int frames = sourceImg.getHeight() / 40;
-	            icon = new Sprite(sourceImg, frames, 1, false);
-	            icons.add(icon);
-            } else {
-	        	//load the individual icon 
-	        	res = Core.findResource(
-	                    "gfx/icons/icon_" + iconName + ".png",
+        	}
+        	// 5) check for static standard
+        	if (res == null) {
+	        	res = Core.findResourceEx(
+	                    "gfx/iconbar/ticon_" + iconName + ".png",
+	                    false, true,
 	                    Core.IMAGE_EXTENSIONS);
-	            sourceImg = Core.loadLemmImage(res);
-	            icon = new Sprite(sourceImg, 2, 1, false);
-	            icons.add(icon);
-            }
+        	}
+        	// if we still can't find anything, then this should throw an error.
+        	if (res == null)
+        		res = Core.findResource("gfx/iconbar/ticon_" + iconName + ".png", Core.IMAGE_EXTENSIONS);
+            sourceImg = Core.loadLemmImage(res);
+            int frames = sourceImg.getHeight() / 40;
+            icon = new Sprite(sourceImg, frames, 1, false);
+            icons.add(icon);
 	            
             //load standard size backgrounds
             //TODO: allow for multiple different background objects
@@ -506,16 +575,16 @@ public class Icons {
 
         	//these 5 icon types don't have numbers with them, so we can move the icons up a tad
         	int yIcon = 0;
-        	int yLabel = 0;
+        	int yLabel = 29; //we're manually moving the labels lower here. TODO: eventually we should just update the graphics so they're lower
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
-	        	switch(type) {
+	        	yLabel = 43;
+            	switch(type) {
 		        	case FFWD:
 		        	case PAUSE:
 		        	case RESTART:
 		        	case VLOCK:
 		        	case NUKE:
 		        		yIcon = -4;
-		        		yLabel = -10;
 		        		break;
 		    		default:
 	        	}
@@ -523,7 +592,7 @@ public class Icons {
 	        	
         	iconGfx.drawImage(icon.getImage(), getIconWidth() * idx + x, 0 + y + yIcon);
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS))
-            	iconGfx.drawImage(iconLabel.getImage(), getIconWidth() * idx + x, 0 + y + yLabel);
+            	iconGfx.drawImage(iconLabel.getImage(), getIconWidth() * idx + x, yLabel);
         }
     }
     

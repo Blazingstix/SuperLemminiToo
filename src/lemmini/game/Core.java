@@ -55,7 +55,7 @@ import org.apache.commons.lang3.SystemUtils;
  */
 public class Core {
 
-	public static final String RES_REVISION = "1.40";
+	public static final String RES_REVISION = "1.45";
 
     
     /** extensions accepted for level files in file dialog */
@@ -202,6 +202,8 @@ public class Core {
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, programProps.getBoolean("enhancedIconBar", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, programProps.getBoolean("iconLabels", true));
         GameController.setOption(GameController.SuperLemminiTooOption.ANIMATED_ICONS, programProps.getBoolean("animatedIcons", true));
+        GameController.setOption(GameController.SuperLemminiTooOption.CLASSIC_TICKER, programProps.getBoolean("classicTicker", false));
+
         System.out.println("      all settings read from config");
         
         // check for the existence of root.lzp.
@@ -399,6 +401,7 @@ public class Core {
                 zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
             }
         }
+        System.out.println("      " + zipFiles.size() + " found");
         //load the main root.lzp from the game data folder.
         for (Path file : gameDataTree.getAllPaths(ROOT_ZIP_NAME)) {
             zipFiles.add(new CaseInsensitiveZipFile(file.toFile()));
@@ -460,6 +463,7 @@ public class Core {
         programProps.setBoolean("enhancedIconBar", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR));
         programProps.setBoolean("iconLabels", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
         programProps.setBoolean("animatedIcons", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ANIMATED_ICONS));
+        programProps.setBoolean("classicTicker", GameController.isOptionEnabled(GameController.SuperLemminiTooOption.CLASSIC_TICKER));
 
     }
     

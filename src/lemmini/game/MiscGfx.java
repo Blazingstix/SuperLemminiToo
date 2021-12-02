@@ -103,15 +103,15 @@ public class MiscGfx {
         images.add(img);
 
         /* 3: MINIMAP_LARGE_LEFT */
-        res = Core.findResource("gfx/misc/large_minimap_left.png", Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/iconbar/large_minimap_left.png", Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
         /* 4: MINIMAP_LARGE_CENTER */
-        res = Core.findResource("gfx/misc/large_minimap_center.png", Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/iconbar/large_minimap_center.png", Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
         /* 5: MINIMAP_LARGE_RIGHT */
-        res = Core.findResource("gfx/misc/large_minimap_right.png", Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/iconbar/large_minimap_right.png", Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
         
@@ -143,7 +143,7 @@ public class MiscGfx {
         anim = ToolBox.getAnimation(Core.loadLemmImage(res), 4);
         images.addAll(anim);
         /* 20: ICONBAR_FILLER */
-        res = Core.findResource("gfx/misc/iconbar_filler.png", Core.IMAGE_EXTENSIONS);
+        res = Core.findResource("gfx/iconbar/iconbar_filler.png", Core.IMAGE_EXTENSIONS);
         img = Core.loadLemmImage(res);
         images.add(img);
         /* 21: TICKER_TAPE */

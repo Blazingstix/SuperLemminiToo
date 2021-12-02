@@ -116,7 +116,9 @@ public class GameController {
         /** flag: show text labels on icons */
         ICON_LABELS,
         /** flag: show animated icons */
-        ANIMATED_ICONS
+        ANIMATED_ICONS,
+        /** flag: show the classic lemmings ticker (as seen in the original Amiga version) */
+        CLASSIC_TICKER
     }
     
     public static enum LevelFormat {

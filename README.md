@@ -1,7 +1,7 @@
 # SuperLemminiToo
 My personal fork of SuperLemmini, which itself is a fork of Lemmini
 
-# SuperLemminiToo v1.40 2021-Nov-15
+# SuperLemminiToo v1.45 2021-Dec-01
 
 This is SuperLemminiToo: a fork of SuperLemmini, which is itself a fork of Lemmini.
 I made this because there were some minor features I wanted to see in SuperLemmini, which didn't appear to be in the original author's immediate timeline.

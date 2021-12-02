@@ -1,0 +1,87 @@
+name: (string) The name of this level pack.
+
+allLevelsUnlocked: (boolean) If true, all levels are unlocked from the beginning. (Default: false)
+
+mods: (string list) A list of all the mods to be used, in order of highest priority to lowest priority.
+
+codeSeed: (string) A series of 10 letters (A-Z) to be used to generate and decode level codes via the code system from the original Lemmings games. If not specified or if the seed is not 10 letters long, level codes will not be supported.
+
+codeOffest: (integer) The level offset used in generating/decoding level codes. (Default: 0)
+
+maxFallDistance: (integer) The maximum distance in pixels that a non-floater can fall without splatting. Any level that also specifies maxFallDistance will override this. (Default: 126)
+
+
+Music:
+
+Each entry of the music list is formatted as follows:
+
+music_n = File name
+
+--n: The index number of this music entry. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--File name: (string) The name of the music file. If the file is in a subfolder, forward slashes are used between folder and file names (e.g., mysongs/greatsong.ogg).
+
+
+Debriefings:
+
+This section specifies the messages that appear at the end of the level to comment on the player's performance. The formulas for when each message appears is shown below.
+
+failureA: (string) Failed, and rescued = 0
+                   (Default: ROCK BOTTOM! I hope for your sake\nthat you nuked that level.)
+
+failureB: (string) Failed, and rescued > 0, but % rescued < 50% of % to rescue
+                   (Default: Better rethink your strategy before\nyou try this level again!)
+
+failureC: (string) Failed, and % rescued >= 50% of % to rescue, but % rescued < % to rescue - 5
+                   (Default: A little more practice on this level\nis definitely recommended.)
+
+failureD: (string) Failed, and % to rescue - 5 <= % rescued < % to rescue - 1
+                   (Default: You got pretty close that time.\nNow try again for that few % extra.)
+
+failureE: (string) Failed, and % rescued >= % to rescue - 1
+                   (Default: OH NO, So near and yet so far (teehee)\nMaybe this time.....)
+
+successA: (string) Completed, and rescued = to rescue, but % rescued < 100%
+                   (Default: SPOT ON. You can't get much closer\nthan that. Let's try the next....)
+
+successB: (string) Completed, and rescued > to rescue, but % rescued < % to rescue + 20, and % rescued < 100%
+                   (Default: That level seemed no problem to you on\nthat attempt. Onto the next....)
+
+successC: (string) Completed, and % rescued >= % to rescue + 20, but rescued < 100%
+                   (Default: You totally stormed that level!\nLet's see if you can storm the next...)
+
+successD: (string) Completed, and % rescued = 100%
+                   (Default: Superb! You rescued every lemming on\nthat level. Can you do it again....?)
+
+
+Ratings:
+
+Each entry of the rating list is as follows:
+
+level_n = Rating name
+
+--n: The index number of this rating entry. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--File name: (string) The name of the rating.
+
+
+Levels:
+
+Each entry of the level list is as follows:
+
+level_n_m = Level file, Music index
+
+--n: The index number of the rating that this level will be part of.
+
+--m: The index number of this level entry. Index numbers of all entries must start at 0, must not be zero-padded, and must be contiguous.
+
+--Level file: (string) The name of the level file.
+
+--Music index: (integer) The index of the music file to play on this level. If the level file also specifies music, it will override this field.
+
+Alternatively, level entries can be specified as follows:
+
+lowercaserating_m = Level file, Music index
+
+...where "lowercaserating" is the name of the rating converted to lowercase. Any spaces, equals signs, and colons need to be escaped with a preceding backslash. For example, if the rating is called "Super Hardcore!", then it needs to be entered here as "super\ hardcore!"
+

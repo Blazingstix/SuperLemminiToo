@@ -1,0 +1,47 @@
+While playing a level:
+
+1 or F3: Select climber skill
+2 or F4: Select floater skill
+3 or F5: Select bomber skill
+4 or F6: Select blocker skill
+5 or F7: Select builder skill
+6 or F8: Select basher skill
+7 or F9: Select miner skill
+8 or F10: Select digger skill
+- or F1: Decrease release rate
+=, +, or F2: Increase release rate
+F12 (twice): Nuke level
+P or F11 or SPACE: Pause/unpause game
+F or Enter: Toggle fast-forward
+S: Toggle vertical scroll lock
+Up (if Advanced Select is enabled): Select walkers only
+Left (if Advanced Select is enabled): Select left-facing lemmings only
+Right (if Advanced Select is enabled): Select right-facing lemmings only
+Up (if Advanced Select is disabled): Scroll level up
+Down (if Advanced Select is disabled): Scroll level down
+Left (if Advanced Select is disabled): Scroll level left
+Right (if Advanced Select is disabled): Scroll level right
+Shift: Increase scroll speed
+V: Save image of level in current state
+Ctrl-R: Restart level
+Esc: End level
+
+To use the following controls, enable debug mode by pressing CTRL-ALT-SHIFT-D while playing a level.
+D (debug mode only): Enable/disable draw mode
+W (debug mode only): End level with all lemmings saved
+U (debug mode only): Toggle superlemming mode
+T (debug mode only): Toggle timer countdown
+N (debug mode only): Add a new Lemming into the level (at the cursor's position)
+
+
+While viewing a level preview:
+
+Up: Previous rating
+Down: Next rating
+Left: Next level
+Right: Previous level
+
+
+While viewing a level preview or debriefing:
+
+V: Save image of level in current state
