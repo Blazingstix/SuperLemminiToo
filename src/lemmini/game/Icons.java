@@ -578,13 +578,14 @@ public class Icons {
         	int yLabel = 29; //we're manually moving the labels lower here. TODO: eventually we should just update the graphics so they're lower
             if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR)) {
 	        	yLabel = 43;
+	        	yIcon = -5;
             	switch(type) {
 		        	case FFWD:
 		        	case PAUSE:
 		        	case RESTART:
 		        	case VLOCK:
 		        	case NUKE:
-		        		yIcon = -4;
+		        		yIcon -= 4;
 		        		break;
 		    		default:
 	        	}

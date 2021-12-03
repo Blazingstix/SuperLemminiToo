@@ -55,7 +55,7 @@ import org.apache.commons.lang3.SystemUtils;
  */
 public class Core {
 
-	public static final String RES_REVISION = "1.45";
+	public static final String RES_REVISION = "1.46";
 
     
     /** extensions accepted for level files in file dialog */

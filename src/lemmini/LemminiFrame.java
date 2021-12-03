@@ -54,10 +54,10 @@ import org.apache.commons.lang3.SystemUtils;
 public class LemminiFrame extends JFrame {
     
     // These variables define the current revision
-	public static final String REVISION = "1.45";
+	public static final String REVISION = "1.46";
 	//when released, the date should be in the format of d MMM yyyy
 	//before it's released, the value should be BETA
-	public static final String REV_DATE = "1 DEC 2021"; 
+	public static final String REV_DATE = "3 DEC 2021"; 
     //RES_REVISION is stored in Core.
     
     public static final int LEVEL_HEIGHT = 320;
