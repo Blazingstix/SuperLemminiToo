@@ -82,6 +82,7 @@ public class OptionsDialog extends JDialog {
         jCheckBoxEnhancedStatus = new javax.swing.JCheckBox();
         jCheckBoxEnhancedIconBar = new javax.swing.JCheckBox();
         jCheckBoxIconLabels = new javax.swing.JCheckBox();
+        jCheckBoxClassicTicker = new javax.swing.JCheckBox();
         jButtonOK = new javax.swing.JButton();
         jButtonCancel = new javax.swing.JButton();
         jButtonApply = new javax.swing.JButton();
@@ -130,6 +131,10 @@ public class OptionsDialog extends JDialog {
         jCheckBoxIconLabels.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.ICON_LABELS));
         jCheckBoxIconLabels.setText("Show labels on the Icon Bar");
         
+        jCheckBoxClassicTicker.setSelected(GameController.isOptionEnabled(GameController.SuperLemminiTooOption.CLASSIC_TICKER));
+        jCheckBoxClassicTicker.setText("Use Classic Ticker");
+        jCheckBoxClassicTicker.setToolTipText("Show the classic yellow ticker tape on the title screen");
+
         jComboBoxMixer.setSelectedIndex(GameController.sound.getMixerIdx());
 
         javax.swing.GroupLayout jPanelSoundLayout = new javax.swing.GroupLayout(jPanelSound);
@@ -264,6 +269,7 @@ public class OptionsDialog extends JDialog {
                 	.addComponent(jCheckBoxEnhancedStatus)
                 	.addComponent(jCheckBoxEnhancedIconBar)
                 	.addComponent(jCheckBoxIconLabels)
+                	.addComponent(jCheckBoxClassicTicker)
                 	)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -300,6 +306,8 @@ public class OptionsDialog extends JDialog {
                 .addComponent(jCheckBoxEnhancedIconBar)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jCheckBoxIconLabels)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jCheckBoxClassicTicker)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
@@ -425,6 +433,7 @@ public class OptionsDialog extends JDialog {
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_STATUS, jCheckBoxEnhancedStatus.isSelected());
         GameController.setOption(GameController.SuperLemminiTooOption.ENHANCED_ICONBAR, jCheckBoxEnhancedIconBar.isSelected());
         GameController.setOption(GameController.SuperLemminiTooOption.ICON_LABELS, jCheckBoxIconLabels.isSelected());
+        GameController.setOption(GameController.SuperLemminiTooOption.CLASSIC_TICKER, jCheckBoxClassicTicker.isSelected());
         
         
         //then commit all those settings to disk
@@ -454,6 +463,7 @@ public class OptionsDialog extends JDialog {
     private javax.swing.JCheckBox jCheckBoxEnhancedStatus;
     private javax.swing.JCheckBox jCheckBoxEnhancedIconBar;
     private javax.swing.JCheckBox jCheckBoxIconLabels;
+    private javax.swing.JCheckBox jCheckBoxClassicTicker;
     private javax.swing.JComboBox<String> jComboBoxMixer;
     private javax.swing.JLabel jLabelMixer;
     private javax.swing.JLabel jLabelMusicVolume;

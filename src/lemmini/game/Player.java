@@ -48,6 +48,8 @@ public class Player {
      * @param n player's name
      */
     public Player(final String n) {
+        System.out.println("    initalizing player: " + n);
+
         name = n;
         lvlGroups = new LinkedHashMap<>();
         // read main ini file
@@ -58,39 +60,92 @@ public class Player {
         } catch (IOException ex) {
         }
         Path iniFilePath = getPlayerINIFilePath(name);
+        System.out.println("    loading player level stats: " + iniFilePath);
         
         if (props.load(iniFilePath)) { // might exist or not - if not, it's created
             // file exists, now extract entries
             for (int idx = 0; true; idx++) {
-                // first string is the level group key identifier
+            	System.out.print("    loading level group " + idx);
+            	// first string is the level group key identifier
                 // second string is a BigInteger used as bitfield to store available levels
                 String[] s = props.getArray("group" + idx, null);
-                if (s == null || s.length != 2 || s[0] == null) {
-                    break;
+                if (s == null || s.length < 2 || s[0] == null) {
+                    System.out.println(": <no valid group data found. skipping...>");
+                	break;
                 }
+                String s1 = s[s.length-1]; // get the last
+                String groupName = "";
+                // due to a bug in the ini property "Array" saving, commas are not escaped, and so they're treated as you would any column separator
+                // because the getArray function above trims out any spaces, knowledge if there was or was not a space after a comma is lost
+                // so let's just assume there's always a space after it, because that's better grammar.
+                for (int a = 0; a < s.length-1; a++) {
+                	groupName += s[a];
+                	if (a < s.length-2 ) {
+                		groupName +=", "; //we're assuming there's always a space after any comma
+                	}
+                }
+                System.out.print(": “" + groupName + "”");
                 
-                BigInteger unlockedLevels = ToolBox.parseBigInteger(s[1]);
+                // note: unlockedLevels are stored as bits. a bit 1 indicates the level is unlocked; bit 0 indicates the level is locked.
+                // unlocked means it is either completed, or is after a group of uncompleted levels.
+                BigInteger unlockedLevels = ToolBox.parseBigInteger(s1);
+                System.out.println("  [" + unlockedLevels.bitLength() + ":" + unlockedLevels.toString(16) + "]");
                 Map<Integer, LevelRecord> levelRecords = new LinkedHashMap<>();
-                for (int j = 0; j < unlockedLevels.bitLength(); j++) {
-                    if (j == 0 || unlockedLevels.testBit(j)) {
-                        boolean completed = props.getBoolean("group" + idx + "_level" + j + "_completed", false);
-                        if (completed) {
-                            int lemmingsSaved = props.getInt("group" + idx + "_level" + j + "_lemmingsSaved", -1);
-                            int skillsUsed = props.getInt("group" + idx + "_level" + j + "_skillsUsed", -1);
-                            int timeElapsed = props.getInt("group" + idx + "_level" + j + "_timeElapsed", -1);
-                            int score = props.getInt("group" + idx + "_level" + j + "_score", -1);
-                            levelRecords.put(j, new LevelRecord(completed, lemmingsSaved, skillsUsed, timeElapsed, score));
-                        } else {
-                            levelRecords.put(j, LevelRecord.BLANK_LEVEL_RECORD);
+
+                
+                System.out.print("     building level stats map...");
+
+                if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DEBUG_VERBOSE_PLAYER_LOAD))
+                	System.out.println();
+                
+                int compCount = 0;
+               
+                int maxLevel = props.getHighestLevel(idx) + 1;
+                maxLevel = Math.max(maxLevel, unlockedLevels.bitLength());
+                for (int j = 0; j < maxLevel; j++) {
+                    if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DEBUG_VERBOSE_PLAYER_LOAD))
+                    	System.out.print("     level " + j + ": ");
+
+                	String levelSetting = "group" + idx + "_level" + j;
+                	String completedKey = levelSetting + "_completed";
+                	//TODO: check if we're on the last level, and there is no compKey... 
+                	//props.containsKey(completedKey); 
+                    boolean completed = props.getBoolean(completedKey, false);
+                    if (completed) {
+                    	compCount++;
+                        int lemmingsSaved = props.getInt(levelSetting + "_lemmingsSaved", -1);
+                        int skillsUsed = props.getInt(levelSetting + "_skillsUsed", -1);
+                        int timeElapsed = props.getInt(levelSetting + "_timeElapsed", -1);
+                        int score = props.getInt(levelSetting + "_score", -1);
+                        levelRecords.put(j, new LevelRecord(completed, lemmingsSaved, skillsUsed, timeElapsed, score));
+                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DEBUG_VERBOSE_PLAYER_LOAD)) {
+	                        System.out.print("[completed]");
+	                        System.out.print(" saved: " + lemmingsSaved);
+	                        System.out.print(" skills: " + skillsUsed);
+	                        System.out.print(" time: " + timeElapsed);
+	                        System.out.print(" score: " + score);
                         }
+                    } else {
+                        levelRecords.put(j, LevelRecord.BLANK_LEVEL_RECORD);
+                        if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DEBUG_VERBOSE_PLAYER_LOAD))
+                        	System.out.print("[incomplete] ... creating blank records.");
                     }
+                    if (GameController.isOptionEnabled(GameController.SuperLemminiTooOption.DEBUG_VERBOSE_PLAYER_LOAD))
+                    	System.out.println();
                 }
-                lvlGroups.put(s[0], new LevelGroup(levelRecords));
+                lvlGroups.put(groupName, new LevelGroup(levelRecords));
+                //and finally print out the summary of this level.
+                //this gets printed regardless if verbose or not.
+                System.out.println("     Highest recorded level: " + maxLevel + ", Total completed: " + compCount);
             }
+        } else {
+        	System.out.println("    ini file not found... new one created.");
         }
         
         // cheat mode
         cheat = false;
+        
+        System.out.println();
     }
     
     /**

@@ -6,6 +6,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.Set;
+
 import lemmini.game.Core;
 import lemmini.game.Resource;
 
@@ -134,7 +136,7 @@ public class Props {
     }
     
     /**
-     * Get string array property
+     * Get string array property (an array is a result split by commas)
      * @param key Name of the key to get value for
      * @param def Default value in case key is not found
      * @return Value of key as array of strings
@@ -510,4 +512,34 @@ public class Props {
             return false;
         }
     }
+    
+    
+    /**
+     * Returns the highest level number present for the supplied Group, in the records.
+     * @param groupNum The group number from the player INI file to check levels against
+     * @return -1 if no matches found, or the highest level number otherwise (starting at 0).
+     */
+    public int getHighestLevel(int groupNum) {
+    	Set<Object> keys = hash.keySet();
+    	int max = -1;
+    	for(Object k:keys) {
+    		String key = k.toString();
+    		String match = "group" + groupNum + "_level";
+    		if(key.startsWith(match)) {
+    			int idx2 = key.indexOf("_", match.length()-1);
+    			String tmpNum = key.substring(match.length(), idx2);
+    			try {
+    				int num = Integer.parseInt(tmpNum);
+    				if (num > max) {
+    					max = num;
+    				}
+    			} catch (NumberFormatException e) {
+    				//just catching errors because we have no way of trusting the data we're inputting.
+    				//but we don't need to actually do anything with the error... just to prevent it from bringing down the whole system.
+    			}
+    		}
+    	}
+    	return max;
+    }
+    
 }

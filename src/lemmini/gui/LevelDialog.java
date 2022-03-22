@@ -634,10 +634,9 @@ public class LevelDialog extends JDialog {
                 for (ListIterator<String> lit2 = levels.listIterator(); lit2.hasNext(); ) {
                     int k = lit2.nextIndex();
                     String level = lit2.next();
-                    if (lp.getAllLevelsUnlocked()
-                            || Core.player.isAvailable(lp.getName(), rating, k)) {
-                        LevelItem levelItem = new LevelItem(i, j, k, level,
-                                Core.player.getLevelRecord(lp.getName(), rating, k).isCompleted());
+                    if (lp.getAllLevelsUnlocked() || Core.player.isAvailable(lp.getName(), rating, k)) {
+                        LevelItem levelItem = new LevelItem(i, j, k, level, 
+                        									Core.player.getLevelRecord(lp.getName(), rating, k).isCompleted());
                         DefaultMutableTreeNode levelNode = new DefaultMutableTreeNode(levelItem, false);
                         ratingNode.add(levelNode);
                         levelPositionLookup[i][j][k] = ka++;
