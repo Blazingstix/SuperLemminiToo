@@ -1083,36 +1083,52 @@ public class GameController {
                         pan = l.getPan();
                         switch (rs.skill) {
                             case CLIMBER:
-                                numClimbers--;
-                                numSkillsUsed++;
+                            	if (numClimbers != Integer.MAX_VALUE) {
+                            		numClimbers--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case FLOATER:
-                                numFloaters--;
-                                numSkillsUsed++;
+                            	if (numFloaters != Integer.MAX_VALUE) {
+                            		numFloaters--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case FLAPPER:
-                                numBombers--;
-                                numSkillsUsed++;
+                            	if (numBombers != Integer.MAX_VALUE) {
+                            		numBombers--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case BLOCKER:
-                                numBlockers--;
-                                numSkillsUsed++;
+                            	if (numBlockers != Integer.MAX_VALUE) {
+                                    numBlockers--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case BUILDER:
-                                numBuilders--;
-                                numSkillsUsed++;
+                            	if (numBuilders != Integer.MAX_VALUE) {
+                            		numBuilders--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case BASHER:
-                                numBashers--;
-                                numSkillsUsed++;
+                            	if (numBashers != Integer.MAX_VALUE) {
+                            		numBashers--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case MINER:
-                                numMiners--;
-                                numSkillsUsed++;
+                            	if (numMiners != Integer.MAX_VALUE) {
+                            		numMiners--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             case DIGGER:
-                                numDiggers--;
-                                numSkillsUsed++;
+                            	if (numDiggers != Integer.MAX_VALUE) {
+                            		numDiggers--;
+                                    numSkillsUsed++;
+                                }
                                 break;
                             default:
                                 break;
